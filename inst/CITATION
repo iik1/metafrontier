@@ -1,0 +1,8 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "metafrontier: Metafrontier Analysis for Efficiency and Productivity Studies",
+  author   = person("Ivar", "Kiil"),
+  year     = "2026",
+  note     = "R package version 0.1.0.9000",
+  url      = "https://github.com/iik1/metafrontier"
+)
