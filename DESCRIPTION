@@ -30,10 +30,13 @@ Imports:
     methods
 Suggests:
     testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
     sfaR,
     frontier,
     Benchmarking,
     ggplot2
+VignetteBuilder: knitr
 URL: https://github.com/iik1/metafrontier
 BugReports: https://github.com/iik1/metafrontier/issues
 Config/testthat/edition: 3
