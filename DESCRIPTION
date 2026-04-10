@@ -1,0 +1,39 @@
+Package: metafrontier
+Type: Package
+Title: Analysis of Metafrontier Models for Efficiency and Productivity
+Version: 0.1.0.9000
+Authors@R: c(
+    person("Ivar", "Kiil", email = "ivar.kiil@nhh.no",
+           role = c("aut", "cre")))
+Description: Implements metafrontier production function models for
+    estimating technical efficiencies and technology gaps for firms
+    operating under different technologies. Supports both stochastic
+    frontier analysis (SFA) and data envelopment analysis (DEA) based
+    metafrontiers. Includes the deterministic metafrontier of Battese,
+    Rao, and O'Donnell (2004) <doi:10.1023/B:PROD.0000016869.68578.b7>,
+    the stochastic metafrontier of Huang, Huang, and Liu (2014)
+    <doi:10.1007/s11123-014-0397-1>, and the metafrontier Malmquist
+    productivity index of O'Donnell, Rao, and Battese (2008)
+    <doi:10.1007/s00181-006-0095-0>.
+License: GPL (>= 3)
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+Depends: R (>= 4.0.0)
+Imports:
+    stats,
+    graphics,
+    grDevices,
+    Formula,
+    numDeriv,
+    lpSolveAPI,
+    Matrix,
+    methods
+Suggests:
+    testthat (>= 3.0.0),
+    sfaR,
+    frontier,
+    Benchmarking,
+    ggplot2
+URL: https://github.com/iik1/metafrontier
+BugReports: https://github.com/iik1/metafrontier/issues
+Config/testthat/edition: 3
