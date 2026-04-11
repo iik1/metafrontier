@@ -223,28 +223,30 @@ malmquist_meta <- function(formula = NULL,
 
       # D_j^s(x_t, y_t) — period-t obs against period-s group tech
       for (i in seq_along(idx_gt)) {
-        d_grp_st[idx_gt[i]] <- .dea_solve_lp(
+        d_grp_st[idx_gt[i]] <- suppressWarnings(.dea_solve_lp(
           X_gt[i, ], Y_gt[i, ], X_gs, Y_gs, orientation, rts
-        )
+        ))
       }
 
       # D_j^t(x_s, y_s) — period-s obs against period-t group tech
       for (i in seq_along(idx_gs)) {
-        d_grp_ts[idx_gs[i]] <- .dea_solve_lp(
+        d_grp_ts[idx_gs[i]] <- suppressWarnings(.dea_solve_lp(
           X_gs[i, ], Y_gs[i, ], X_gt, Y_gt, orientation, rts
-        )
+        ))
       }
     }
 
     # Metafrontier (pooled) DEA scores
-    # D*^s(s): period-s obs against period-s pooled tech
-    d_meta_ss <- .dea_batch(X_s, Y_s, X_s, Y_s, orientation, rts)
-    # D*^t(t): period-t obs against period-t pooled tech
-    d_meta_tt <- .dea_batch(X_t, Y_t, X_t, Y_t, orientation, rts)
-    # D*^s(t): period-t obs against period-s pooled tech
-    d_meta_st <- .dea_batch(X_t, Y_t, X_s, Y_s, orientation, rts)
-    # D*^t(s): period-s obs against period-t pooled tech
-    d_meta_ts <- .dea_batch(X_s, Y_s, X_t, Y_t, orientation, rts)
+    # Suppress LP infeasibility warnings from cross-period evaluations
+    # (expected when reference technology cannot envelop all eval DMUs)
+    d_meta_ss <- suppressWarnings(
+      .dea_batch(X_s, Y_s, X_s, Y_s, orientation, rts))
+    d_meta_tt <- suppressWarnings(
+      .dea_batch(X_t, Y_t, X_t, Y_t, orientation, rts))
+    d_meta_st <- suppressWarnings(
+      .dea_batch(X_t, Y_t, X_s, Y_s, orientation, rts))
+    d_meta_ts <- suppressWarnings(
+      .dea_batch(X_s, Y_s, X_t, Y_t, orientation, rts))
 
     # --- Identify matched firms across periods ---
     # We need firms present in both periods. Match by group.
