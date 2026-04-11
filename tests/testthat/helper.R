@@ -11,7 +11,7 @@ TOLERANCE_EFF  <- 1e-4
 set.seed(12345)
 test_sim <- simulate_metafrontier(
   n_groups = 2,
-  n_per_group = 100,
+  n_per_group = 150,
   n_inputs = 2,
   beta_meta = c(1.0, 0.5, 0.3),
   tech_gap = c(0, 0.3),
