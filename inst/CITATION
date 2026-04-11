@@ -3,6 +3,6 @@ bibentry(
   title    = "metafrontier: Analysis of Metafrontier Models for Efficiency and Productivity",
   author   = person("Ivar", "Kiil"),
   year     = "2026",
-  note     = "R package version 0.1.0.9000",
+  note     = "R package version 0.1.0",
   url      = "https://github.com/iik1/metafrontier"
 )
