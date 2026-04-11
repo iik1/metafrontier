@@ -3,7 +3,7 @@
 \docType{package}
 \name{metafrontier-package}
 \alias{metafrontier-package}
-\title{metafrontier: Metafrontier Analysis for Efficiency and Productivity Studies}
+\title{metafrontier: Analysis of Metafrontier Models for Efficiency and Productivity}
 \description{
 Implements metafrontier production function models for estimating technical efficiencies and technology gaps for firms operating under different technologies. Supports both stochastic frontier analysis (SFA) and data envelopment analysis (DEA) based metafrontiers. Includes the deterministic metafrontier of Battese, Rao, and O'Donnell (2004) \doi{10.1023/B:PROD.0000016869.68578.b7}, the stochastic metafrontier of Huang, Huang, and Liu (2014) \doi{10.1007/s11123-014-0397-1}, and the metafrontier Malmquist productivity index of O'Donnell, Rao, and Battese (2008) \doi{10.1007/s00181-006-0095-0}.
 }
@@ -16,7 +16,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Ivar Kiil \email{ivar.kiil@nhh.no} (\href{https://orcid.org/0000-0000-0000-0000}{ORCID})
+\strong{Maintainer}: Ivar Kiil \email{ivar.kiil@nhh.no}
 
 }
 \keyword{internal}
