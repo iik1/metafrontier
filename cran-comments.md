@@ -1,0 +1,30 @@
+## R CMD check results
+
+0 errors | 0 warnings | 1 note
+
+* This is a new submission.
+
+## Test environments
+
+* Local: Windows 11, R 4.5.1
+* GitHub Actions:
+  - Ubuntu 24.04, R-devel
+  - Ubuntu 24.04, R 4.5.1 (release)
+  - Ubuntu 24.04, R 4.4.x (oldrel-1)
+  - Windows Server 2022, R 4.5.1 (release)
+  - macOS 14, R 4.5.1 (release)
+
+## Notes
+
+The CRAN incoming checks report two DOIs as "404 Not Found":
+
+* `10.1023/B:PROD.0000016869.68578.b7` (Battese, Rao, and O'Donnell, 2004)
+* `10.1007/s11123-014-0397-1` (Huang, Huang, and Liu, 2014)
+
+Both DOIs are valid and resolve correctly in a web browser. The 404
+responses are caused by the doi.org resolver returning errors on
+programmatic HEAD requests for certain older Springer/Kluwer DOIs.
+
+## Downstream dependencies
+
+There are currently no downstream dependencies for this package.

@@ -371,12 +371,12 @@ metafrontier <- function(formula = NULL,
       te = model$efficiency,
       X = model$X,
       y = as.numeric(model$y),
-      sigma_v = model$sigma_v %||% NA_real_,
-      sigma_u = model$sigma_u %||% NA_real_,
-      logLik = model$logLik %||% NA_real_,
+      sigma_v = if (is.null(model$sigma_v)) NA_real_ else model$sigma_v,
+      sigma_u = if (is.null(model$sigma_u)) NA_real_ else model$sigma_u,
+      logLik = if (is.null(model$logLik)) NA_real_ else model$logLik,
       hessian = model$hessian,
       n = length(model$y),
-      dist = model$dist %||% "hnormal"
+      dist = if (is.null(model$dist)) "hnormal" else model$dist
     ))
   } else {
     stop("Unsupported model class: ", paste(cls, collapse = ", "),
@@ -442,7 +442,7 @@ metafrontier <- function(formula = NULL,
     y = as.numeric(y),
     sigma_v = as.numeric(sigma_v),
     sigma_u = as.numeric(sigma_u),
-    logLik = model$mlLoglik %||% NA_real_,
+    logLik = if (is.null(model$mlLoglik)) NA_real_ else model$mlLoglik,
     hessian = model$mlHessian,
     n = length(y),
     dist = switch(udist,
@@ -502,7 +502,3 @@ metafrontier <- function(formula = NULL,
   )
 }
 
-
-#' Null-coalescing operator
-#' @noRd
-`%||%` <- function(a, b) if (is.null(a)) b else a
