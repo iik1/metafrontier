@@ -242,3 +242,115 @@ residuals.metafrontier <- function(object, ...) {
   y <- model.response(model.frame(object$formula, data = object$data))
   y - object$meta_frontier
 }
+
+
+#' Confidence Intervals for Metafrontier Coefficients
+#'
+#' Computes Wald-type confidence intervals for the metafrontier
+#' coefficients using the variance-covariance matrix from the
+#' stochastic metafrontier.
+#'
+#' @param object a \code{"metafrontier"} object.
+#' @param parm a character or integer vector of parameter names or
+#'   indices. If missing, all frontier coefficients are used.
+#' @param level the confidence level (default 0.95).
+#' @param ... additional arguments (currently unused).
+#'
+#' @return A matrix with columns for the lower and upper bounds.
+#'
+#' @export
+confint.metafrontier <- function(object, parm, level = 0.95, ...) {
+  v <- vcov(object)
+  if (is.null(v)) {
+    stop("Confidence intervals require a stochastic metafrontier ",
+         "(meta_type = 'stochastic').", call. = FALSE)
+  }
+
+  cf <- object$meta_coef
+  k <- length(cf)
+  se <- sqrt(pmax(diag(v), 0))
+
+  a <- (1 - level) / 2
+  z <- qnorm(1 - a)
+
+  ci <- cbind(cf - z * se, cf + z * se)
+  rownames(ci) <- names(cf)
+  pct <- paste(format(100 * c(a, 1 - a), trim = TRUE, digits = 3), "%")
+  colnames(ci) <- pct
+
+  if (!missing(parm)) {
+    ci <- ci[parm, , drop = FALSE]
+  }
+  ci
+}
+
+
+#' Predict Frontier Values from a Metafrontier Model
+#'
+#' Computes predicted frontier values at given input levels using
+#' either the metafrontier or a group-specific frontier.
+#'
+#' @param object a \code{"metafrontier"} object.
+#' @param newdata an optional data frame of new inputs. If omitted,
+#'   the training data predictions are returned.
+#' @param type character. \code{"meta"} (default) for metafrontier
+#'   predictions, or \code{"group"} for group-specific frontier
+#'   predictions (requires a \code{group} column in \code{newdata}).
+#' @param ... additional arguments (currently unused).
+#'
+#' @return A numeric vector of predicted frontier values.
+#'
+#' @export
+predict.metafrontier <- function(object, newdata = NULL,
+                                 type = c("meta", "group"), ...) {
+  type <- match.arg(type)
+
+  if (is.null(newdata)) {
+    if (type == "meta") {
+      return(object$meta_frontier)
+    } else {
+      return(object$group_frontier)
+    }
+  }
+
+  if (object$method == "dea") {
+    stop("predict() with newdata is only supported for SFA metafrontiers.",
+         call. = FALSE)
+  }
+
+  # Build design matrix from newdata (no response needed)
+  f <- object$formula
+  if (inherits(f, "Formula")) {
+    f_base <- formula(f, rhs = 1)
+  } else {
+    f_base <- f
+  }
+  tt <- delete.response(terms(f_base))
+  mf_new <- model.frame(tt, data = newdata, na.action = na.omit)
+  X_new <- model.matrix(tt, data = mf_new)
+
+  if (type == "meta") {
+    if (is.null(object$meta_coef)) {
+      stop("Metafrontier coefficients not available (DEA model?).",
+           call. = FALSE)
+    }
+    return(as.numeric(X_new %*% object$meta_coef))
+  }
+
+  # Group predictions
+  if (!"group" %in% names(newdata) && is.null(object$group_vec)) {
+    stop("'newdata' must contain a 'group' column for type = 'group'.",
+         call. = FALSE)
+  }
+
+  group_col <- if ("group" %in% names(newdata)) newdata$group
+               else object$group_vec
+  preds <- numeric(nrow(X_new))
+  for (g in object$groups) {
+    idx <- which(group_col == g)
+    if (length(idx) == 0) next
+    beta_g <- object$group_coef[[g]]
+    preds[idx] <- as.numeric(X_new[idx, , drop = FALSE] %*% beta_g)
+  }
+  preds
+}

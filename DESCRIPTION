@@ -35,6 +35,7 @@ Suggests:
     sfaR,
     frontier,
     Benchmarking,
+    plm,
     ggplot2
 VignetteBuilder: knitr
 URL: https://github.com/iik1/metafrontier

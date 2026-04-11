@@ -245,8 +245,264 @@ metafrontier <- function(formula = NULL,
          call. = FALSE)
   }
 
-  # TODO: Extract coefficients and data from sfaR/frontier/Benchmarking
-  # objects and dispatch to the appropriate metafrontier estimator
-  stop("Estimation from pre-fitted models is not yet implemented. ",
-       "Please use the formula interface.", call. = FALSE)
+  n_groups <- length(models)
+  if (n_groups < 2L) {
+    stop("At least 2 groups are required for metafrontier analysis.",
+         call. = FALSE)
+  }
+
+  group_levels <- names(models)
+
+  # Extract components from each model
+  extracted <- lapply(models, .extract_model_components)
+
+  # Build internal group_models structure
+  group_models <- vector("list", n_groups)
+  names(group_models) <- group_levels
+
+  all_X <- list()
+  all_y <- list()
+  group_vec_parts <- list()
+
+  for (g in group_levels) {
+    ex <- extracted[[g]]
+    group_models[[g]] <- list(
+      coefficients = ex$beta,
+      efficiency = ex$te,
+      sigma_v = ex$sigma_v,
+      sigma_u = ex$sigma_u,
+      logLik = ex$logLik,
+      hessian = ex$hessian,
+      nobs = ex$n,
+      X = ex$X,
+      y = ex$y,
+      dist = ex$dist
+    )
+    all_X[[g]] <- ex$X
+    all_y[[g]] <- ex$y
+    group_vec_parts[[g]] <- rep(g, ex$n)
+  }
+
+  # Combine data across groups
+  X_combined <- do.call(rbind, all_X)
+  y_combined <- do.call(c, all_y)
+  group_vec <- factor(unlist(group_vec_parts), levels = group_levels)
+  n <- length(y_combined)
+  k <- ncol(X_combined)
+
+  # Compute group frontier and efficiency for all observations
+  group_frontier <- numeric(n)
+  te_group <- numeric(n)
+
+  for (g in group_levels) {
+    idx <- which(group_vec == g)
+    beta_g <- group_models[[g]]$coefficients
+    group_frontier[idx] <- X_combined[idx, , drop = FALSE] %*% beta_g
+    te_group[idx] <- group_models[[g]]$efficiency
+  }
+
+  group_coef <- lapply(group_models, function(m) m$coefficients)
+
+  # Estimate the metafrontier
+  if (meta_type == "deterministic") {
+    meta_result <- .deterministic_metafrontier_lp(
+      X_combined, group_frontier, group_vec, group_levels, group_coef, k
+    )
+  } else {
+    meta_result <- .stochastic_metafrontier(
+      X_combined, group_frontier, group_vec, group_levels, "hnormal", control
+    )
+  }
+
+  meta_frontier <- as.numeric(X_combined %*% meta_result$meta_coef)
+  tgr <- exp(group_frontier - meta_frontier)
+  if (meta_type == "deterministic") tgr <- pmin(tgr, 1.0)
+  te_meta <- te_group * tgr
+
+  # Construct a minimal Formula for downstream methods
+  input_names <- colnames(X_combined)
+  input_names <- input_names[input_names != "(Intercept)"]
+  f_str <- paste("y ~", paste(input_names, collapse = " + "))
+  f <- Formula::Formula(as.formula(f_str))
+
+  # Build combined data frame
+  combined_data <- as.data.frame(X_combined)
+  combined_data$y <- y_combined
+
+  list(
+    meta_coef = meta_result$meta_coef,
+    meta_vcov = meta_result$meta_vcov,
+    group_coef = group_coef,
+    tgr = tgr,
+    te_group = te_group,
+    te_meta = te_meta,
+    group_frontier = group_frontier,
+    meta_frontier = meta_frontier,
+    logLik_groups = sapply(group_models, function(m) m$logLik),
+    meta_logLik = meta_result$meta_logLik,
+    meta_convergence = meta_result$convergence,
+    group_models = group_models,
+    groups = group_levels,
+    group_vec = group_vec,
+    formula = f,
+    data = combined_data,
+    nobs = c(
+      total = n,
+      setNames(table(group_vec), group_levels)
+    )
+  )
 }
+
+
+#' Extract components from a pre-fitted frontier model
+#' @noRd
+.extract_model_components <- function(model) {
+  cls <- class(model)
+
+  if ("sfacross" %in% cls) {
+    return(.extract_sfacross(model))
+  } else if ("sfa" %in% cls) {
+    return(.extract_frontier_sfa(model))
+  } else if (is.list(model) && all(c("coefficients", "efficiency",
+                                      "X", "y") %in% names(model))) {
+    # Generic list interface (e.g., from our own .fit_sfa_group)
+    return(list(
+      beta = model$coefficients,
+      te = model$efficiency,
+      X = model$X,
+      y = as.numeric(model$y),
+      sigma_v = model$sigma_v %||% NA_real_,
+      sigma_u = model$sigma_u %||% NA_real_,
+      logLik = model$logLik %||% NA_real_,
+      hessian = model$hessian,
+      n = length(model$y),
+      dist = model$dist %||% "hnormal"
+    ))
+  } else {
+    stop("Unsupported model class: ", paste(cls, collapse = ", "),
+         ". Supported: sfaR::sfacross, frontier::sfa, or a named list ",
+         "with 'coefficients', 'efficiency', 'X', and 'y'.",
+         call. = FALSE)
+  }
+}
+
+
+#' Extract from sfaR::sfacross object
+#' @noRd
+.extract_sfacross <- function(model) {
+  if (!requireNamespace("sfaR", quietly = TRUE)) {
+    stop("Package 'sfaR' is required to extract from sfacross objects.",
+         call. = FALSE)
+  }
+
+  # Frontier coefficients (beta only)
+  all_coef <- model$mlParam
+  if (is.null(all_coef)) all_coef <- coef(model)
+  n_beta <- model$nXvar
+  if (is.null(n_beta)) {
+    n_beta <- length(attr(terms(model$formula), "term.labels")) + 1L
+  }
+  beta <- all_coef[seq_len(n_beta)]
+
+  # Technical efficiency — efficiencies() may return a data.frame
+  te_obj <- sfaR::efficiencies(model)
+  if (is.data.frame(te_obj) || is.matrix(te_obj)) {
+    if ("teBC" %in% names(te_obj)) {
+      te <- as.numeric(te_obj[["teBC"]])
+    } else if ("teJLMS" %in% names(te_obj)) {
+      te <- as.numeric(te_obj[["teJLMS"]])
+    } else {
+      te <- as.numeric(te_obj[[1]])
+    }
+  } else {
+    te <- as.numeric(te_obj)
+  }
+
+  # Extract X and y from the model's stored data via formula
+  dat <- model$dataTable
+  if (is.null(dat)) dat <- model$data
+  f <- model$formula
+  mf <- model.frame(f, data = dat)
+  y <- model.response(mf)
+  X <- model.matrix(f, data = dat)
+
+  # Sigma parameters
+  sv_name <- intersect(c("lnsigmaV", "lnSigmaV"), names(all_coef))
+  su_name <- intersect(c("lnsigmaU", "lnSigmaU"), names(all_coef))
+  sigma_v <- if (length(sv_name)) exp(all_coef[sv_name[1]]) else NA_real_
+  sigma_u <- if (length(su_name)) exp(all_coef[su_name[1]]) else NA_real_
+
+  udist <- model$udist
+  if (is.null(udist)) udist <- "hnormal"
+
+  list(
+    beta = beta,
+    te = te,
+    X = X,
+    y = as.numeric(y),
+    sigma_v = as.numeric(sigma_v),
+    sigma_u = as.numeric(sigma_u),
+    logLik = model$mlLoglik %||% NA_real_,
+    hessian = model$mlHessian,
+    n = length(y),
+    dist = switch(udist,
+                  "hnormal" = "hnormal",
+                  "tnormal" = "tnormal",
+                  "exponential" = "exponential",
+                  "hnormal")
+  )
+}
+
+
+#' Extract from frontier::sfa object
+#' @noRd
+.extract_frontier_sfa <- function(model) {
+  if (!requireNamespace("frontier", quietly = TRUE)) {
+    stop("Package 'frontier' is required to extract from sfa objects.",
+         call. = FALSE)
+  }
+
+  # frontier::sfa stores MLE params in mleParam
+  all_coef <- model$mleParam
+  # Frontier coefficients are named "beta_*" or similar
+  beta_idx <- grep("^beta", names(all_coef), ignore.case = TRUE)
+  if (length(beta_idx) == 0) {
+    # Fallback: OLS params have same structure
+    beta_idx <- grep("^beta", names(model$olsParam), ignore.case = TRUE)
+    n_beta <- length(beta_idx)
+    beta <- all_coef[seq_len(n_beta)]
+  } else {
+    beta <- all_coef[beta_idx]
+  }
+
+  # Efficiency: frontier stores TE in $efficiencies
+  te <- as.numeric(frontier::efficiencies(model))
+
+  # Design matrix from the model
+  X <- model.matrix(model$formula, data = model$dataTable)
+  y <- model.response(model.frame(model$formula, data = model$dataTable))
+
+  # Extract sigma parameters
+  sigma_sq <- all_coef["sigmaSq"]
+  gamma <- all_coef["gamma"]
+  sigma_v <- sqrt(sigma_sq * (1 - gamma))
+  sigma_u <- sqrt(sigma_sq * gamma)
+
+  list(
+    beta = beta,
+    te = as.numeric(te),
+    X = X,
+    y = as.numeric(y),
+    sigma_v = as.numeric(sigma_v),
+    sigma_u = as.numeric(sigma_u),
+    logLik = model$mleLogl,
+    hessian = NULL,
+    n = length(y),
+    dist = "hnormal"
+  )
+}
+
+
+#' Null-coalescing operator
+#' @noRd
+`%||%` <- function(a, b) if (is.null(a)) b else a
