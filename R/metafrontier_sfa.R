@@ -128,12 +128,34 @@
   # Starting value: OLS on group frontier values (unconstrained)
   beta_start <- lm.fit(X, group_frontier)$coefficients
 
+  # Fallback if OLS produces non-finite coefficients
+  if (any(!is.finite(beta_start))) {
+    # Use average of group coefficients as starting point
+    avg_coef <- rowMeans(do.call(cbind, group_coef))
+    if (all(is.finite(avg_coef))) {
+      beta_start <- avg_coef
+    } else {
+      beta_start <- rep(0, k)
+      beta_start[1] <- max(group_frontier) + 0.1
+    }
+  }
+
   # Ensure starting point is feasible
   violations <- group_frontier - X %*% beta_start
   if (any(violations > 0)) {
     # Shift intercept up to make feasible
     max_violation <- max(violations)
     beta_start[1] <- beta_start[1] + max_violation + 0.01
+  }
+
+  # Verify objective is finite at starting point
+  if (!is.finite(obj_fn(beta_start))) {
+    beta_start <- rep(0, k)
+    beta_start[1] <- max(group_frontier) + 0.1
+    violations <- group_frontier - X %*% beta_start
+    if (any(violations > 0)) {
+      beta_start[1] <- beta_start[1] + max(violations) + 0.01
+    }
   }
 
   # Constraints: -X %*% beta <= -gf

@@ -35,7 +35,7 @@ test_that("confint respects level argument", {
 
 
 test_that("confint errors for deterministic metafrontier", {
-  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 60, seed = 72)
+  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 72)
 
   fit <- metafrontier(log_y ~ log_x1 + log_x2,
                       data = sim$data, group = "group",
@@ -58,7 +58,7 @@ test_that("confint parm subsetting works", {
 
 
 test_that("predict returns training predictions without newdata", {
-  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 60, seed = 74)
+  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 74)
 
   fit <- metafrontier(log_y ~ log_x1 + log_x2,
                       data = sim$data, group = "group",
@@ -75,7 +75,7 @@ test_that("predict returns training predictions without newdata", {
 
 
 test_that("predict with newdata works for SFA", {
-  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 80, seed = 75)
+  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 75)
 
   fit <- metafrontier(log_y ~ log_x1 + log_x2,
                       data = sim$data, group = "group",
@@ -90,7 +90,7 @@ test_that("predict with newdata works for SFA", {
 
 
 test_that("predict errors for DEA with newdata", {
-  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 30, seed = 76)
+  sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 76)
 
   fit <- metafrontier(log_y ~ log_x1 + log_x2,
                       data = sim$data, group = "group",
