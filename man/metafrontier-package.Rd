@@ -16,7 +16,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Ivar Kiil \email{ivar.kiil@nhh.no} (\href{https://orcid.org/0009-0006-1053-3849}{ORCID})
+\strong{Maintainer}: Erik Enstad \email{erik.enstad@nhh.no} (\href{https://orcid.org/0009-0006-1053-3849}{ORCID})
 
 }
 \keyword{internal}
