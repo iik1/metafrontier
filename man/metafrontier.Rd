@@ -14,6 +14,10 @@ metafrontier(
   orientation = c("output", "input"),
   rts = c("crs", "vrs", "drs", "irs"),
   models = NULL,
+  panel = NULL,
+  panel_dist = c("bc92", "bc95"),
+  type = c("radial", "directional"),
+  direction = c("proportional", "output", "input"),
   control = list(),
   ...
 )
@@ -61,8 +65,29 @@ frontier models (objects from \pkg{sfaR}, \pkg{frontier}, or
 \pkg{Benchmarking}). If provided, \code{formula}, \code{data},
 and \code{group} are ignored.}
 
-\item{control}{a list of control parameters for the optimiser.
-See Details.}
+\item{panel}{an optional list with components \code{id} and
+\code{time} naming the panel identifier and time columns in
+\code{data}. When non-NULL, panel SFA models (BC92/BC95) are
+used at the group level.}
+
+\item{panel_dist}{character. Panel SFA model: \code{"bc92"}
+(Battese and Coelli 1992, time-varying inefficiency, default)
+or \code{"bc95"} (Battese and Coelli 1995, observation-specific
+mean). Only used when \code{panel} is non-NULL.}
+
+\item{type}{character. For DEA: \code{"radial"} (default) for
+standard radial DEA or \code{"directional"} for directional
+distance functions.}
+
+\item{direction}{character. Direction vector for DDF:
+\code{"proportional"} (default), \code{"output"}, or
+\code{"input"}. Only used when \code{type = "directional"}.}
+
+\item{control}{a named list of control parameters passed to
+\code{\link[stats]{optim}}. Common options include
+\code{maxit} (maximum iterations, default 5000),
+\code{reltol} (relative convergence tolerance, default 1e-10),
+and \code{fnscale} (set to -1 internally for maximisation).}
 
 \item{...}{additional arguments passed to the group-level
 estimation functions.}
@@ -110,6 +135,16 @@ frontiers subject to the constraint that the metafrontier envelops
 all group frontiers. The stochastic metafrontier (Huang, Huang, and
 Liu, 2014) replaces this with a second-stage SFA, providing a
 distributional framework for inference on the TGR.
+
+\strong{Note on standard errors (stochastic metafrontier):}
+The stochastic metafrontier is a two-stage estimator. Stage 2 treats
+the fitted group frontier values as data, so the reported standard
+errors, confidence intervals, and variance-covariance matrix do not
+account for estimation uncertainty from Stage 1 (the
+generated-regressor problem; see Murphy and Topel, 1985). As a
+result, standard errors may be understated. Users requiring
+rigorous inference should consider bootstrap-based confidence
+intervals (planned for a future version).
 }
 \examples{
 # Simulate metafrontier data

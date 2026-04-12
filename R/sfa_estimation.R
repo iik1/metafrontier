@@ -136,6 +136,13 @@
     }
   )
 
+  # Check convergence
+  if (opt$convergence != 0L) {
+    warning("SFA optimisation did not converge (code ", opt$convergence,
+            "). Results may be unreliable. Consider increasing maxit ",
+            "via control or checking the data for outliers.", call. = FALSE)
+  }
+
   # Extract results
   beta_hat <- opt$par[seq_len(k)]
   names(beta_hat) <- colnames(X)
@@ -397,4 +404,167 @@
   result <- sum(ll)
   if (!is.finite(result)) return(-1e20)
   result
+}
+
+
+# ==== Observation-level log-likelihoods (return vector, not sum) ====
+# Used by Murphy-Topel correction and latent class EM
+
+#' @noRd
+.loglik_hnormal_obs <- function(params, y, X) {
+  k <- ncol(X)
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params["log_sigma_v"])
+  sigma_u <- exp(params["log_sigma_u"])
+
+  if (sigma_v < 1e-10 || sigma_u < 1e-10) return(rep(-1e20, length(y)))
+
+  sigma_sq <- sigma_v^2 + sigma_u^2
+  sigma <- sqrt(sigma_sq)
+  lambda <- sigma_u / sigma_v
+  eps <- as.numeric(y - X %*% beta)
+
+  -0.5 * log(2 * pi) + log(2) - log(sigma) -
+    0.5 * (eps / sigma)^2 +
+    pnorm(-eps * lambda / sigma, log.p = TRUE)
+}
+
+#' @noRd
+.loglik_tnormal_obs <- function(params, y, X) {
+  k <- ncol(X)
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params["log_sigma_v"])
+  mu <- params["mu"]
+  sigma_u <- exp(params["log_sigma_u"])
+
+  if (sigma_v < 1e-10 || sigma_u < 1e-10) return(rep(-1e20, length(y)))
+
+  sigma_sq <- sigma_v^2 + sigma_u^2
+  sigma <- sqrt(sigma_sq)
+  eps <- as.numeric(y - X %*% beta)
+  mu_star <- (mu * sigma_v^2 - eps * sigma_u^2) / sigma_sq
+  sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
+
+  -0.5 * log(2 * pi) - log(sigma) -
+    0.5 * ((eps + mu)^2 / sigma_sq) +
+    pnorm(mu_star / sigma_star, log.p = TRUE) -
+    pnorm(mu / sigma_u, log.p = TRUE)
+}
+
+#' @noRd
+.loglik_exponential_obs <- function(params, y, X) {
+  k <- ncol(X)
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params["log_sigma_v"])
+  sigma_u <- exp(params["log_sigma_u"])
+
+  if (sigma_v < 1e-10 || sigma_u < 1e-10) return(rep(-1e20, length(y)))
+
+  lambda_u <- 1 / sigma_u
+  eps <- as.numeric(y - X %*% beta)
+
+  log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
+    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
+}
+
+#' @noRd
+.loglik_hnormal_z_obs <- function(params, y, X, Z, k) {
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params[k + 1L])
+  p <- ncol(Z)
+  delta <- params[(k + 2L):(k + 1L + p)]
+
+  if (sigma_v < 1e-10) return(rep(-1e20, length(y)))
+
+  sigma_u <- exp(as.numeric(Z %*% delta))
+  if (any(sigma_u < 1e-10)) return(rep(-1e20, length(y)))
+
+  sigma_sq <- sigma_v^2 + sigma_u^2
+  sigma <- sqrt(sigma_sq)
+  lambda <- sigma_u / sigma_v
+  eps <- as.numeric(y - X %*% beta)
+
+  -0.5 * log(2 * pi) + log(2) - log(sigma) -
+    0.5 * (eps / sigma)^2 +
+    pnorm(-eps * lambda / sigma, log.p = TRUE)
+}
+
+#' @noRd
+.loglik_tnormal_z_obs <- function(params, y, X, Z, k) {
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params[k + 1L])
+  p <- ncol(Z)
+  delta <- params[(k + 2L):(k + 1L + p)]
+  sigma_u <- exp(params[k + 1L + p + 1L])
+
+  if (sigma_v < 1e-10 || sigma_u < 1e-10) return(rep(-1e20, length(y)))
+
+  mu <- as.numeric(Z %*% delta)
+  sigma_sq <- sigma_v^2 + sigma_u^2
+  sigma <- sqrt(sigma_sq)
+  eps <- as.numeric(y - X %*% beta)
+  mu_star <- (mu * sigma_v^2 - eps * sigma_u^2) / sigma_sq
+  sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
+
+  -0.5 * log(2 * pi) - log(sigma) -
+    0.5 * ((eps + mu)^2 / sigma_sq) +
+    pnorm(mu_star / sigma_star, log.p = TRUE) -
+    pnorm(mu / sigma_u, log.p = TRUE)
+}
+
+#' @noRd
+.loglik_exponential_z_obs <- function(params, y, X, Z, k) {
+  beta <- params[seq_len(k)]
+  sigma_v <- exp(params[k + 1L])
+  p <- ncol(Z)
+  delta <- params[(k + 2L):(k + 1L + p)]
+
+  if (sigma_v < 1e-10) return(rep(-1e20, length(y)))
+
+  sigma_u <- exp(as.numeric(Z %*% delta))
+  if (any(sigma_u < 1e-10)) return(rep(-1e20, length(y)))
+
+  lambda_u <- 1 / sigma_u
+  eps <- as.numeric(y - X %*% beta)
+
+  log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
+    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
+}
+
+
+# ==== Score vector computation ====
+
+#' Compute observation-level score matrix for a fitted group model
+#'
+#' Returns an n x p matrix where each row is the gradient of that
+#' observation's log-likelihood contribution w.r.t. all parameters.
+#'
+#' @param group_model A fitted group model from .fit_sfa_group().
+#' @return An n x p numeric matrix.
+#' @keywords internal
+#' @noRd
+.score_vector_sfa <- function(group_model) {
+  params <- group_model$all_params
+  y <- group_model$y
+  X <- group_model$X
+  has_z <- !is.null(group_model$Z)
+  k <- ncol(X)
+
+  if (has_z) {
+    Z <- group_model$Z
+    obs_fn <- switch(group_model$dist,
+      hnormal     = function(p) .loglik_hnormal_z_obs(p, y, X, Z, k),
+      tnormal     = function(p) .loglik_tnormal_z_obs(p, y, X, Z, k),
+      exponential = function(p) .loglik_exponential_z_obs(p, y, X, Z, k)
+    )
+  } else {
+    obs_fn <- switch(group_model$dist,
+      hnormal     = function(p) .loglik_hnormal_obs(p, y, X),
+      tnormal     = function(p) .loglik_tnormal_obs(p, y, X),
+      exponential = function(p) .loglik_exponential_obs(p, y, X)
+    )
+  }
+
+  numDeriv::jacobian(obs_fn, params,
+                     method.args = list(eps = 1e-4))
 }

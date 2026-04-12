@@ -1,10 +1,11 @@
 Package: metafrontier
 Type: Package
 Title: Analysis of Metafrontier Models for Efficiency and Productivity
-Version: 0.1.0
+Version: 0.2.1
 Authors@R: c(
     person("Ivar", "Kiil", email = "ivar.kiil@nhh.no",
-           role = c("aut", "cre")))
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0006-1053-3849")))
 Description: Implements metafrontier production function models for
     estimating technical efficiencies and technology gaps for firms
     operating under different technologies. Supports both stochastic
@@ -26,7 +27,6 @@ Imports:
     Formula,
     numDeriv,
     lpSolveAPI,
-    Matrix,
     methods
 Suggests:
     testthat (>= 3.0.0),
@@ -36,7 +36,8 @@ Suggests:
     frontier,
     Benchmarking,
     plm,
-    ggplot2
+    ggplot2,
+    parallel
 VignetteBuilder: knitr
 URL: https://github.com/iik1/metafrontier
 BugReports: https://github.com/iik1/metafrontier/issues

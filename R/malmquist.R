@@ -17,11 +17,18 @@
 #' @param time a character string naming the column in \code{data}
 #'   that identifies time periods, or a vector of time indicators.
 #'   Periods must be consecutive integers or sortable.
+#' @param method character. \code{"dea"} (default) for DEA-based
+#'   distance functions or \code{"sfa"} for SFA-based parametric
+#'   distance functions.
+#' @param dist character. Distribution of the inefficiency term
+#'   when \code{method = "sfa"}: \code{"hnormal"} (default),
+#'   \code{"tnormal"}, or \code{"exponential"}.
 #' @param orientation character. \code{"output"} (default) or
 #'   \code{"input"}.
 #' @param rts character. Returns to scale assumption:
 #'   \code{"crs"} (default), \code{"vrs"}, \code{"drs"}, or
 #'   \code{"irs"}.
+#' @param control a list of control parameters for the SFA optimiser.
 #' @param ... additional arguments (currently unused).
 #'
 #' @return An object of class \code{"malmquist_meta"}, a list
@@ -39,6 +46,12 @@
 #'     \item{meta_malmquist}{data frame with the metafrontier
 #'       Malmquist index: \code{MPI_meta}, \code{EC_meta},
 #'       \code{TC_meta}}
+#'     \item{tgr}{data frame with technology gap ratios at each
+#'       period endpoint: \code{id}, \code{group},
+#'       \code{period_from}, \code{period_to}, \code{TGR_from}
+#'       (TGR at the start period), \code{TGR_to} (TGR at the
+#'       end period), and \code{TGC} (technology gap change,
+#'       \code{TGR_to / TGR_from})}
 #'     \item{call}{the matched function call}
 #'     \item{orientation}{the orientation used}
 #'     \item{rts}{the returns to scale assumption}
@@ -105,11 +118,16 @@ malmquist_meta <- function(formula = NULL,
                            data = NULL,
                            group = NULL,
                            time = NULL,
+                           method = c("dea", "sfa"),
+                           dist = c("hnormal", "tnormal", "exponential"),
                            orientation = c("output", "input"),
                            rts = c("crs", "vrs", "drs", "irs"),
+                           control = list(),
                            ...) {
 
   cl <- match.call()
+  method <- match.arg(method)
+  dist <- match.arg(dist)
   orientation <- match.arg(orientation)
   rts <- match.arg(rts)
 
@@ -151,8 +169,24 @@ malmquist_meta <- function(formula = NULL,
     stop("At least 2 time periods are required.", call. = FALSE)
   }
 
-  # Parse formula and extract data matrices
+  # Parse formula
   f <- Formula::Formula(formula)
+
+  # --- SFA Malmquist path ---
+  if (method == "sfa") {
+    result <- .malmquist_sfa(f, data, group_vec, group_levels,
+                             time_vec, time_levels, dist, control)
+    result$call <- cl
+    result$orientation <- orientation
+    result$rts <- rts
+    result$groups <- group_levels
+    result$periods <- time_levels
+    result$method <- method
+    class(result) <- "malmquist_meta"
+    return(result)
+  }
+
+  # --- DEA Malmquist path ---
   mf <- model.frame(f, data = data)
   y_raw <- model.response(mf)
   X_raw <- model.matrix(f, data = data, rhs = 1)
@@ -166,7 +200,12 @@ malmquist_meta <- function(formula = NULL,
   }
 
   # --- Solve DEA LPs for all period pairs ---
-  results <- list()
+  # Pre-allocate results list (upper bound: pairs x groups x max_obs)
+  n_periods <- length(time_levels) - 1L
+  n_groups  <- length(group_levels)
+  max_obs_per_group <- max(table(group_vec)) # conservative upper bound per period
+  results <- vector("list", n_periods * n_groups * max_obs_per_group)
+  result_idx <- 0L
 
   for (tp in seq_len(length(time_levels) - 1L)) {
     t_s <- time_levels[tp]
@@ -208,32 +247,22 @@ malmquist_meta <- function(formula = NULL,
       Y_gt <- Y_t[idx_gt, , drop = FALSE]
 
       # D_j^s(x_s, y_s) — same-period group efficiency
-      for (i in seq_along(idx_gs)) {
-        d_grp_ss[idx_gs[i]] <- .dea_solve_lp(
-          X_gs[i, ], Y_gs[i, ], X_gs, Y_gs, orientation, rts
-        )
-      }
+      d_grp_ss[idx_gs] <- .dea_batch_fast(
+        X_gs, Y_gs, orientation, rts)
 
       # D_j^t(x_t, y_t) — same-period group efficiency
-      for (i in seq_along(idx_gt)) {
-        d_grp_tt[idx_gt[i]] <- .dea_solve_lp(
-          X_gt[i, ], Y_gt[i, ], X_gt, Y_gt, orientation, rts
-        )
-      }
+      d_grp_tt[idx_gt] <- .dea_batch_fast(
+        X_gt, Y_gt, orientation, rts)
 
-      # D_j^s(x_t, y_t) — period-t obs against period-s group tech
-      for (i in seq_along(idx_gt)) {
-        d_grp_st[idx_gt[i]] <- suppressWarnings(.dea_solve_lp(
-          X_gt[i, ], Y_gt[i, ], X_gs, Y_gs, orientation, rts
-        ))
-      }
+      # D_j^s(x_t, y_t) — cross-period: period-t obs against period-s group tech
+      d_grp_st[idx_gt] <- suppressWarnings(.dea_batch_fast(
+        X_gt, Y_gt, orientation, rts,
+        X_ref = X_gs, Y_ref = Y_gs))
 
-      # D_j^t(x_s, y_s) — period-s obs against period-t group tech
-      for (i in seq_along(idx_gs)) {
-        d_grp_ts[idx_gs[i]] <- suppressWarnings(.dea_solve_lp(
-          X_gs[i, ], Y_gs[i, ], X_gt, Y_gt, orientation, rts
-        ))
-      }
+      # D_j^t(x_s, y_s) — cross-period: period-s obs against period-t group tech
+      d_grp_ts[idx_gs] <- suppressWarnings(.dea_batch_fast(
+        X_gs, Y_gs, orientation, rts,
+        X_ref = X_gt, Y_ref = Y_gt))
     }
 
     # Metafrontier (pooled) DEA scores
@@ -297,7 +326,10 @@ malmquist_meta <- function(formula = NULL,
         # TEC = within-group efficiency change
         tec <- ec_grp
 
-        # TGR at each period
+        # TGR in [0,1]: Farrell TE ratio for DEA, distance function ratio for SFA
+        # Both conventions yield TGR = TE_meta/TE_group <= 1 (BRO 2004 definition)
+        # DEA path: d_meta and d_grp are Farrell efficiencies (<=1), so
+        # TGR = TE_meta / TE_group <= 1 because TE_meta <= TE_group.
         tgr_s <- d_meta_ss[is] / d_grp_ss[is]
         tgr_t <- d_meta_tt[it] / d_grp_tt[it]
 
@@ -309,7 +341,8 @@ malmquist_meta <- function(formula = NULL,
                        tgc > 0)
           mpi_meta / (tec * tgc) else NA_real_
 
-        results[[length(results) + 1L]] <- data.frame(
+        result_idx <- result_idx + 1L
+        results[[result_idx]] <- data.frame(
           id = i,
           group = g,
           period_from = t_s,
@@ -336,12 +369,12 @@ malmquist_meta <- function(formula = NULL,
     }
   }
 
-  if (length(results) == 0) {
+  if (result_idx == 0L) {
     stop("No matched observations found across time periods.",
          call. = FALSE)
   }
 
-  malmquist_df <- do.call(rbind, results)
+  malmquist_df <- do.call(rbind, results[seq_len(result_idx)])
   rownames(malmquist_df) <- NULL
 
   out <- list(
@@ -371,25 +404,15 @@ malmquist_meta <- function(formula = NULL,
 #' Batch DEA solver
 #'
 #' Evaluates all rows of X_eval/Y_eval against the reference
-#' technology X_ref/Y_ref.
+#' technology X_ref/Y_ref.  Delegates to \code{.dea_batch_fast()}
+#' which reuses a single LP object for performance.
 #'
 #' @keywords internal
 #' @noRd
 .dea_batch <- function(X_eval, Y_eval, X_ref, Y_ref,
                        orientation, rts) {
-  n <- nrow(X_eval)
-  eff <- numeric(n)
-  for (i in seq_len(n)) {
-    eff[i] <- .dea_solve_lp(
-      x_i = X_eval[i, ],
-      y_i = Y_eval[i, ],
-      X = X_ref,
-      Y = Y_ref,
-      orientation = orientation,
-      rts = rts
-    )
-  }
-  eff
+  .dea_batch_fast(X_eval, Y_eval, orientation, rts,
+                  X_ref = X_ref, Y_ref = Y_ref)
 }
 
 
@@ -417,54 +440,293 @@ print.malmquist_meta <- function(x, ...) {
 
 #' @export
 summary.malmquist_meta <- function(object, ...) {
+  decomp_cols <- c("MPI", "TEC", "TGC", "TC")
+
+  # Compute per-group means
+  by_group <- lapply(object$groups, function(g) {
+    idx <- object$malmquist$group == g
+    n_g <- sum(idx)
+    means <- colMeans(object$malmquist[idx, decomp_cols, drop = FALSE],
+                      na.rm = TRUE)
+    list(n = n_g, means = means)
+  })
+  names(by_group) <- object$groups
+
+  # Compute per-period means
+  periods_from <- unique(object$malmquist$period_from)
+  by_period <- lapply(periods_from, function(p) {
+    idx <- object$malmquist$period_from == p
+    period_to <- unique(object$malmquist$period_to[idx])
+    means <- colMeans(object$malmquist[idx, decomp_cols, drop = FALSE],
+                      na.rm = TRUE)
+    list(period_from = p, period_to = period_to, means = means)
+  })
+  names(by_period) <- as.character(periods_from)
+
+  # Compute per-group TGR summary
+  tgr_summary <- lapply(object$groups, function(g) {
+    idx <- object$tgr$group == g
+    sub <- object$tgr[idx, ]
+    c(TGR_from = mean(sub$TGR_from, na.rm = TRUE),
+      TGR_to   = mean(sub$TGR_to,   na.rm = TRUE),
+      TGC      = mean(sub$TGC,      na.rm = TRUE))
+  })
+  names(tgr_summary) <- object$groups
+
+  out <- list(
+    call        = object$call,
+    orientation = object$orientation,
+    rts         = object$rts,
+    groups      = object$groups,
+    periods     = object$periods,
+    n_obs       = nrow(object$malmquist),
+    overall     = colMeans(object$malmquist[, decomp_cols, drop = FALSE],
+                           na.rm = TRUE),
+    by_group    = by_group,
+    by_period   = by_period,
+    tgr_summary = tgr_summary
+  )
+  class(out) <- "summary.malmquist_meta"
+  out
+}
+
+
+#' @export
+print.summary.malmquist_meta <- function(x, ...) {
   cat("\nMetafrontier Malmquist TFP Index Summary\n")
   cat("=========================================\n\n")
   cat("Call:\n")
-  print(object$call)
-  cat("\nOrientation:", object$orientation, "\n")
-  cat("RTS:        ", object$rts, "\n")
-  cat("Groups:     ", paste(object$groups, collapse = ", "), "\n")
-  cat("Periods:    ", paste(object$periods, collapse = " -> "), "\n\n")
+  print(x$call)
+  cat("\nOrientation:", x$orientation, "\n")
+  cat("RTS:        ", x$rts, "\n")
+  cat("Groups:     ", paste(x$groups, collapse = ", "), "\n")
+  cat("Periods:    ", paste(x$periods, collapse = " -> "), "\n")
+  cat("Observations:", x$n_obs, "\n\n")
+
+  # Overall means
+  cat("Overall means:\n")
+  cat("  MPI  =", format(x$overall["MPI"], digits = 4), "\n")
+  cat("  TEC  =", format(x$overall["TEC"], digits = 4), "\n")
+  cat("  TGC  =", format(x$overall["TGC"], digits = 4), "\n")
+  cat("  TC*  =", format(x$overall["TC"],  digits = 4), "\n\n")
 
   # By-group means
   cat("--- Three-Way Decomposition by Group ---\n")
   cat("M* = TEC x TGC x TC*\n\n")
 
-  for (g in object$groups) {
-    idx <- object$malmquist$group == g
-    sub <- object$malmquist[idx, c("MPI", "TEC", "TGC", "TC")]
-    cat("Group:", g, "(n =", sum(idx), ")\n")
-    print(round(colMeans(sub, na.rm = TRUE), 4))
+  for (g in x$groups) {
+    bg <- x$by_group[[g]]
+    cat("Group:", g, "(n =", bg$n, ")\n")
+    print(round(bg$means, 4))
     cat("\n")
   }
 
   # By-period means
-  periods_from <- unique(object$malmquist$period_from)
-  if (length(periods_from) > 1L) {
+  if (length(x$by_period) > 1L) {
     cat("--- By Period ---\n\n")
-    for (p in periods_from) {
-      idx <- object$malmquist$period_from == p
-      sub <- object$malmquist[idx, c("MPI", "TEC", "TGC", "TC")]
-      cat("Period", p, "->",
-          unique(object$malmquist$period_to[idx]), "\n")
-      print(round(colMeans(sub, na.rm = TRUE), 4))
+    for (bp in x$by_period) {
+      cat("Period", bp$period_from, "->", bp$period_to, "\n")
+      print(round(bp$means, 4))
       cat("\n")
     }
   }
 
   # Overall TGR change
   cat("--- Technology Gap Ratios ---\n\n")
-  for (g in object$groups) {
-    idx <- object$tgr$group == g
-    sub <- object$tgr[idx, ]
+  for (g in x$groups) {
+    tgr <- x$tgr_summary[[g]]
     cat("Group:", g, "\n")
-    cat("  Mean TGR (from):", format(mean(sub$TGR_from, na.rm = TRUE),
-                                     digits = 4), "\n")
-    cat("  Mean TGR (to):  ", format(mean(sub$TGR_to, na.rm = TRUE),
-                                     digits = 4), "\n")
-    cat("  Mean TGC:       ", format(mean(sub$TGC, na.rm = TRUE),
-                                     digits = 4), "\n\n")
+    cat("  Mean TGR (from):", format(tgr["TGR_from"], digits = 4), "\n")
+    cat("  Mean TGR (to):  ", format(tgr["TGR_to"],   digits = 4), "\n")
+    cat("  Mean TGC:       ", format(tgr["TGC"],       digits = 4), "\n\n")
   }
 
-  invisible(object)
+  invisible(x)
+}
+
+
+# ---------- SFA Malmquist ----------
+
+#' SFA-based Malmquist decomposition
+#'
+#' Fits period-specific group SFA models and computes the three-way
+#' decomposition using SFA distance functions.
+#'
+#' @keywords internal
+#' @noRd
+.malmquist_sfa <- function(formula, data, group_vec, group_levels,
+                           time_vec, time_levels, dist, control) {
+
+  # Fit period x group SFA models
+  models <- list()
+  for (tt in time_levels) {
+    models[[as.character(tt)]] <- list()
+    for (g in group_levels) {
+      idx <- which(group_vec == g & time_vec == tt)
+      if (length(idx) < 5) {
+        warning("Group '", g, "' at time ", tt, " has ", length(idx),
+                " obs. Skipping.", call. = FALSE)
+        next
+      }
+      data_gt <- data[idx, , drop = FALSE]
+      models[[as.character(tt)]][[g]] <- tryCatch(
+        .fit_sfa_group(formula, data_gt, dist, control),
+        error = function(e) NULL
+      )
+    }
+  }
+
+  # Build design matrices
+  mf <- model.frame(formula(formula, rhs = 1), data = data,
+                     na.action = na.omit)
+  X_all <- model.matrix(formula(formula, rhs = 1), data = mf)
+  y_all <- model.response(mf)
+
+  # Pre-allocate results list (upper bound: pairs x groups x max_obs)
+  sfa_n_periods <- length(time_levels) - 1L
+  sfa_n_groups  <- length(group_levels)
+  sfa_max_obs   <- max(table(group_vec))
+  results <- vector("list", sfa_n_periods * sfa_n_groups * sfa_max_obs)
+  result_idx <- 0L
+
+  for (tp in seq_len(length(time_levels) - 1L)) {
+    t_s <- time_levels[tp]
+    t_t <- time_levels[tp + 1L]
+    ts_chr <- as.character(t_s)
+    tt_chr <- as.character(t_t)
+
+    for (g in group_levels) {
+      mod_s <- models[[ts_chr]][[g]]
+      mod_t <- models[[tt_chr]][[g]]
+      if (is.null(mod_s) || is.null(mod_t)) next
+
+      beta_s <- mod_s$coefficients
+      beta_t <- mod_t$coefficients
+
+      # Obs indices for each period
+      idx_s <- which(group_vec == g & time_vec == t_s)
+      idx_t <- which(group_vec == g & time_vec == t_t)
+      n_pairs <- min(length(idx_s), length(idx_t))
+      if (n_pairs == 0) next
+
+      for (i in seq_len(n_pairs)) {
+        is <- idx_s[i]
+        it <- idx_t[i]
+
+        x_s <- X_all[is, ]
+        x_t <- X_all[it, ]
+        y_s <- y_all[is]
+        y_t <- y_all[it]
+
+        # SFA distance: D(x,y|beta) = exp(x'beta - ln_y)
+        # = exp(x'beta) / exp(ln_y) = frontier(x) / y
+        # For log output, ln D = x'beta - y (since y is already log)
+        d_grp_ss <- exp(sum(x_s * beta_s) - y_s)  # same-period
+        d_grp_tt <- exp(sum(x_t * beta_t) - y_t)
+
+        # Cross-period
+        d_grp_st <- exp(sum(x_t * beta_s) - y_t)  # t obs, s tech
+        d_grp_ts <- exp(sum(x_s * beta_t) - y_s)  # s obs, t tech
+
+        # Group TE
+        te_s <- mod_s$efficiency[match(is, idx_s)]
+        te_t <- mod_t$efficiency[match(it, idx_t)]
+
+        if (is.na(te_s) || is.na(te_t) || te_s <= 0 || te_t <= 0) next
+
+        # TEC = TE_t / TE_s
+        tec <- te_t / te_s
+
+        # Group TC (geometric mean)
+        tc_grp_1 <- d_grp_st / d_grp_tt
+        tc_grp_2 <- d_grp_ss / d_grp_ts
+        tc_grp <- sqrt(tc_grp_1 * tc_grp_2)
+
+        ec_grp <- tec
+        mpi_grp <- ec_grp * tc_grp
+
+        # Pooled (meta) distances — use average coefficients across groups
+        # as a simple pooled approximation
+        all_betas_s <- lapply(group_levels, function(gg) {
+          m <- models[[ts_chr]][[gg]]
+          if (!is.null(m)) m$coefficients else NULL
+        })
+        all_betas_t <- lapply(group_levels, function(gg) {
+          m <- models[[tt_chr]][[gg]]
+          if (!is.null(m)) m$coefficients else NULL
+        })
+        all_betas_s <- all_betas_s[!sapply(all_betas_s, is.null)]
+        all_betas_t <- all_betas_t[!sapply(all_betas_t, is.null)]
+
+        # Metafrontier approximation: envelope of group-specific frontier predictions.
+        # This is the pointwise maximum over group distance functions, which
+        # approximates the O'Donnell-Rao-Battese (2008) meta-technology as the
+        # dominant group technology at each input mix. For non-parallel frontiers
+        # with 3+ groups, this may differ from the convex hull definition.
+        meta_ss <- max(sapply(all_betas_s, function(b) exp(sum(x_s * b) - y_s)))
+        meta_tt <- max(sapply(all_betas_t, function(b) exp(sum(x_t * b) - y_t)))
+        meta_st <- max(sapply(all_betas_s, function(b) exp(sum(x_t * b) - y_t)))
+        meta_ts <- max(sapply(all_betas_t, function(b) exp(sum(x_s * b) - y_s)))
+
+        # TGR in [0,1]: Farrell TE ratio for DEA, distance function ratio for SFA
+        # Both conventions yield TGR = TE_meta/TE_group <= 1 (BRO 2004 definition)
+        # SFA path: d_grp and meta are Shephard distance function values (>=1), so
+        # TGR = D_group / D_meta <= 1 because D_meta >= D_group.
+        tgr_s <- d_grp_ss / meta_ss
+        tgr_t <- d_grp_tt / meta_tt
+        tgc <- tgr_t / tgr_s
+
+        ec_meta <- meta_tt * te_t / (meta_ss * te_s)
+        tc_meta <- sqrt((meta_st / meta_tt) * (meta_ss / meta_ts))
+        mpi_meta <- ec_meta * tc_meta
+
+        tc_star <- if (tec > 0 && tgc > 0 && is.finite(mpi_meta))
+          mpi_meta / (tec * tgc) else NA_real_
+
+        result_idx <- result_idx + 1L
+        results[[result_idx]] <- data.frame(
+          id = i,
+          group = g,
+          period_from = t_s,
+          period_to = t_t,
+          MPI = mpi_meta,
+          TEC = tec,
+          TGC = tgc,
+          TC = tc_star,
+          MPI_group = mpi_grp,
+          EC_group = ec_grp,
+          TC_group = tc_grp,
+          MPI_meta = mpi_meta,
+          EC_meta = ec_meta,
+          TC_meta = tc_meta,
+          TGR_from = tgr_s,
+          TGR_to = tgr_t,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+
+  if (result_idx == 0L) {
+    stop("No matched observations found for SFA Malmquist.",
+         call. = FALSE)
+  }
+
+  malmquist_df <- do.call(rbind, results[seq_len(result_idx)])
+  rownames(malmquist_df) <- NULL
+
+  list(
+    malmquist = malmquist_df[, c("id", "group", "period_from",
+                                  "period_to", "MPI", "TEC",
+                                  "TGC", "TC")],
+    group_malmquist = malmquist_df[, c("id", "group", "period_from",
+                                        "period_to", "MPI_group",
+                                        "EC_group", "TC_group")],
+    meta_malmquist = malmquist_df[, c("id", "group", "period_from",
+                                       "period_to", "MPI_meta",
+                                       "EC_meta", "TC_meta")],
+    tgr = malmquist_df[, c("id", "group", "period_from",
+                            "period_to", "TGR_from", "TGR_to",
+                            "TGC")]
+  )
 }

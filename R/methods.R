@@ -3,6 +3,10 @@
 #' @param x a \code{"metafrontier"} object.
 #' @param ... additional arguments (currently unused).
 #' @return Invisibly returns \code{x}.
+#' @examples
+#' sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+#' fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data, group = "group")
+#' print(fit)
 #' @export
 print.metafrontier <- function(x, ...) {
   cat("\nMetafrontier Model\n")
@@ -39,36 +43,44 @@ print.metafrontier <- function(x, ...) {
 #' @param object a \code{"metafrontier"} object.
 #' @param ... additional arguments (currently unused).
 #' @return An object of class \code{"summary.metafrontier"}.
+#' @examples
+#' sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+#' fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+#'                     group = "group", meta_type = "stochastic")
+#' s <- summary(fit)
+#' print(s)
 #' @export
 summary.metafrontier <- function(object, ...) {
 
-  # Group coefficient tables with SEs
+  # Group coefficient tables with SEs (SFA only)
   group_tables <- list()
-  for (g in object$groups) {
-    gm <- object$group_models[[g]]
-    if (!is.null(gm$hessian)) {
-      vcov_g <- tryCatch(
-        solve(-gm$hessian),
-        error = function(e) NULL
-      )
-      if (!is.null(vcov_g)) {
-        k <- length(gm$coefficients)
-        se_all <- sqrt(pmax(diag(vcov_g), 0))
-        se <- se_all[seq_len(k)]
-        beta <- gm$coefficients
-        zval <- beta / se
-        pval <- 2 * pnorm(-abs(zval))
-        group_tables[[g]] <- cbind(
-          Estimate = beta,
-          `Std. Error` = se,
-          `z value` = zval,
-          `Pr(>|z|)` = pval
+  if (object$method != "dea") {
+    for (g in object$groups) {
+      gm <- object$group_models[[g]]
+      if (!is.null(gm$hessian)) {
+        vcov_g <- tryCatch(
+          solve(-gm$hessian),
+          error = function(e) NULL
         )
+        if (!is.null(vcov_g)) {
+          k <- length(gm$coefficients)
+          se_all <- sqrt(pmax(diag(vcov_g), 0))
+          se <- se_all[seq_len(k)]
+          beta <- gm$coefficients
+          zval <- beta / se
+          pval <- 2 * pnorm(-abs(zval))
+          group_tables[[g]] <- cbind(
+            Estimate = beta,
+            `Std. Error` = se,
+            `z value` = zval,
+            `Pr(>|z|)` = pval
+          )
+        } else {
+          group_tables[[g]] <- cbind(Estimate = gm$coefficients)
+        }
       } else {
         group_tables[[g]] <- cbind(Estimate = gm$coefficients)
       }
-    } else {
-      group_tables[[g]] <- cbind(Estimate = gm$coefficients)
     }
   }
 
@@ -135,18 +147,25 @@ print.summary.metafrontier <- function(x, digits = 4, ...) {
   cat("Metafrontier: ", x$meta_type, "\n\n")
 
   # Group-specific frontiers
-  for (g in x$groups) {
-    cat("--- Group: ", g, " (n = ", x$nobs[g], ") ---\n", sep = "")
-    if (ncol(x$group_tables[[g]]) >= 4) {
-      printCoefmat(x$group_tables[[g]], digits = digits,
-                   P.values = TRUE, has.Pvalue = TRUE)
-    } else {
-      print(round(x$group_tables[[g]], digits))
+  if (length(x$group_tables) > 0) {
+    for (g in x$groups) {
+      cat("--- Group: ", g, " (n = ", x$nobs[g], ") ---\n", sep = "")
+      if (ncol(x$group_tables[[g]]) >= 4) {
+        printCoefmat(x$group_tables[[g]], digits = digits,
+                     P.values = TRUE, has.Pvalue = TRUE)
+      } else {
+        print(round(x$group_tables[[g]], digits))
+      }
+      if (!is.null(x$logLik_groups)) {
+        cat("Log-likelihood:", format(x$logLik_groups[g], digits = 5), "\n")
+      }
+      cat("\n")
     }
-    if (!is.null(x$logLik_groups)) {
-      cat("Log-likelihood:", format(x$logLik_groups[g], digits = 5), "\n")
+  } else {
+    for (g in x$groups) {
+      cat("--- Group: ", g, " (n = ", x$nobs[g], ") ---\n", sep = "")
+      cat("  DEA efficiency (nonparametric)\n\n")
     }
-    cat("\n")
   }
 
   # Metafrontier
@@ -187,6 +206,10 @@ coef.metafrontier <- function(object,
                               which = c("meta", "group"),
                               ...) {
   which <- match.arg(which)
+  if (object$method == "dea") {
+    stop("coef() is not available for DEA-based metafrontiers ",
+         "(nonparametric model).", call. = FALSE)
+  }
   if (which == "meta") {
     object$meta_coef
   } else {
@@ -195,16 +218,72 @@ coef.metafrontier <- function(object,
 }
 
 
+#' Variance-Covariance Matrix for Metafrontier Coefficients
+#'
+#' @param object a \code{"metafrontier"} object.
+#' @param correction character. \code{"none"} (default) returns the
+#'   Stage 2 variance-covariance matrix. \code{"murphy-topel"} applies
+#'   the Murphy and Topel (1985) correction for first-stage estimation
+#'   uncertainty (the generated-regressor problem). Only available for
+#'   stochastic metafrontiers.
+#' @param ... additional arguments (currently unused).
+#'
+#' @return A variance-covariance matrix, or \code{NULL} if unavailable.
+#'
+#' @references Murphy, K.M. and Topel, R.H. (1985). Estimation and
+#'   inference in two-step econometric models. \emph{Journal of
+#'   Business & Economic Statistics}, 3(4), 370--379.
+#'
+#' @examples
+#' sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+#' fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+#'                     group = "group", meta_type = "stochastic")
+#' vcov(fit)
+#' \donttest{
+#' vcov(fit, correction = "murphy-topel")
+#' }
+#'
 #' @export
-vcov.metafrontier <- function(object, ...) {
-  if (is.null(object$meta_vcov)) {
-    warning("Variance-covariance matrix not available for ",
-            "deterministic metafrontier. Use meta_type = 'stochastic'.",
-            call. = FALSE)
-    return(NULL)
+vcov.metafrontier <- function(object,
+                              correction = c("none", "murphy-topel"),
+                              ...) {
+  correction <- match.arg(correction)
+
+  if (object$method == "dea") {
+    stop("vcov() is not available for DEA-based metafrontiers ",
+         "(nonparametric model).", call. = FALSE)
   }
+
   k <- length(object$meta_coef)
-  v <- object$meta_vcov[seq_len(k), seq_len(k)]
+
+  if (correction == "murphy-topel") {
+    if (object$meta_type != "stochastic") {
+      stop("Murphy-Topel correction requires a stochastic metafrontier ",
+           "(meta_type = 'stochastic').", call. = FALSE)
+    }
+    if (!requireNamespace("numDeriv", quietly = TRUE)) {
+      stop("Package 'numDeriv' is required for the Murphy-Topel ",
+           "correction. Install it with install.packages('numDeriv').",
+           call. = FALSE)
+    }
+    v <- .murphy_topel_correction(object)
+    if (is.null(v)) {
+      warning("Murphy-Topel correction failed; returning uncorrected ",
+              "variance-covariance matrix.", call. = FALSE)
+      v <- object$meta_vcov[seq_len(k), seq_len(k)]
+    } else {
+      v <- v[seq_len(k), seq_len(k)]
+    }
+  } else {
+    if (is.null(object$meta_vcov)) {
+      warning("Variance-covariance matrix not available for ",
+              "deterministic metafrontier. Use meta_type = 'stochastic'.",
+              call. = FALSE)
+      return(NULL)
+    }
+    v <- object$meta_vcov[seq_len(k), seq_len(k)]
+  }
+
   rownames(v) <- colnames(v) <- names(object$meta_coef)
   v
 }
@@ -212,6 +291,10 @@ vcov.metafrontier <- function(object, ...) {
 
 #' @export
 logLik.metafrontier <- function(object, ...) {
+  if (object$method == "dea") {
+    stop("logLik() is not available for DEA-based metafrontiers ",
+         "(nonparametric model).", call. = FALSE)
+  }
   if (!is.null(object$meta_logLik)) {
     val <- object$meta_logLik
   } else {
@@ -232,12 +315,22 @@ nobs.metafrontier <- function(object, ...) {
 
 #' @export
 fitted.metafrontier <- function(object, ...) {
+  if (is.null(object$meta_frontier)) {
+    stop("fitted() is not available for DEA-based metafrontiers. ",
+         "Use efficiencies() to extract DEA efficiency scores.",
+         call. = FALSE)
+  }
+
   object$meta_frontier
 }
 
 
 #' @export
 residuals.metafrontier <- function(object, ...) {
+  if (object$method == "dea") {
+    stop("residuals() is not available for DEA-based metafrontiers.",
+         call. = FALSE)
+  }
   if (is.null(object$meta_frontier)) return(NULL)
   y <- model.response(model.frame(object$formula, data = object$data))
   y - object$meta_frontier
@@ -254,13 +347,30 @@ residuals.metafrontier <- function(object, ...) {
 #' @param parm a character or integer vector of parameter names or
 #'   indices. If missing, all frontier coefficients are used.
 #' @param level the confidence level (default 0.95).
+#' @param correction character. Passed to \code{\link{vcov.metafrontier}}.
+#'   \code{"none"} (default) uses the Stage 2 variance-covariance
+#'   matrix; \code{"murphy-topel"} applies the Murphy and Topel (1985)
+#'   correction for first-stage estimation uncertainty.
 #' @param ... additional arguments (currently unused).
 #'
 #' @return A matrix with columns for the lower and upper bounds.
 #'
+#' @examples
+#' sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+#' fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+#'                     group = "group", meta_type = "stochastic")
+#' confint(fit)
+#' # With Murphy-Topel correction (requires numDeriv):
+#' \donttest{
+#' confint(fit, correction = "murphy-topel")
+#' }
+#'
 #' @export
-confint.metafrontier <- function(object, parm, level = 0.95, ...) {
-  v <- vcov(object)
+confint.metafrontier <- function(object, parm, level = 0.95,
+                                 correction = c("none", "murphy-topel"),
+                                 ...) {
+  correction <- match.arg(correction)
+  v <- vcov(object, correction = correction)
   if (is.null(v)) {
     stop("Confidence intervals require a stochastic metafrontier ",
          "(meta_type = 'stochastic').", call. = FALSE)
@@ -299,6 +409,15 @@ confint.metafrontier <- function(object, parm, level = 0.95, ...) {
 #' @param ... additional arguments (currently unused).
 #'
 #' @return A numeric vector of predicted frontier values.
+#'
+#' @examples
+#' sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+#' fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+#'                     group = "group", meta_type = "stochastic")
+#' pred <- predict(fit)
+#' # Out-of-sample prediction:
+#' newdata <- data.frame(log_x1 = c(1, 2), log_x2 = c(1.5, 2.5))
+#' predict(fit, newdata = newdata)
 #'
 #' @export
 predict.metafrontier <- function(object, newdata = NULL,

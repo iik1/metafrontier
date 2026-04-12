@@ -1,8 +1,9 @@
 bibentry(
   bibtype  = "Manual",
   title    = "metafrontier: Analysis of Metafrontier Models for Efficiency and Productivity",
-  author   = person("Ivar", "Kiil"),
+  author   = person("Ivar", "Kiil",
+                    comment = c(ORCID = "0009-0006-1053-3849")),
   year     = "2026",
-  note     = "R package version 0.1.0",
+  note     = "R package version 0.2.1",
   url      = "https://github.com/iik1/metafrontier"
 )

@@ -156,7 +156,31 @@ noise term. This is estimated via MLE, yielding:
 3. **Consistency**: The metafrontier need not strictly envelop all group
    frontiers in finite samples, which can be more realistic.
 
-### 3.3 Example
+### 3.3 Caveat: the generated-regressor problem
+
+The stochastic metafrontier is a two-stage estimator. In Stage 2, the
+dependent variable $\ln \hat{f}(x_{ij}; \hat\beta_j)$ is itself an
+estimate from Stage 1 -- it is a *generated regressor* (Murphy and
+Topel, 1985). The standard errors reported by the package are derived
+from the Stage 2 Hessian alone and **do not account for the sampling
+uncertainty in the Stage 1 group frontier estimates**.
+
+As a result:
+
+- Standard errors, confidence intervals (`confint()`), and hypothesis
+  tests may be **understated** (confidence intervals narrower than their
+  nominal coverage warrants).
+- This issue does **not** affect point estimates of $\hat\beta^*$ or
+  efficiency scores, only inference.
+- The bias is negligible when group sample sizes are large relative to
+  the number of frontier parameters.
+- The Murphy--Topel (1985) correction is available via
+  `vcov(fit, correction = "murphy-topel")` and
+  `confint(fit, correction = "murphy-topel")`. This adjusts the Stage 2
+  variance-covariance matrix to account for Stage 1 estimation
+  uncertainty.
+
+### 3.4 Example
 
 ```{r sto-example}
 fit_sto <- metafrontier(
@@ -179,7 +203,7 @@ vcov(fit_sto)
 logLik(fit_sto)
 ```
 
-### 3.4 A note on TGR values
+### 3.5 A note on TGR values
 
 Under the stochastic metafrontier, TGR values are not constrained to be
 $\le 1$ in finite samples, since the metafrontier need not strictly
@@ -272,7 +296,45 @@ round(comparison, 4)
 ```
 
 
-## 6. Testing for technology heterogeneity
+## 6. Choosing a method: practical guidance
+
+Selecting between deterministic SFA, stochastic SFA, and DEA
+metafrontiers depends on the research question, data characteristics,
+and inferential requirements.
+
+**Use the deterministic SFA metafrontier (BRO 2004) when:**
+
+- You need guaranteed $TGR \le 1$ (the metafrontier strictly envelops
+  all group frontiers).
+- Inference on metafrontier parameters is not required.
+- The goal is descriptive decomposition of efficiency into within-group
+  and between-group components.
+
+**Use the stochastic SFA metafrontier (HHL 2014) when:**
+
+- You need standard errors, confidence intervals, or hypothesis tests
+  on the metafrontier parameters.
+- You want a distributional framework for the technology gap ratio.
+- Sample sizes per group are moderate to large (at least 50--100
+  observations per group is recommended).
+- You are comfortable with the generated-regressor caveat (Section 3.3).
+
+**Use the DEA metafrontier when:**
+
+- You prefer a nonparametric approach with no functional form
+  assumptions.
+- Multiple inputs and/or multiple outputs are involved.
+- Sample sizes are large enough to support DEA (a rough guideline:
+  $n \ge 3 \times (m + s)$ per group, where $m$ is the number of
+  inputs and $s$ the number of outputs).
+- The returns-to-scale assumption (`rts`) is well-justified by the
+  application context.
+
+In many applied studies, it is informative to estimate multiple methods
+and compare TGR estimates for robustness (as shown in Section 5).
+
+
+## 7. Testing for technology heterogeneity
 
 Before estimating a metafrontier, it is useful to test whether separate
 group frontiers are actually needed. The **poolability test** uses a
@@ -291,7 +353,7 @@ A significant test (p < 0.05) confirms that the groups operate under
 different technologies and the metafrontier decomposition is warranted.
 
 
-## 7. Simulation for Monte Carlo studies
+## 8. Simulation for Monte Carlo studies
 
 The `simulate_metafrontier()` function generates data from a known DGP,
 enabling parameter recovery studies:

@@ -17,3 +17,8 @@ Invisibly returns \code{x}.
 \description{
 Print a Metafrontier Object
 }
+\examples{
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data, group = "group")
+print(fit)
+}
