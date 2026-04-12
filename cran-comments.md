@@ -1,8 +1,16 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes
 
-* This is a new submission.
+(CRAN incoming checks may show 1 NOTE for new submission and
+possibly misspelled words: Battese, Malmquist, Metafrontier, SFA.
+These are correct domain-specific terms.)
+
+## Resubmission
+
+Previous submission returned 2 WARNINGs due to missing pre-built
+vignettes in inst/doc. This has been fixed — all three vignettes
+are now pre-built and included.
 
 ## Test environments
 
