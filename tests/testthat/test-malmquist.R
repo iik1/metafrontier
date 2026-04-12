@@ -123,7 +123,9 @@ test_that("malmquist_meta print and summary work", {
                          time = "time")
 
   expect_output(print(malm), "Metafrontier Malmquist")
-  expect_output(summary(malm), "Three-Way Decomposition")
+  s <- summary(malm)
+  expect_s3_class(s, "summary.malmquist_meta")
+  expect_output(print(s), "Three-Way Decomposition")
 })
 
 

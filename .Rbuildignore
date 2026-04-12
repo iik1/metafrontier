@@ -10,3 +10,12 @@
 ^cran-comments\.md$
 ^\.lintr$
 ^CRAN-SUBMISSION$
+^QA_ROUND2_EDITORIAL_REPORT\.md$
+^ROADMAP\.md$
+^mc_review_r10\.R$
+^reviewer2_dso_test\.R$
+^test_edge_cases\.R$
+^test_panel_review\.R$
+^test_reviewer16_edgecases\.R$
+^test_reviewer9\.R$
+^test_steel_review\.R$

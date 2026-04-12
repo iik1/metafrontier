@@ -25,3 +25,13 @@ A numeric vector of predicted frontier values.
 Computes predicted frontier values at given input levels using
 either the metafrontier or a group-specific frontier.
 }
+\examples{
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+pred <- predict(fit)
+# Out-of-sample prediction:
+newdata <- data.frame(log_x1 = c(1, 2), log_x2 = c(1.5, 2.5))
+predict(fit, newdata = newdata)
+
+}

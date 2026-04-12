@@ -4,7 +4,13 @@
 \alias{confint.metafrontier}
 \title{Confidence Intervals for Metafrontier Coefficients}
 \usage{
-\method{confint}{metafrontier}(object, parm, level = 0.95, ...)
+\method{confint}{metafrontier}(
+  object,
+  parm,
+  level = 0.95,
+  correction = c("none", "murphy-topel"),
+  ...
+)
 }
 \arguments{
 \item{object}{a \code{"metafrontier"} object.}
@@ -13,6 +19,11 @@
 indices. If missing, all frontier coefficients are used.}
 
 \item{level}{the confidence level (default 0.95).}
+
+\item{correction}{character. Passed to \code{\link{vcov.metafrontier}}.
+\code{"none"} (default) uses the Stage 2 variance-covariance
+matrix; \code{"murphy-topel"} applies the Murphy and Topel (1985)
+correction for first-stage estimation uncertainty.}
 
 \item{...}{additional arguments (currently unused).}
 }
@@ -23,4 +34,15 @@ A matrix with columns for the lower and upper bounds.
 Computes Wald-type confidence intervals for the metafrontier
 coefficients using the variance-covariance matrix from the
 stochastic metafrontier.
+}
+\examples{
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+confint(fit)
+# With Murphy-Topel correction (requires numDeriv):
+\donttest{
+confint(fit, correction = "murphy-topel")
+}
+
 }

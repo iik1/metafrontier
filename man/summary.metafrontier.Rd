@@ -17,3 +17,10 @@ An object of class \code{"summary.metafrontier"}.
 \description{
 Summary of a Metafrontier Model
 }
+\examples{
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+s <- summary(fit)
+print(s)
+}

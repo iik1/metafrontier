@@ -9,8 +9,11 @@ malmquist_meta(
   data = NULL,
   group = NULL,
   time = NULL,
+  method = c("dea", "sfa"),
+  dist = c("hnormal", "tnormal", "exponential"),
   orientation = c("output", "input"),
   rts = c("crs", "vrs", "drs", "irs"),
+  control = list(),
   ...
 )
 }
@@ -30,12 +33,22 @@ indicators.}
 that identifies time periods, or a vector of time indicators.
 Periods must be consecutive integers or sortable.}
 
+\item{method}{character. \code{"dea"} (default) for DEA-based
+distance functions or \code{"sfa"} for SFA-based parametric
+distance functions.}
+
+\item{dist}{character. Distribution of the inefficiency term
+when \code{method = "sfa"}: \code{"hnormal"} (default),
+\code{"tnormal"}, or \code{"exponential"}.}
+
 \item{orientation}{character. \code{"output"} (default) or
 \code{"input"}.}
 
 \item{rts}{character. Returns to scale assumption:
 \code{"crs"} (default), \code{"vrs"}, \code{"drs"}, or
 \code{"irs"}.}
+
+\item{control}{a list of control parameters for the SFA optimiser.}
 
 \item{...}{additional arguments (currently unused).}
 }
@@ -55,6 +68,12 @@ An object of class \code{"malmquist_meta"}, a list
     \item{meta_malmquist}{data frame with the metafrontier
       Malmquist index: \code{MPI_meta}, \code{EC_meta},
       \code{TC_meta}}
+    \item{tgr}{data frame with technology gap ratios at each
+      period endpoint: \code{id}, \code{group},
+      \code{period_from}, \code{period_to}, \code{TGR_from}
+      (TGR at the start period), \code{TGR_to} (TGR at the
+      end period), and \code{TGC} (technology gap change,
+      \code{TGR_to / TGR_from})}
     \item{call}{the matched function call}
     \item{orientation}{the orientation used}
     \item{rts}{the returns to scale assumption}

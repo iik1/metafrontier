@@ -328,6 +328,131 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 ```
 
 
+## Panel SFA Metafrontier
+
+The package supports panel data via the Battese-Coelli (1992) and (1995) models. Use the `panel` argument:
+
+```{r panel-sfa, eval=FALSE}
+# Simulate panel data
+panel_sim <- simulate_panel_metafrontier(
+  n_groups = 2, n_firms_per_group = 20, n_periods = 5, seed = 42
+)
+
+# BC92: time-varying inefficiency u_it = u_i * exp(-eta*(t-T))
+fit_panel <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = panel_sim$data,
+  group = "group",
+  panel = list(id = "firm", time = "year"),
+  panel_dist = "bc92"
+)
+summary(fit_panel)
+
+# The eta parameter captures time-varying inefficiency
+# eta > 0: inefficiency decreasing over time
+# eta < 0: inefficiency increasing over time
+```
+
+
+## Bootstrap Confidence Intervals for TGR
+
+The `boot_tgr()` function provides parametric and nonparametric
+bootstrap confidence intervals for the technology gap ratio:
+
+```{r bootstrap, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+
+# Nonparametric bootstrap (case resampling within groups)
+boot <- boot_tgr(fit, R = 499, type = "nonparametric", seed = 1)
+print(boot)
+
+# Observation-level CIs
+ci <- confint(boot)
+head(ci)
+
+# Group-level mean TGR CIs
+boot$ci_group
+
+# Parametric bootstrap (resample from estimated error distributions)
+boot_par <- boot_tgr(fit, R = 499, type = "parametric", seed = 1)
+```
+
+
+## Murphy-Topel Variance Correction
+
+The stochastic metafrontier is a two-stage estimator where Stage 2
+uses fitted values from Stage 1 as regressors. This "generated
+regressor" problem means naive standard errors understate uncertainty.
+The Murphy-Topel (1985) correction adjusts for this:
+
+```{r murphy-topel, eval=FALSE}
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+
+# Naive (uncorrected) standard errors
+vcov(fit)
+
+# Murphy-Topel corrected standard errors
+vcov(fit, correction = "murphy-topel")
+
+# Corrected confidence intervals
+confint(fit, correction = "murphy-topel")
+```
+
+
+## Latent Class Metafrontier
+
+When group membership is unobserved, use `latent_class_metafrontier()`:
+
+```{r latent-class, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
+
+# Fit with 2 latent classes
+lc <- latent_class_metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data, n_classes = 2,
+  n_starts = 5, seed = 123
+)
+print(lc)
+summary(lc)
+
+# Select optimal number of classes via BIC
+bic_table <- select_n_classes(
+  log_y ~ log_x1 + log_x2, data = sim$data,
+  n_classes_range = 2:4, n_starts = 3, seed = 42
+)
+print(bic_table)  # choose n_classes with lowest BIC
+```
+
+
+## Directional Distance Functions (DDF)
+
+For additive efficiency decomposition, use DDF-based metafrontier:
+
+```{r ddf, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+# Use raw (non-log) data for DEA
+sim$data$y <- exp(sim$data$log_y)
+sim$data$x1 <- exp(sim$data$log_x1)
+sim$data$x2 <- exp(sim$data$log_x2)
+
+fit_ddf <- metafrontier(
+  y ~ x1 + x2, data = sim$data, group = "group",
+  method = "dea", type = "directional", direction = "output"
+)
+summary(fit_ddf)
+
+# Additive decomposition: beta_meta = beta_group + ddf_tgr
+head(data.frame(
+  beta_meta = fit_ddf$beta_meta,
+  beta_group = fit_ddf$beta_group,
+  ddf_tgr = fit_ddf$ddf_tgr
+))
+```
+
+
 ## References
 
 - Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier

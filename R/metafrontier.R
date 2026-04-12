@@ -39,8 +39,25 @@
 #'   frontier models (objects from \pkg{sfaR}, \pkg{frontier}, or
 #'   \pkg{Benchmarking}). If provided, \code{formula}, \code{data},
 #'   and \code{group} are ignored.
-#' @param control a list of control parameters for the optimiser.
-#'   See Details.
+#' @param panel an optional list with components \code{id} and
+#'   \code{time} naming the panel identifier and time columns in
+#'   \code{data}. When non-NULL, panel SFA models (BC92/BC95) are
+#'   used at the group level.
+#' @param panel_dist character. Panel SFA model: \code{"bc92"}
+#'   (Battese and Coelli 1992, time-varying inefficiency, default)
+#'   or \code{"bc95"} (Battese and Coelli 1995, observation-specific
+#'   mean). Only used when \code{panel} is non-NULL.
+#' @param type character. For DEA: \code{"radial"} (default) for
+#'   standard radial DEA or \code{"directional"} for directional
+#'   distance functions.
+#' @param direction character. Direction vector for DDF:
+#'   \code{"proportional"} (default), \code{"output"}, or
+#'   \code{"input"}. Only used when \code{type = "directional"}.
+#' @param control a named list of control parameters passed to
+#'   \code{\link[stats]{optim}}. Common options include
+#'   \code{maxit} (maximum iterations, default 5000),
+#'   \code{reltol} (relative convergence tolerance, default 1e-10),
+#'   and \code{fnscale} (set to -1 internally for maximisation).
 #' @param ... additional arguments passed to the group-level
 #'   estimation functions.
 #'
@@ -79,6 +96,16 @@
 #' all group frontiers. The stochastic metafrontier (Huang, Huang, and
 #' Liu, 2014) replaces this with a second-stage SFA, providing a
 #' distributional framework for inference on the TGR.
+#'
+#' \strong{Note on standard errors (stochastic metafrontier):}
+#' The stochastic metafrontier is a two-stage estimator. Stage 2 treats
+#' the fitted group frontier values as data, so the reported standard
+#' errors, confidence intervals, and variance-covariance matrix do not
+#' account for estimation uncertainty from Stage 1 (the
+#' generated-regressor problem; see Murphy and Topel, 1985). As a
+#' result, standard errors may be understated. Users requiring
+#' rigorous inference should consider bootstrap-based confidence
+#' intervals (planned for a future version).
 #'
 #' @references
 #' Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A
@@ -124,6 +151,10 @@ metafrontier <- function(formula = NULL,
                          orientation = c("output", "input"),
                          rts = c("crs", "vrs", "drs", "irs"),
                          models = NULL,
+                         panel = NULL,
+                         panel_dist = c("bc92", "bc95"),
+                         type = c("radial", "directional"),
+                         direction = c("proportional", "output", "input"),
                          control = list(),
                          ...) {
 
@@ -133,6 +164,9 @@ metafrontier <- function(formula = NULL,
   dist <- match.arg(dist)
   orientation <- match.arg(orientation)
   rts <- match.arg(rts)
+  panel_dist <- match.arg(panel_dist)
+  type <- match.arg(type)
+  direction <- match.arg(direction)
 
   # ------ Input validation ------
   if (is.null(models)) {
@@ -142,7 +176,11 @@ metafrontier <- function(formula = NULL,
     }
     result <- .estimate_from_data(formula, data, group, method,
                                   meta_type, dist, orientation,
-                                  rts, control, ...)
+                                  rts, control,
+                                  panel = panel,
+                                  panel_dist = panel_dist,
+                                  type = type,
+                                  direction = direction, ...)
   } else {
     result <- .estimate_from_models(models, meta_type, control, ...)
   }
@@ -150,6 +188,8 @@ metafrontier <- function(formula = NULL,
   result$call <- cl
   result$method <- method
   result$meta_type <- meta_type
+  result$orientation <- orientation
+  result$rts <- rts
 
   class(result) <- c(
     paste0("metafrontier_", method),
@@ -205,9 +245,21 @@ metafrontier <- function(formula = NULL,
     data_g <- data[idx, , drop = FALSE]
 
     if (method == "sfa") {
-      group_models[[g]] <- .fit_sfa_group(f, data_g, dist, control, ...)
+      dots <- list(...)
+      if (!is.null(dots$panel)) {
+        group_models[[g]] <- .fit_sfa_panel_group(
+          f, data_g, dist, dots$panel_dist, dots$panel, control, ...
+        )
+      } else {
+        group_models[[g]] <- .fit_sfa_group(f, data_g, dist, control, ...)
+      }
     } else {
-      group_models[[g]] <- .fit_dea_group(f, data_g, orientation, rts, ...)
+      dots <- if (!exists("dots", inherits = FALSE)) list(...) else dots
+      if (!is.null(dots$type) && dots$type == "directional") {
+        group_models[[g]] <- .fit_ddf_group(f, data_g, rts, dots$direction)
+      } else {
+        group_models[[g]] <- .fit_dea_group(f, data_g, orientation, rts, ...)
+      }
     }
   }
 
@@ -218,10 +270,18 @@ metafrontier <- function(formula = NULL,
       meta_type, dist, control
     )
   } else {
-    meta_result <- .estimate_dea_metafrontier(
-      f, data, group_vec, group_levels, group_models,
-      orientation, rts
-    )
+    dots <- list(...)
+    if (!is.null(dots$type) && dots$type == "directional") {
+      meta_result <- .estimate_ddf_metafrontier(
+        f, data, group_vec, group_levels, group_models,
+        rts, dots$direction
+      )
+    } else {
+      meta_result <- .estimate_dea_metafrontier(
+        f, data, group_vec, group_levels, group_models,
+        orientation, rts
+      )
+    }
   }
 
   meta_result$group_models <- group_models
@@ -357,33 +417,7 @@ metafrontier <- function(formula = NULL,
 #' Extract components from a pre-fitted frontier model
 #' @noRd
 .extract_model_components <- function(model) {
-  cls <- class(model)
-
-  if ("sfacross" %in% cls) {
-    return(.extract_sfacross(model))
-  } else if ("sfa" %in% cls) {
-    return(.extract_frontier_sfa(model))
-  } else if (is.list(model) && all(c("coefficients", "efficiency",
-                                      "X", "y") %in% names(model))) {
-    # Generic list interface (e.g., from our own .fit_sfa_group)
-    return(list(
-      beta = model$coefficients,
-      te = model$efficiency,
-      X = model$X,
-      y = as.numeric(model$y),
-      sigma_v = if (is.null(model$sigma_v)) NA_real_ else model$sigma_v,
-      sigma_u = if (is.null(model$sigma_u)) NA_real_ else model$sigma_u,
-      logLik = if (is.null(model$logLik)) NA_real_ else model$logLik,
-      hessian = model$hessian,
-      n = length(model$y),
-      dist = if (is.null(model$dist)) "hnormal" else model$dist
-    ))
-  } else {
-    stop("Unsupported model class: ", paste(cls, collapse = ", "),
-         ". Supported: sfaR::sfacross, frontier::sfa, or a named list ",
-         "with 'coefficients', 'efficiency', 'X', and 'y'.",
-         call. = FALSE)
-  }
+  as_metafrontier_model(model)
 }
 
 

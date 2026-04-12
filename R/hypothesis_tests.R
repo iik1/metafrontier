@@ -23,7 +23,15 @@
 #' where \eqn{LL_{pooled}} is the log-likelihood of the pooled (single
 #' frontier) model and \eqn{LL_j} are the group-specific
 #' log-likelihoods. Under H0, the statistic follows a chi-squared
-#' distribution.
+#' distribution with degrees of freedom equal to
+#' \eqn{df = k_{groups} - k_{pooled}}, where \eqn{k_{groups}} is the
+#' total number of parameters across all group-specific models and
+#' \eqn{k_{pooled}} is the number of parameters in the pooled model.
+#' For \eqn{J} groups each with \eqn{p} frontier parameters plus
+#' distributional parameters, this equals
+#' \eqn{(J - 1) \times p_{total}} where \eqn{p_{total}} includes
+#' frontier coefficients, \eqn{\sigma_v}, and \eqn{\sigma_u}
+#' (and \eqn{\mu} for truncated-normal).
 #'
 #' @examples
 #' set.seed(42)
