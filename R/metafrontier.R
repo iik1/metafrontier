@@ -127,12 +127,12 @@
 #' Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach
 #' to estimating the metafrontier production function based on a
 #' stochastic frontier framework. \emph{Journal of Productivity
-#' Analysis}, 42(3), 241--254. \doi{10.1007/s11123-014-0397-1}
+#' Analysis}, 42(3), 241--254. \doi{10.1007/s11123-014-0402-2}
 #'
 #' O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 #' Metafrontier frameworks for the study of firm-level efficiencies
 #' and technology ratios. \emph{Empirical Economics}, 34(2), 231--255.
-#' \doi{10.1007/s00181-006-0095-0}
+#' \doi{10.1007/s00181-007-0119-4}
 #'
 #' @examples
 #' # Simulate metafrontier data

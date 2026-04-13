@@ -27,7 +27,7 @@ are now pre-built and included.
 The CRAN incoming checks report two DOIs as "404 Not Found":
 
 * `10.1023/B:PROD.0000012454.06094.29` (Battese, Rao, and O'Donnell, 2004)
-* `10.1007/s11123-014-0397-1` (Huang, Huang, and Liu, 2014)
+* `10.1007/s11123-014-0402-2` (Huang, Huang, and Liu, 2014)
 
 Both DOIs are valid and resolve correctly in a web browser. The 404
 responses are caused by the doi.org resolver returning errors on
