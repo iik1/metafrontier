@@ -4,7 +4,7 @@
 \alias{autoplot.boot_tgr}
 \title{Autoplot Method for Bootstrap TGR Objects}
 \usage{
-autoplot.boot_tgr(object, which = c("distribution", "ci"), ...)
+\method{autoplot}{boot_tgr}(object, which = c("distribution", "ci"), ...)
 }
 \arguments{
 \item{object}{a \code{"boot_tgr"} object.}

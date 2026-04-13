@@ -4,11 +4,7 @@
 \alias{autoplot.malmquist_meta}
 \title{Autoplot Method for Malmquist Meta Objects}
 \usage{
-autoplot.malmquist_meta(
-  object,
-  which = c("decomposition", "tgr_evolution", "mpi_trend"),
-  ...
-)
+\method{autoplot}{malmquist_meta}(object, which = c("decomposition", "tgr_evolution", "mpi_trend"), ...)
 }
 \arguments{
 \item{object}{a \code{"malmquist_meta"} object.}

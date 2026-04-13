@@ -130,21 +130,31 @@ where \eqn{TE_i} is efficiency relative to the group frontier and
 group frontier is to the metafrontier.
 
 The deterministic metafrontier (Battese, Rao, and O'Donnell, 2004)
-is estimated by minimising the sum of squared deviations from group
-frontiers subject to the constraint that the metafrontier envelops
-all group frontiers. The stochastic metafrontier (Huang, Huang, and
-Liu, 2014) replaces this with a second-stage SFA, providing a
-distributional framework for inference on the TGR.
+is estimated by solving a linear program that minimises the total
+envelope overshoot subject to the constraint that the metafrontier
+envelops all group frontiers. BRO (2004) originally proposed a
+constrained least-squares (QP) formulation; the LP yields the
+tightest envelope and is solved via \pkg{lpSolveAPI}, with a QP
+fallback via \code{constrOptim()} when the LP is infeasible.
+The stochastic metafrontier (Huang, Huang, and Liu, 2014) replaces
+this with a second-stage SFA, providing a distributional framework
+for inference on the TGR.
 
 \strong{Note on standard errors (stochastic metafrontier):}
 The stochastic metafrontier is a two-stage estimator. Stage 2 treats
 the fitted group frontier values as data, so the reported standard
 errors, confidence intervals, and variance-covariance matrix do not
 account for estimation uncertainty from Stage 1 (the
-generated-regressor problem; see Murphy and Topel, 1985). As a
-result, standard errors may be understated. Users requiring
-rigorous inference should consider bootstrap-based confidence
-intervals (planned for a future version).
+generated-regressor problem; see Murphy and Topel, 1985). Use
+\code{vcov(fit, correction = "murphy-topel")} or bootstrap-based
+confidence intervals via \code{\link{boot_tgr}} for corrected
+inference.
+
+\strong{Note on frontier orientation (SFA path):}
+The SFA estimation path assumes a production frontier
+(\eqn{\varepsilon = v - u}). Cost frontiers (\eqn{\varepsilon = v + u})
+are not currently supported via the SFA path. The DEA path supports
+both \code{orientation = "output"} and \code{orientation = "input"}.
 }
 \examples{
 # Simulate metafrontier data
@@ -169,7 +179,7 @@ Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A
 metafrontier production function for estimation of technical
 efficiencies and technology gaps for firms operating under different
 technologies. \emph{Journal of Productivity Analysis}, 21(1),
-91--103. \doi{10.1023/B:PROD.0000016869.68578.b7}
+91--103. \doi{10.1023/B:PROD.0000012454.06094.29}
 
 Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach
 to estimating the metafrontier production function based on a
