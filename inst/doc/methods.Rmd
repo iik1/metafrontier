@@ -1,0 +1,415 @@
+---
+title: "Metafrontier Methods: Theory and Computation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Metafrontier Methods: Theory and Computation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup}
+library(metafrontier)
+```
+
+This vignette provides a detailed exposition of the metafrontier methods
+implemented in the package, linking the econometric theory to the
+computational approach used at each step.
+
+
+## 1. The metafrontier framework
+
+### 1.1 Group-specific stochastic frontiers
+
+Consider $J$ groups of firms, where group $j$ contains $n_j$ firms. For
+group $j$, the stochastic frontier model is:
+
+$$\ln y_{ij} = x_{ij}'\beta_j + v_{ij} - u_{ij}, \quad i = 1, \ldots, n_j$$
+
+where $y_{ij}$ is the output of firm $i$ in group $j$, $x_{ij}$ is a
+vector of (logged) inputs including a constant, $\beta_j$ is the
+group-specific parameter vector, $v_{ij} \sim N(0, \sigma_{v,j}^2)$ is
+symmetric noise, and $u_{ij} \ge 0$ is one-sided inefficiency.
+
+The group-specific technical efficiency is:
+
+$$TE_{ij} = \exp(-u_{ij}) \in (0, 1]$$
+
+estimated via the Jondrow et al. (1982) conditional mean estimator.
+
+
+### 1.2 The metafrontier
+
+The metafrontier is defined as a function $f^*(x) = \exp(x'\beta^*)$ such
+that:
+
+$$x'\beta^* \ge x'\beta_j \quad \text{for all } x \text{ and all } j$$
+
+That is, the metafrontier weakly dominates all group frontiers. It
+represents the production technology available to firms with unrestricted
+access to all technologies.
+
+
+### 1.3 The efficiency decomposition
+
+For each firm, efficiency relative to the metafrontier decomposes as:
+
+$$TE^*_{ij} = TE_{ij} \times TGR_{ij}$$
+
+where the **technology gap ratio** is:
+
+$$TGR_{ij} = \frac{\exp(x_{ij}'\beta_j)}{\exp(x_{ij}'\beta^*)} = \exp\left(x_{ij}'(\beta_j - \beta^*)\right) \in (0, 1]$$
+
+A $TGR$ of 1 means the group frontier coincides with the metafrontier at
+that input mix; values below 1 indicate a technology gap.
+
+
+## 2. Deterministic metafrontier (Battese, Rao, and O'Donnell, 2004)
+
+### 2.1 Estimation
+
+After obtaining group estimates $\hat\beta_j$ in Stage 1, the metafrontier
+parameters $\hat\beta^*$ are estimated by solving:
+
+$$\min_{\beta^*} \sum_{j=1}^{J} \sum_{i=1}^{n_j} \left(x_{ij}'\beta^* - x_{ij}'\hat\beta_j\right)^2$$
+$$\text{subject to: } x_{ij}'\beta^* \ge x_{ij}'\hat\beta_j \quad \forall\, i, j$$
+
+This is a convex quadratic program. The `metafrontier` package solves it
+using `constrOptim()` from base R, which implements an adaptive barrier
+algorithm for linearly constrained optimisation.
+
+### 2.2 Properties
+
+- The deterministic metafrontier is a **point estimate** with no associated
+  standard errors (since Stage 2 is a deterministic optimisation, not a
+  statistical model).
+- The enveloping constraints guarantee $TGR_{ij} \le 1$ for all
+  observations in the estimation sample.
+- The metafrontier coefficients depend on the observed input range; they
+  are global only within the sample support.
+
+### 2.3 Example
+
+```{r det-example}
+sim <- simulate_metafrontier(
+  n_groups = 2, n_per_group = 300,
+  tech_gap = c(0, 0.4),
+  sigma_u = c(0.2, 0.35),
+  seed = 123
+)
+
+fit_det <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "deterministic"
+)
+
+# Metafrontier coefficients (no standard errors)
+coef(fit_det, which = "meta")
+
+# Group coefficients for comparison
+coef(fit_det, which = "group")
+```
+
+The metafrontier intercept should be at least as large as all group
+intercepts:
+
+```{r verify-envelop}
+meta_b0 <- coef(fit_det, which = "meta")[1]
+group_b0 <- sapply(coef(fit_det, which = "group"), `[`, 1)
+meta_b0 >= group_b0
+```
+
+
+## 3. Stochastic metafrontier (Huang, Huang, and Liu, 2014)
+
+### 3.1 Estimation
+
+Huang, Huang, and Liu (2014) propose treating the technology gap as a
+stochastic variable. In Stage 2, the fitted group frontier values become
+the dependent variable in a second SFA:
+
+$$\ln \hat{f}(x_{ij}; \hat\beta_j) = x_{ij}'\beta^* + v^*_{ij} - u^*_{ij}$$
+
+where $u^*_{ij} \ge 0$ captures the technology gap and $v^*_{ij}$ is a
+noise term. This is estimated via MLE, yielding:
+
+- Point estimates $\hat\beta^*$ with standard errors
+- A variance-covariance matrix for inference
+- A distributional $\widehat{TGR}$ with associated uncertainty
+
+### 3.2 Advantages over the deterministic approach
+
+1. **Inference**: Standard errors, confidence intervals, and hypothesis
+   tests on metafrontier parameters are available.
+2. **Robustness**: The noise term $v^*_{ij}$ absorbs sampling variation
+   from Stage 1, preventing overfitting.
+3. **Consistency**: The metafrontier need not strictly envelop all group
+   frontiers in finite samples, which can be more realistic.
+
+### 3.3 Caveat: the generated-regressor problem
+
+The stochastic metafrontier is a two-stage estimator. In Stage 2, the
+dependent variable $\ln \hat{f}(x_{ij}; \hat\beta_j)$ is itself an
+estimate from Stage 1 -- it is a *generated regressor* (Murphy and
+Topel, 1985). The standard errors reported by the package are derived
+from the Stage 2 Hessian alone and **do not account for the sampling
+uncertainty in the Stage 1 group frontier estimates**.
+
+As a result:
+
+- Standard errors, confidence intervals (`confint()`), and hypothesis
+  tests may be **understated** (confidence intervals narrower than their
+  nominal coverage warrants).
+- This issue does **not** affect point estimates of $\hat\beta^*$ or
+  efficiency scores, only inference.
+- The bias is negligible when group sample sizes are large relative to
+  the number of frontier parameters.
+- The Murphy--Topel (1985) correction is available via
+  `vcov(fit, correction = "murphy-topel")` and
+  `confint(fit, correction = "murphy-topel")`. This adjusts the Stage 2
+  variance-covariance matrix to account for Stage 1 estimation
+  uncertainty.
+
+### 3.4 Example
+
+```{r sto-example}
+fit_sto <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "stochastic"
+)
+
+summary(fit_sto)
+```
+
+The stochastic metafrontier provides standard errors:
+
+```{r sto-inference}
+# Variance-covariance matrix
+vcov(fit_sto)
+
+# Log-likelihood of the metafrontier model
+logLik(fit_sto)
+```
+
+### 3.5 A note on TGR values
+
+Under the stochastic metafrontier, TGR values are not constrained to be
+$\le 1$ in finite samples, since the metafrontier need not strictly
+envelop all group frontiers. Values slightly above 1 can occur and are
+consistent with the stochastic framework.
+
+```{r tgr-range}
+tgr_vals <- efficiencies(fit_sto, type = "tgr")
+summary(tgr_vals)
+```
+
+
+## 4. DEA-based metafrontier
+
+### 4.1 Approach
+
+For a nonparametric metafrontier:
+
+1. Compute group-specific DEA efficiencies $\hat\theta_{ij}^{group}$ using
+   only observations from group $j$.
+2. Compute pooled DEA efficiencies $\hat\theta_{ij}^{pool}$ using all
+   observations.
+3. The TGR is: $TGR_{ij} = \hat\theta_{ij}^{pool} / \hat\theta_{ij}^{group}$.
+
+The package solves the DEA linear programs using `lpSolveAPI`.
+
+### 4.2 Returns to scale
+
+The `rts` argument controls the technology assumption:
+
+- `"crs"` (constant returns to scale): the standard CCR model
+- `"vrs"` (variable returns to scale): the BCC model
+- `"drs"` / `"irs"` (decreasing / increasing returns)
+
+```{r dea-example}
+# CRS metafrontier
+fit_crs <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  method = "dea",
+  rts = "crs"
+)
+
+# VRS metafrontier
+fit_vrs <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  method = "dea",
+  rts = "vrs"
+)
+
+# Compare mean TGR
+cbind(
+  CRS = tapply(fit_crs$tgr, fit_crs$group_vec, mean),
+  VRS = tapply(fit_vrs$tgr, fit_vrs$group_vec, mean)
+)
+```
+
+
+## 5. Comparing methods
+
+The choice between deterministic, stochastic, and DEA metafrontiers
+involves trade-offs:
+
+| Feature | Deterministic SFA | Stochastic SFA | DEA |
+|---|---|---|---|
+| Functional form | Parametric | Parametric | Nonparametric |
+| Noise handling | Stage 1 only | Both stages | None |
+| Inference on TGR | No | Yes | No |
+| TGR $\le$ 1 guaranteed | Yes | No | Yes |
+| Small sample performance | Moderate | Moderate | Poor |
+| References | BRO (2004) | HHL (2014) | ORB (2008) |
+
+```{r compare-methods}
+# Compare TGR estimates across methods
+tgr_det <- tapply(fit_det$tgr, fit_det$group_vec, mean)
+tgr_sto <- tapply(fit_sto$tgr, fit_sto$group_vec, mean)
+tgr_dea <- tapply(fit_crs$tgr, fit_crs$group_vec, mean)
+true_tgr <- tapply(sim$data$true_tgr, sim$data$group, mean)
+
+comparison <- data.frame(
+  True = true_tgr,
+  Deterministic = tgr_det,
+  Stochastic = tgr_sto,
+  DEA_CRS = tgr_dea
+)
+round(comparison, 4)
+```
+
+
+## 6. Choosing a method: practical guidance
+
+Selecting between deterministic SFA, stochastic SFA, and DEA
+metafrontiers depends on the research question, data characteristics,
+and inferential requirements.
+
+**Use the deterministic SFA metafrontier (BRO 2004) when:**
+
+- You need guaranteed $TGR \le 1$ (the metafrontier strictly envelops
+  all group frontiers).
+- Inference on metafrontier parameters is not required.
+- The goal is descriptive decomposition of efficiency into within-group
+  and between-group components.
+
+**Use the stochastic SFA metafrontier (HHL 2014) when:**
+
+- You need standard errors, confidence intervals, or hypothesis tests
+  on the metafrontier parameters.
+- You want a distributional framework for the technology gap ratio.
+- Sample sizes per group are moderate to large (at least 50--100
+  observations per group is recommended).
+- You are comfortable with the generated-regressor caveat (Section 3.3).
+
+**Use the DEA metafrontier when:**
+
+- You prefer a nonparametric approach with no functional form
+  assumptions.
+- Multiple inputs and/or multiple outputs are involved.
+- Sample sizes are large enough to support DEA (a rough guideline:
+  $n \ge 3 \times (m + s)$ per group, where $m$ is the number of
+  inputs and $s$ the number of outputs).
+- The returns-to-scale assumption (`rts`) is well-justified by the
+  application context.
+
+In many applied studies, it is informative to estimate multiple methods
+and compare TGR estimates for robustness (as shown in Section 5).
+
+
+## 7. Testing for technology heterogeneity
+
+Before estimating a metafrontier, it is useful to test whether separate
+group frontiers are actually needed. The **poolability test** uses a
+likelihood ratio statistic:
+
+$$LR = -2\left[LL_{pooled} - \sum_{j=1}^{J} LL_j\right] \sim \chi^2_{df}$$
+
+where $LL_{pooled}$ is the log-likelihood of a single frontier estimated
+on the pooled sample and $LL_j$ are the group-specific log-likelihoods.
+
+```{r poolability}
+poolability_test(fit_det)
+```
+
+A significant test (p < 0.05) confirms that the groups operate under
+different technologies and the metafrontier decomposition is warranted.
+
+
+## 8. Simulation for Monte Carlo studies
+
+The `simulate_metafrontier()` function generates data from a known DGP,
+enabling parameter recovery studies:
+
+```{r monte-carlo, eval=FALSE}
+# Monte Carlo: check parameter recovery over 100 replications
+set.seed(1)
+n_rep <- 100
+beta_hat <- matrix(NA, n_rep, 3)
+
+for (r in seq_len(n_rep)) {
+  sim_r <- simulate_metafrontier(
+    n_groups = 2, n_per_group = 200,
+    tech_gap = c(0, 0.3),
+    sigma_u = c(0.2, 0.3),
+    sigma_v = 0.15
+  )
+  fit_r <- metafrontier(
+    log_y ~ log_x1 + log_x2,
+    data = sim_r$data,
+    group = "group",
+    meta_type = "deterministic"
+  )
+  beta_hat[r, ] <- coef(fit_r, which = "meta")
+}
+
+# Bias
+true_beta <- c(1.0, 0.5, 0.3)
+colMeans(beta_hat) - true_beta
+```
+
+The `simulate_metafrontier()` function supports:
+
+- Arbitrary number of groups (`n_groups`)
+- Unequal group sizes (`n_per_group` as a vector)
+- Custom metafrontier coefficients (`beta_meta`)
+- Group-specific technology gaps (`tech_gap`)
+- Group-specific inefficiency dispersion (`sigma_u`)
+- Reproducible results via `seed`
+
+
+## References
+
+- Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier
+  production function for estimation of technical efficiencies and
+  technology gaps for firms operating under different technologies.
+  *Journal of Productivity Analysis*, 21(1), 91--103.
+
+- Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach to
+  estimating the metafrontier production function based on a stochastic
+  frontier framework. *Journal of Productivity Analysis*, 42(3), 241--254.
+
+- Jondrow, J., Lovell, C.A.K., Materov, I.S. and Schmidt, P. (1982). On
+  the estimation of technical inefficiency in the stochastic frontier
+  production function model. *Journal of Econometrics*, 19(2--3), 233--238.
+
+- O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008). Metafrontier
+  frameworks for the study of firm-level efficiencies and technology
+  ratios. *Empirical Economics*, 34(2), 231--255.

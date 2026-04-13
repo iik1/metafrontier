@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Introduction to metafrontier</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Introduction to metafrontier</h1>
+
+
+
+<div id="what-is-a-metafrontier" class="section level2">
+<h2>What is a metafrontier?</h2>
+<p>In efficiency analysis, we often study firms that operate under
+fundamentally different technologies. Steel producers using electric arc
+furnaces (EAF) face a different production possibility set than those
+using the blast furnace-basic oxygen furnace (BF-BOF) route. Hospitals
+in rural areas face different constraints than urban ones. Banks in
+developing economies operate under different regulatory and
+technological environments than those in advanced economies.</p>
+<p>Standard stochastic frontier analysis (SFA) or data envelopment
+analysis (DEA) applied to the pooled sample implicitly assumes all firms
+share the same technology – an assumption that may be unrealistic.
+Estimating separate frontiers for each group solves this problem but
+makes efficiency scores incomparable across groups: a firm that is 90%
+efficient relative to a less advanced group frontier may actually be
+less productive than a firm that is 70% efficient relative to a more
+advanced frontier.</p>
+<p>The <strong>metafrontier</strong> framework, introduced by Battese,
+Rao, and O’Donnell (2004) and extended by Huang, Huang, and Liu (2014)
+and O’Donnell, Rao, and Battese (2008), resolves this by:</p>
+<ol style="list-style-type: decimal">
+<li>Estimating <strong>group-specific frontiers</strong> for each
+technology group</li>
+<li>Estimating a <strong>metafrontier</strong> that envelops all group
+frontiers</li>
+<li>Decomposing efficiency into two components:</li>
+</ol>
+<p><span class="math display">\[TE^*_i = TE_i \times TGR_i\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(TE_i\)</span> is efficiency relative to
+the <strong>group frontier</strong> (within-group inefficiency)</li>
+<li><span class="math inline">\(TGR_i\)</span> is the <strong>technology
+gap ratio</strong>, measuring how close the group frontier is to the
+metafrontier (between-group technology gap)</li>
+<li><span class="math inline">\(TE^*_i\)</span> is efficiency relative
+to the <strong>metafrontier</strong> (overall efficiency)</li>
+</ul>
+<p>The <code>metafrontier</code> package provides a unified interface
+for estimating metafrontier models using both SFA and DEA
+approaches.</p>
+</div>
+<div id="quick-start" class="section level2">
+<h2>Quick start</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(metafrontier)</span></code></pre></div>
+<div id="simulate-data" class="section level3">
+<h3>Simulate data</h3>
+<p>The package includes <code>simulate_metafrontier()</code> for
+generating data from a known data-generating process. This is useful for
+Monte Carlo studies and for learning the package.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">n_groups =</span> <span class="dv">3</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">n_per_group =</span> <span class="dv">200</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">beta_meta =</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>),  <span class="co"># intercept, elasticity_1, elasticity_2</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>),    <span class="co"># intercept shifts (0 = best technology)</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.3</span>, <span class="fl">0.4</span>),    <span class="co"># inefficiency SD per group</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">sigma_v =</span> <span class="fl">0.15</span>,                 <span class="co"># noise SD</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>)</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="fu">str</span>(sim<span class="sc">$</span>data[, <span class="fu">c</span>(<span class="st">&quot;log_y&quot;</span>, <span class="st">&quot;log_x1&quot;</span>, <span class="st">&quot;log_x2&quot;</span>, <span class="st">&quot;group&quot;</span>)])</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; &#39;data.frame&#39;:    600 obs. of  4 variables:</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;  $ log_y : num  4.05 3.99 3.16 4.04 2.52 ...</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;  $ log_x1: num  4.57 4.69 1.43 4.15 3.21 ...</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  $ log_x2: num  4.426 2.586 4.26 2.214 0.789 ...</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt;  $ group : Factor w/ 3 levels &quot;G1&quot;,&quot;G2&quot;,&quot;G3&quot;: 1 1 1 1 1 1 1 1 1 1 ...</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="fu">table</span>(sim<span class="sc">$</span>data<span class="sc">$</span>group)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;  G1  G2  G3 </span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; 200 200 200</span></span></code></pre></div>
+<p>The simulation generates a Cobb-Douglas frontier: <span class="math display">\[\ln y_i = \beta_0^{(j)} + \beta_1 \ln x_{1i} +
+\beta_2 \ln x_{2i} + v_i - u_i\]</span> where the intercept <span class="math inline">\(\beta_0^{(j)} = \beta_0^* - \delta_j\)</span> is
+shifted down from the metafrontier by the technology gap <span class="math inline">\(\delta_j\)</span> for group <span class="math inline">\(j\)</span>.</p>
+</div>
+<div id="estimate-the-metafrontier" class="section level3">
+<h3>Estimate the metafrontier</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;sfa&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>fit</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; ------------------</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; Method:           sfa </span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; Metafrontier:     deterministic </span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; Groups:           G1, G2, G3 </span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; Total obs:        600 </span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;   G1: 200 obs</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;   G2: 200 obs</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt;   G3: 200 obs</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; Group log-likelihoods:</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   G1: 35.49</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;   G2: 0.84652</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;   G3: -25.399</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt; Mean TGR by group:</span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt;   G1: 1</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt;   G2: 0.7593</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt;   G3: 0.6047</span></span></code></pre></div>
+</div>
+</div>
+<div id="deterministic-sfa-metafrontier-battese-rao-and-odonnell-2004" class="section level2">
+<h2>Deterministic SFA metafrontier (Battese, Rao, and O’Donnell,
+2004)</h2>
+<p>The deterministic metafrontier is estimated in two stages:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Stage 1</strong>: Fit separate SFA models for each group via
+maximum likelihood.</li>
+<li><strong>Stage 2</strong>: Find metafrontier coefficients <span class="math inline">\(\hat\beta^*\)</span> by minimising <span class="math display">\[\sum_i \left[\ln f(x_i; \hat\beta^*) - \ln f(x_i;
+\hat\beta_j)\right]^2\]</span> subject to the constraint that the
+metafrontier envelops all group frontiers: <span class="math inline">\(\ln f(x_i; \hat\beta^*) \ge \ln f(x_i;
+\hat\beta_j)\)</span> for all <span class="math inline">\(i\)</span> and
+<span class="math inline">\(j\)</span>.</li>
+</ol>
+<p>This is the default method:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>fit_det <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">summary</span>(fit_det)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model Summary</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; ==========================</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data, </span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, meta_type = &quot;deterministic&quot;)</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; Method:        sfa </span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:  deterministic </span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; --- Group: G1 (n = 200) ---</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; (Intercept) 1.025588   0.060881   16.85   &lt;2e-16 ***</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; log_x1      0.493508   0.009658   51.10   &lt;2e-16 ***</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; log_x2      0.294569   0.009805   30.04   &lt;2e-16 ***</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 35.49 </span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; --- Group: G2 (n = 200) ---</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.76703    0.06478   11.84   &lt;2e-16 ***</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; log_x1       0.48428    0.01239   39.10   &lt;2e-16 ***</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; log_x2       0.29703    0.01210   24.55   &lt;2e-16 ***</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 0.84652 </span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; --- Group: G3 (n = 200) ---</span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.53665    0.05513   9.734   &lt;2e-16 ***</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; log_x1       0.49950    0.01238  40.352   &lt;2e-16 ***</span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; log_x2       0.28205    0.01186  23.782   &lt;2e-16 ***</span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: -25.399 </span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; --- Metafrontier ---</span></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt;             Estimate</span></span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt; (Intercept)   1.0256</span></span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt; log_x1        0.4935</span></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt; log_x2        0.2946</span></span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt; --- Efficiency Decomposition ---</span></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt;  Group Mean_TE Mean_TGR Mean_TE_star</span></span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt;     G1  0.8571   1.0000       0.8571</span></span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a><span class="co">#&gt;     G2  0.8249   0.7593       0.6263</span></span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="co">#&gt;     G3  0.7401   0.6047       0.4475</span></span>
+<span id="cb4-58"><a href="#cb4-58" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-59"><a href="#cb4-59" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratio Summary ---</span></span>
+<span id="cb4-60"><a href="#cb4-60" tabindex="-1"></a><span class="co">#&gt;  Group   N   Mean     SD    Min     Q1 Median     Q3    Max</span></span>
+<span id="cb4-61"><a href="#cb4-61" tabindex="-1"></a><span class="co">#&gt;     G1 200 1.0000 0.0000 1.0000 1.0000 1.0000 1.0000 1.0000</span></span>
+<span id="cb4-62"><a href="#cb4-62" tabindex="-1"></a><span class="co">#&gt;     G2 200 0.7593 0.0099 0.7386 0.7518 0.7592 0.7679 0.7799</span></span>
+<span id="cb4-63"><a href="#cb4-63" tabindex="-1"></a><span class="co">#&gt;     G3 200 0.6047 0.0125 0.5769 0.5947 0.6056 0.6143 0.6289</span></span></code></pre></div>
+</div>
+<div id="stochastic-metafrontier-huang-huang-and-liu-2014" class="section level2">
+<h2>Stochastic metafrontier (Huang, Huang, and Liu, 2014)</h2>
+<p>The stochastic metafrontier replaces the LP in Stage 2 with a
+second-stage SFA, using the fitted group frontier values as the
+dependent variable:</p>
+<p><span class="math display">\[\ln \hat{f}(x_i; \hat\beta_j) =
+x_i&#39;\beta^* + v^*_i - u^*_i\]</span></p>
+<p>where <span class="math inline">\(u^*_i \ge 0\)</span> captures the
+technology gap stochastically. This provides a distributional framework
+for the TGR, enabling standard errors and hypothesis testing.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_sto <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">summary</span>(fit_sto)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model Summary</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; ==========================</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data, </span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, meta_type = &quot;stochastic&quot;)</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt; Method:        sfa </span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:  stochastic </span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt; --- Group: G1 (n = 200) ---</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; (Intercept) 1.025588   0.060881   16.85   &lt;2e-16 ***</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt; log_x1      0.493508   0.009658   51.10   &lt;2e-16 ***</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; log_x2      0.294569   0.009805   30.04   &lt;2e-16 ***</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 35.49 </span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt; --- Group: G2 (n = 200) ---</span></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.76703    0.06478   11.84   &lt;2e-16 ***</span></span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt; log_x1       0.48428    0.01239   39.10   &lt;2e-16 ***</span></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt; log_x2       0.29703    0.01210   24.55   &lt;2e-16 ***</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 0.84652 </span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt; --- Group: G3 (n = 200) ---</span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.53665    0.05513   9.734   &lt;2e-16 ***</span></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt; log_x1       0.49950    0.01238  40.352   &lt;2e-16 ***</span></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt; log_x2       0.28205    0.01186  23.782   &lt;2e-16 ***</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: -25.399 </span></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="co">#&gt; --- Metafrontier ---</span></span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.784379   0.186836   4.198 2.69e-05 ***</span></span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a><span class="co">#&gt; log_x1      0.493270   0.005918  83.349  &lt; 2e-16 ***</span></span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a><span class="co">#&gt; log_x2      0.289361   0.005832  49.613  &lt; 2e-16 ***</span></span>
+<span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 96.292 </span></span>
+<span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a><span class="co">#&gt; --- Efficiency Decomposition ---</span></span>
+<span id="cb5-57"><a href="#cb5-57" tabindex="-1"></a><span class="co">#&gt;  Group Mean_TE Mean_TGR Mean_TE_star</span></span>
+<span id="cb5-58"><a href="#cb5-58" tabindex="-1"></a><span class="co">#&gt;     G1  0.8571   1.2894       1.1051</span></span>
+<span id="cb5-59"><a href="#cb5-59" tabindex="-1"></a><span class="co">#&gt;     G2  0.8249   0.9794       0.8078</span></span>
+<span id="cb5-60"><a href="#cb5-60" tabindex="-1"></a><span class="co">#&gt;     G3  0.7401   0.7797       0.5771</span></span>
+<span id="cb5-61"><a href="#cb5-61" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-62"><a href="#cb5-62" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratio Summary ---</span></span>
+<span id="cb5-63"><a href="#cb5-63" tabindex="-1"></a><span class="co">#&gt;  Group   N   Mean     SD    Min     Q1 Median     Q3    Max</span></span>
+<span id="cb5-64"><a href="#cb5-64" tabindex="-1"></a><span class="co">#&gt;     G1 200 1.2894 0.0099 1.2735 1.2808 1.2887 1.2973 1.3073</span></span>
+<span id="cb5-65"><a href="#cb5-65" tabindex="-1"></a><span class="co">#&gt;     G2 200 0.9794 0.0157 0.9428 0.9687 0.9796 0.9906 1.0185</span></span>
+<span id="cb5-66"><a href="#cb5-66" tabindex="-1"></a><span class="co">#&gt;     G3 200 0.7797 0.0111 0.7537 0.7717 0.7798 0.7876 0.8027</span></span></code></pre></div>
+<p>The stochastic metafrontier provides a variance-covariance
+matrix:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">vcov</span>(fit_sto)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt;               (Intercept)        log_x1        log_x2</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)  3.490785e-02 -8.889894e-05 -7.974475e-05</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; log_x1      -8.889894e-05  3.502404e-05 -4.372711e-07</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; log_x2      -7.974475e-05 -4.372711e-07  3.401693e-05</span></span></code></pre></div>
+</div>
+<div id="dea-based-metafrontier" class="section level2">
+<h2>DEA-based metafrontier</h2>
+<p>For a nonparametric approach, set <code>method = &quot;dea&quot;</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>fit_dea <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; Warning: LP infeasible for a DMU.</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; Warning: LP infeasible for a DMU.</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Warning: LP infeasible for a DMU.</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; Warning: LP infeasible for a DMU.</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>fit_dea</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; ------------------</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Method:           dea </span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:     deterministic </span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; Groups:           G1, G2, G3 </span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt; Total obs:        600 </span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt;   G1: 200 obs</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt;   G2: 200 obs</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt;   G3: 200 obs</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; Mean TGR by group:</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt;   G1: 0.9959</span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt;   G2: 0.9221</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt;   G3: NA</span></span></code></pre></div>
+<p>The DEA metafrontier computes:</p>
+<ol style="list-style-type: decimal">
+<li>Group-specific DEA efficiencies under variable returns to scale
+(VRS), constant returns to scale (CRS), or other assumptions.</li>
+<li>A pooled DEA across all observations to form the metafrontier.</li>
+<li><span class="math inline">\(TGR_i = TE^{pool}_i /
+TE^{group}_i\)</span>.</li>
+</ol>
+</div>
+<div id="extracting-results" class="section level2">
+<h2>Extracting results</h2>
+<div id="efficiency-scores" class="section level3">
+<h3>Efficiency scores</h3>
+<p>Use <code>efficiencies()</code> to extract the three components of
+the decomposition:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>te <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_det, <span class="at">type =</span> <span class="st">&quot;group&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>tgr <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_det, <span class="at">type =</span> <span class="st">&quot;tgr&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>te_star <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_det, <span class="at">type =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co"># Verify the fundamental identity: TE* = TE x TGR</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">all.equal</span>(te_star, te <span class="sc">*</span> tgr)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="technology-gap-ratio" class="section level3">
+<h3>Technology gap ratio</h3>
+<p>The <code>technology_gap_ratio()</code> function returns TGR values
+grouped by technology:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>tgr_by_group <span class="ot">&lt;-</span> <span class="fu">technology_gap_ratio</span>(fit_det)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">lapply</span>(tgr_by_group, summary)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; $G1</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt;       1       1       1       1       1       1 </span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; $G2</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt;  0.7386  0.7518  0.7592  0.7593  0.7679  0.7799 </span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; $G3</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;  0.5769  0.5947  0.6056  0.6047  0.6143  0.6289</span></span></code></pre></div>
+<p>For a formatted summary table:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">tgr_summary</span>(fit_det)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt;   Group   N      Mean          SD       Min        Q1    Median        Q3</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; 1    G1 200 1.0000000 0.000000000 1.0000000 1.0000000 1.0000000 1.0000000</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; 2    G2 200 0.7592884 0.009947071 0.7385586 0.7517742 0.7592422 0.7679385</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; 3    G3 200 0.6047017 0.012456784 0.5769063 0.5947118 0.6056158 0.6142562</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;         Max</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt; 1 1.0000000</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt; 2 0.7798918</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; 3 0.6289392</span></span></code></pre></div>
+</div>
+<div id="coefficients" class="section level3">
+<h3>Coefficients</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Metafrontier coefficients</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;   1.0255883   0.4935078   0.2945688</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co"># Group-specific coefficients</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;group&quot;</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; $G1</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt;   1.0255883   0.4935078   0.2945688 </span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#&gt; $G2</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt;   0.7670252   0.4842818   0.2970328 </span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; $G3</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co">#&gt;   0.5366478   0.4994989   0.2820525</span></span></code></pre></div>
+</div>
+<div id="model-information" class="section level3">
+<h3>Model information</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Log-likelihood (sum of group log-likelihoods for deterministic)</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">logLik</span>(fit_det)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; 10.9376 (df=3)</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co"># Number of observations</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="fu">nobs</span>(fit_det)</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt; [1] 600</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co"># AIC and BIC (available automatically via logLik method)</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="fu">AIC</span>(fit_det)</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="co">#&gt; [1] -15.87521</span></span></code></pre></div>
+</div>
+</div>
+<div id="visualisation" class="section level2">
+<h2>Visualisation</h2>
+<p>The package provides four built-in plot types:</p>
+<div id="tgr-distributions" class="section level3">
+<h3>TGR distributions</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">plot</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;tgr&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAGACAMAAABFpiBcAAAAzFBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY3frg6AAA6ADo6AGY6OgA6Ojo6OmY6OpA6ZpA6ZrY6kLY6kNtNr0pmAABmADpmOgBmOjpmkJBmkLZmkNtmtrZmtttmtv+QOgCQZjqQkGaQkLaQtpCQttuQ27aQ29uQ2/+2ZgC2Zjq2ZpC2kDq2kGa2tma225C227a229u22/+2/7a2/9u2///bkDrbtmbbtpDb27bb29vb2//b/7bb///kGhz/tmb/25D/27b//7b//9v///9VTz6/AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAUUUlEQVR4nO2di5rjtnlAqc1uZ8Zx7Dgz8qZ1PeM2aUfpLdkkct10LK2k93+nEABBghRJERRB/oDO+b7doSQIPyUe4UYSyE4AgsmW3gGAPhAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQTWqCbrKSu44k22z1eiGX40v24c0n7P/+Ng/4i2/+djlfzeqrT81X/uOvXVE32bu/Xh86VhC0DU9BrXfZ6nlgwuYufP74bpygg0PHCoK24SdopV1/WVdLWd+7Pgn7XhseOlZSE1SRH7Xi8B//kBct3xjVfvwyrwm/P2lB/z1//v1rY9vUlr/4p7dK0PIJk9X711yWvxS577KsKLTyrdX3eaIfH7LsUb3rY+7LVyrLPPkf8yzef6r2TOe7f9B/y4T6Z6VybkY9VZn8+lP5wTpD5x/ndx+zd5/cPIzfh7V6vbk/EZC0oPlRUbxXZUtRtOqjWBU5dntlbNXkkhQiVU8URdXqy/xdW1NYlQVb/lJRJO9/pWTZVVlu3OxPTsm8UX+rhDVBnainU7XnKtyl0Fv7TiePuqCtDQzJJC3oRhUmeWn1qK35zdvntTnK2YdP6n8j63u7bYo1vW1Ecp5Q7797O26UJvnTz/qIF8V0tWWj/8NbEVWl/3T6sazQayVoPWHZBnWjFp9C7a/O5ELo4qP9Xy2PhqC1/YmAlAU1B8UUO+YwbX/9J30Un+2LZjs/nndluaT+GFWcJ6rDrF+8c6tZo1iNn/7ry8xkqRO5JZ7lsZGwFHTTKCXzrdVrtV+9obfFK617/ni+PxGQsqD54bM1mtvrMZ0kU/g42zbJ1iY/e+JUHNrCeJthYcmubB/8UHaDChPKblkl6J1qNjQSnkU1+buZXAhdvKmWR6MNWtufCEhZ0F3mClrWah2C2upSlU/6CLtP2G19hFVFW5TOiuI1a4mS8P2//rR2BC2LPCvo+98XD2oJz6Ka/DeObf2hrXm1PMw+OC0JN2/5pCyoabHZp6YrQVX+TiFU9FSsJUaFw7qjBM3z/U/TezlLOKAE7Q/dU4LWBKUEXRanDVoWm+bQ7L76faegg9ug+l1fOgOldqzn+NPH/Nmdbda2tPmq0YGyKXnWSWppgzqZ9IYuzXPz2FqHaYNKwenFr74/5V13M6Tzja59nzsFHdqLLxq3j268km/Muz6/2E5Say9ei+ImtMVjRy++yqQ3dCmom4f+X4WhFy+F5jho0Qm2HZIuQYeOg5oHbhlUnW/83nlwVxvCtAntMJMupsuEqpIeMA56IXRVdzt5lF3Fx/P9iYCkBT19/uFBn4JR6DNJ3516BDWnX747Nc4kfWcy/UOWff2p6mXUy6CffvtQnXP6QfWC7ODWX34o96A2UK9avVVCfZ7qT+dRTVp7Jul0KXTVuHTy2H/M3/xH24uv7U8EpChoQIoe9dBucIDG3lU98JganwUIOoyNbuOZEf3T548DD/T0QgwO3QqCJosdU82rUN2ybZ47amdqITxCt4Kg6fJZNfVWqvWWW7L6zbA3BRB0aOhWEBRgWhAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIJqJBc0ABrGUoNNmB6mCoCAaBAXRICiIBkFBNAgKokFQEA2CgmgQFESDoCAaBAXRICiIBkFBNAgKoolSUL0SpV0mff/L2BbtAw9iFHSr1pk+vpjVJA/r6FaVBA8iFHT/oNdBP76oBa93WXzLnoIHUgT9uYdG0k1RuW+flZ+POwRNGSGC9vnZEPT4Ul8HHUGTRoigHhzWz7XHCJo0sQq6yWzjE0GTJkZBiyp+h6A3QHyClp0kBL0FIhS0GGZKRdD7pXdANhEKetpmqpLfZHf6UdyC3t8jaC8xCmpOdVovoxcUQ/uIUtCEQNALIOii5HYiaC8IuijKTgztA0EXBUEvgaCLgqCXCCTo8cVM7tjZw0ZQjZYTQ3sII6gZqTzpy+EmyC5dEPQSQQR1rojb2jszrsjujOqWD11Sd/wGIsCoiaA9BBHUuSKuaxh9mls+ji+r1/zh3RWZLQqCXiTCEtS55cNsbqM9l1SoiaHdhGqDFkVoiDaoe8uHCZIXo3GCoBcJ1IvXrUTn3uCL2d33UE/ZvOUjNzb+EpQTnl0IGQft87Nx6Jq3fHSX0vKxnw1DO5lZUP/lb844u+Uj3j6SW7djaDshBd1lWWfrcLJbPiIuP+ttTwRtJZCgeQH3uP/67bw+HpddPW/3lo9txH42nMTQNsIIqhza6NIz3DCTFrQcLogSBL1MuIH6/RdK0DAD9faWj/1DxOXnmZIY2kIgQZU3x7+dQp7qNBW8JtZxUAS9TKCBeltulj2aq7JLlaaRGHpOoE7S1hRqu84mIoKe2gRlPLSJkIH62+RMRgQ9A0EXpFVGDK2BoMvRriKC1rgFQZ9mjOVDh4oY6nIDgj49CTUUQQcQpaDOKh/bi6OgT09SDUXQAcQoqLPKhxpwvXC9cm4ngsZLhII6t3zo8wBmuY8utJwyDe0yEUMdIhS0ecsHgqaMFEGfeqinPLvlY9tXxRfvFmkogg5AiKB9fjbcalxiuuu/Lx5BI0eIoB40b/nIi9TOW/NEC9rpIYI6xChofZWP3tuOSzEFGoqgQ4hP0OYqH9Ul9i1EKSiGOkQoqHPLh9nsnqW+0hJBIyVCQd1VPlRpej6TQ4mjpTxDEXQIMQrqrvKhOkvd980haPREKehQXCkRNE4QdDEQdAgpC1p3UpyhCDoEBF2KHgsRtCJhQRtGImiUIOhSIOgg0hX0TEhhhvZZiKElCLoUCDqIZAU91xFBYyRVQVtulEPQGElU0LYbORE0RpIVdOiTi4Ggg0hT0HYVRQna6yCClvgLelhPMS08giLoIMaUoNsJFnANKmiHiQgaISOr+KsdRVAEHcToNui2uq0yaNwRdImIoBEyTtCdvo69937fqeKOoFNESYYi6DBGCKpuuDBmdt+tNl3cEcQvKIaWjOnFT7HqS0BBuzVE0PgYIei3xs/e4vP4YlYw6kyDoAg6iPGCbnsELVfQ7FzqFUERdBC+gm6qBbW7h5mcO9WDrDTXS5+Fcgy9YCCCWsaXoD04E9CFWKuzHwRNiiDn4ilBL4KgAwlzsUi5SvYCbVAETQpPQQ/rRz3vTG8P/VRMTlMuxXFNXG8QNCmSu9yu10EEjY6ZBa3GACbJrgUETYtRpzof1aUivefht3bSua7R0mUElWMogg5khKCbD2/7h7vTpmfxF7XwxmGtEiBoOwg6kDHn4p/zzvlz36lOM8ykL3ZC0HYQdCDjBN3k2vWc6rQD9XlZi6DtXDIQQwvGVPF3h/WHN1ODt1MO1G/u5hb0goEIGhvjrgddvfavP2i1zJMiaBsX/UPQgkDDTPZUklmT+OrshnPJQCGGIuhQUhuoR9DEGCHoxYuRJ43rCYImxphO0lVm+sb1BEETY8ww0wQTiyDotQluhXHjoDPG9eOifwgaGf6C9g8wTR7Xj8v+yTAUQYcyog2661l7cPq4fiBoaoya3U5uLx5BUyOxcVAETQ0EXQQEHcoYQfNK/sPb5rrBptsWdIB+GGoY00lavW7V1UwC5wcdYp8EQxF0MGOGmR713e59U99MGNcLBE2OcQP1StAr5l70iesFgibH+BJ0M372Wp+4XiBocoxug26vG65H0OuT3AQje/FZduUstgh6fZKbIK1x0EHyCTAUQQeTlKDD1EPQmBh7Lv6qHpJPXB8QND28Bd0UU9pcudYcgl6f5CbwFXRnO0f7B3m9eARND09BnauV++ZmmjCuDwPVW95QBB2M/wS29gmBpzpjEXSIfAhq8Bb04vIIE8f1ISVBMdSAoAuAoMNJSdCh4iFoRNyioIsbiqDD8Ra0mmUeQceCoMNJ6VQngiYIgi4Agg4HQRcAQYdzk4IubSiCDichQT2sQ9BoQNAFQNDhIOj8DFMPQTUIOj8I6sFtCrqsoQjqQSBBLy60gKBTJUucMIKWN4Tsuu4MQdCpkiVOEEHLpRBPeg6Sa7MbhpdzCBoLQQQdcM0Tgk6VLHFutARd1FAE9SBUG7QoQmdsgyJokgTqxdvrRjvnd0DQqZIlTjrjoAiaJDMLWl2PP0l2Dp7GIWgkJFOCImia3KqgCxo6VDwEVQQaB714ax2CTpYubcKUoMeXS7d8IuiECVMm2MUiF6YWQ9AJE6ZMqDbopSWREXTChCmTSifJ2zcEjYObFXQ5QxHUBwSdHQT1AUFnB0F9QNDZQVAfEHR2ENSHRAQdYRuCRgGCzo2Hdhh6y4IuZSiCeoGgc4OgXiDo3CCoF2kIOso1BI0BBJ0bBPUCQecGQb24YUEXMhRBvUDQuUFQL5IQdKRp4gXFUASdHS/nEBRB5wZB/UDQmUFQP25Z0EUMRVA/UhB0tGcIKh8EnRkE9QNBZwZB/UDQmfFzDkMTEHS8ZgsI6mkcgt60oAsYiqCeIOi8IKgnCDovCOpJ/IJeIxmCigdB58XXuJs3FEHnBUE9iV7Q6xyb21Bv3xB08oQzZ4egaYOgs4KgvsQu6JWGiRf05g29cUHnNhRBfUHQafZjGCNsQ9CpE86a3dV+Ieg5Py9Gy87cuqDzGjrGNvWe5ZSZl5aPH7egE9g1taB93//9/YiDNupN1zHtN3IdNy7ozz8/Pc134McLOsm3FSVxCNpx7CaRa2pDez7GuPbkbXeTAgl6fOldjLsrO1+1rndLlcJztUJHmnZ/04aGEXSbPZqNnd0YlF2fR2c8TWXWZBn1cz9atJs2NIigx5dSy+2HN4/snvy4nwbPqBCMa7zzEfSwLtfi3tUr+ayk7X1+n2YiPVFUDtd4N0sJCtAgVBu0KEL92qAATQL14g9rU5F3lJ8ICgOJYxwUbhYEBdEgKIgGQUE0iwkKMIiFBJ2DOXeZWEsHQ1BiiQ6GoMQSHQxBiSU6GIISS3QwBCWW6GAISizRwRCUWKKDISixRAeLUFC4JRAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgmHkF3WbZ6tQ/2D1l2N0usXXGb7HP/OyaJpaZnCxjpPFb1IAj7X5aTdO7GBotG0F3++XalNR/eTod1MENrsRRzxdqqBwF/C26sTb6xfwj4a8i/tXIW2bNvdDCxCGrmJt3cOQ+2nTPlTxlLEyxU83PdNQKHi3VY6++wc57C69lVaxmcf6ODiUVQ81svRNl/EbRqqsUyT3RMhzpxrMCC1mKZ8mxcqTaIXfZYzsN99o0OJxpBtZPFJ969+/M665pDd+JYik2wArQRK2wVX/8OjaAhW7zVV3j2jQ4nFkFrP/itqjtMcRM81snWhrPEGt2X8I5VFGrzCHpFcR2noKvRP0jvWKeg9WAjliqqw7UnGrF0JwlBJ6JWSZjGTLAuaLNC2gTsSdRiXdFU846Vf6y8E/Pnb0O25m+piq838I2gobpKDU9C1vCzdlxa/HdGKgNwS52kxhCJ+rzBqvjGoEjQwcJaLBNprs+lCDnM5HySGxhmagxo59+rs2pT0FhBm6DNwfOgbdBaLH3uIexHc35q6Q/Ul2fmTOddnYAMWPHWYoUbpT+PtZnvc6klhQKf6tSCFl9i8qc64TZBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoblxQNUGR5nz+JTOFXut7Ls52p7Ptnjju+GKC1mZh2j235Xx8+Wd3F8uMnSwOQef4XJobF1TRMc/oFYLqibWPL52TjhWzl9cmiO/IdXvn7mKVsZvFLugciguDoNMLWkwo2j2JfvFKLUF7rsWzxS46GbtZHF9CzuO9MAjqFE9Fpas27nI3/vFBLft2WKtKVs8sW1SpSppy/sdNlq3+ZfWqJ2c1xV05Zfj22byu3rz/4ncPZZ1uzdQJTQK1dN6H/187YTR2bnCzi07GtSzCTkO7LAhqj/5WLyrwaDYO68fDOv+bb9u/ujpV074qQe22nnJ2l61ed7raLQo4p22pxN3a5Qpsne4WfzaByrVQ/7la2c5Ovax30c24VggHnod2URC0OPpmJvrcMzslvf6bV6r2r9Fjp4yttk2lu9FPWtPdylp3YFQiM29yUdQVdqkWZZnAClpmXe6Ds4tVxk4WgScpXxgEtUtQaCXyQ22PttYh/8/+Nc9rY6ttUwWr9+ZlXaGf8WhTDg3sTBX+XAYpu+CFVjvTkjD/yqyrrOqCmoxrWQRd5mFhENQKalc1tk3SdkHNE+X2thQ0V3XjFL0KZW/enn33Pw/PtV+BKf72D0UZaBLUBbWdo4e6oFXGbhYImjY1dyopPEvQw7f/ZscjbV8mf1En3LcKqhazLKLtzwRtLUHdjJ0sEDRxGg28qg1aF7SnDao6OceXX9m+tFU890gLvMtsG3RTa4NuTMFr+0UX26Buxk4WtEETx+nF6wNudLtrCtrfi1d1dVmMmc1NdleUjfnD/YOzTmxh12H94a1MoFy80It3M3ayoBefOO44qK6x7ThoQ9DOcdB3/63e5o736zOSNq/V60YVtWZUVWMHMZVvNkGe0cVxUCdjNwvGQaEfrdH+6z5LRtbCA877D0wUKwh6Fdo701Lc9nZUxjYTtwOWD+RcPHSyKwYj9w/9lowVdMB5dq5mAlgMBAXRICiIBkFBNAgKokFQEA2CgmgQFESDoCAaBAXRICiIBkFBNAgKokFQEA2CgmgQFESDoCAaBAXRICiIBkFBNAgKovk7hrbnp3x+Wp8AAAAASUVORK5CYII=" /><!-- --></p>
+</div>
+<div id="efficiency-scatter" class="section level3">
+<h3>Efficiency scatter</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">plot</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;efficiency&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>Points below the 45-degree line indicate a technology gap (TE* &lt;
+TE). The vertical distance from the line reflects the TGR.</p>
+</div>
+<div id="efficiency-decomposition" class="section level3">
+<h3>Efficiency decomposition</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">plot</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;decomposition&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>Side-by-side boxplots of TE, TGR, and TE* by group.</p>
+</div>
+</div>
+<div id="hypothesis-testing" class="section level2">
+<h2>Hypothesis testing</h2>
+<div id="poolability-test" class="section level3">
+<h3>Poolability test</h3>
+<p>The poolability test evaluates whether group-specific frontiers are
+statistically different from a single pooled frontier:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">poolability_test</span>(fit_det)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Poolability of Group Frontiers</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co">#&gt; data:  metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data,     group = &quot;group&quot;, meta_type = &quot;deterministic&quot;)</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co">#&gt; LR = 504.71, df = 10, p-value &lt; 2.2e-16</span></span></code></pre></div>
+<p>A significant result (small p-value) indicates that the technology
+groups have genuinely different production technologies, justifying the
+metafrontier approach.</p>
+</div>
+</div>
+<div id="inefficiency-distributions" class="section level2">
+<h2>Inefficiency distributions</h2>
+<p>The package supports three distributional assumptions for the
+one-sided inefficiency term <span class="math inline">\(u_i\)</span> in
+SFA:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Half-normal (default): u ~ |N(0, sigma_u^2)|</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>fit_hn <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>                       <span class="at">data =</span> sim<span class="sc">$</span>data, <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>                       <span class="at">dist =</span> <span class="st">&quot;hnormal&quot;</span>)</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="co"># Truncated normal: u ~ N+(mu, sigma_u^2)</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>fit_tn <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>                       <span class="at">data =</span> sim<span class="sc">$</span>data, <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>                       <span class="at">dist =</span> <span class="st">&quot;tnormal&quot;</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co"># Exponential: u ~ Exp(1/sigma_u)</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>fit_exp <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a>                        <span class="at">data =</span> sim<span class="sc">$</span>data, <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a>                        <span class="at">dist =</span> <span class="st">&quot;exponential&quot;</span>)</span></code></pre></div>
+</div>
+<div id="comparing-true-and-estimated-values" class="section level2">
+<h2>Comparing true and estimated values</h2>
+<p>Since we used simulated data, we can compare estimated values against
+the truth:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># True vs estimated metafrontier coefficients</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">cbind</span>(</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="at">True =</span> sim<span class="sc">$</span>params<span class="sc">$</span>beta_meta,</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>  <span class="at">Estimated =</span> <span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>)</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="co">#&gt;             True Estimated</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="co">#&gt; (Intercept)  1.0 1.0255883</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="co">#&gt; log_x1       0.5 0.4935078</span></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="co">#&gt; log_x2       0.3 0.2945688</span></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a><span class="co"># True vs estimated mean TGR by group</span></span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a>true_tgr <span class="ot">&lt;-</span> <span class="fu">tapply</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_tgr, sim<span class="sc">$</span>data<span class="sc">$</span>group, mean)</span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a>est_tgr <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_det<span class="sc">$</span>tgr, fit_det<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a><span class="fu">cbind</span>(<span class="at">True =</span> true_tgr, <span class="at">Estimated =</span> est_tgr)</span>
+<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a><span class="co">#&gt;         True Estimated</span></span>
+<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="co">#&gt; G1 1.0000000 1.0000000</span></span>
+<span id="cb18-17"><a href="#cb18-17" tabindex="-1"></a><span class="co">#&gt; G2 0.7788008 0.7592884</span></span>
+<span id="cb18-18"><a href="#cb18-18" tabindex="-1"></a><span class="co">#&gt; G3 0.6065307 0.6047017</span></span>
+<span id="cb18-19"><a href="#cb18-19" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" tabindex="-1"></a><span class="co"># Correlation between true and estimated efficiency</span></span>
+<span id="cb18-21"><a href="#cb18-21" tabindex="-1"></a><span class="fu">cor</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_te, fit_det<span class="sc">$</span>te_group)</span>
+<span id="cb18-22"><a href="#cb18-22" tabindex="-1"></a><span class="co">#&gt; [1] 0.80659</span></span>
+<span id="cb18-23"><a href="#cb18-23" tabindex="-1"></a><span class="fu">cor</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_te_star, fit_det<span class="sc">$</span>te_meta)</span>
+<span id="cb18-24"><a href="#cb18-24" tabindex="-1"></a><span class="co">#&gt; [1] 0.9400828</span></span></code></pre></div>
+</div>
+<div id="panel-sfa-metafrontier" class="section level2">
+<h2>Panel SFA Metafrontier</h2>
+<p>The package supports panel data via the Battese-Coelli (1992) and
+(1995) models. Use the <code>panel</code> argument:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># Simulate panel data</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>panel_sim <span class="ot">&lt;-</span> <span class="fu">simulate_panel_metafrontier</span>(</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_firms_per_group =</span> <span class="dv">20</span>, <span class="at">n_periods =</span> <span class="dv">5</span>, <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>)</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co"># BC92: time-varying inefficiency u_it = u_i * exp(-eta*(t-T))</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>fit_panel <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>  <span class="at">data =</span> panel_sim<span class="sc">$</span>data,</span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a>  <span class="at">panel =</span> <span class="fu">list</span>(<span class="at">id =</span> <span class="st">&quot;firm&quot;</span>, <span class="at">time =</span> <span class="st">&quot;year&quot;</span>),</span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a>  <span class="at">panel_dist =</span> <span class="st">&quot;bc92&quot;</span></span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a>)</span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a><span class="fu">summary</span>(fit_panel)</span>
+<span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a></span>
+<span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a><span class="co"># The eta parameter captures time-varying inefficiency</span></span>
+<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a><span class="co"># eta &gt; 0: inefficiency decreasing over time</span></span>
+<span id="cb19-18"><a href="#cb19-18" tabindex="-1"></a><span class="co"># eta &lt; 0: inefficiency increasing over time</span></span></code></pre></div>
+</div>
+<div id="bootstrap-confidence-intervals-for-tgr" class="section level2">
+<h2>Bootstrap Confidence Intervals for TGR</h2>
+<p>The <code>boot_tgr()</code> function provides parametric and
+nonparametric bootstrap confidence intervals for the technology gap
+ratio:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(<span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">100</span>, <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2, <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>                    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>, <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="co"># Nonparametric bootstrap (case resampling within groups)</span></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>boot <span class="ot">&lt;-</span> <span class="fu">boot_tgr</span>(fit, <span class="at">R =</span> <span class="dv">499</span>, <span class="at">type =</span> <span class="st">&quot;nonparametric&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="fu">print</span>(boot)</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co"># Observation-level CIs</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a>ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(boot)</span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="fu">head</span>(ci)</span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="co"># Group-level mean TGR CIs</span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a>boot<span class="sc">$</span>ci_group</span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a><span class="co"># Parametric bootstrap (resample from estimated error distributions)</span></span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a>boot_par <span class="ot">&lt;-</span> <span class="fu">boot_tgr</span>(fit, <span class="at">R =</span> <span class="dv">499</span>, <span class="at">type =</span> <span class="st">&quot;parametric&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span></code></pre></div>
+</div>
+<div id="murphy-topel-variance-correction" class="section level2">
+<h2>Murphy-Topel Variance Correction</h2>
+<p>The stochastic metafrontier is a two-stage estimator where Stage 2
+uses fitted values from Stage 1 as regressors. This “generated
+regressor” problem means naive standard errors understate uncertainty.
+The Murphy-Topel (1985) correction adjusts for this:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2, <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>                    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>, <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span>)</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="co"># Naive (uncorrected) standard errors</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="fu">vcov</span>(fit)</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="co"># Murphy-Topel corrected standard errors</span></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="fu">vcov</span>(fit, <span class="at">correction =</span> <span class="st">&quot;murphy-topel&quot;</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a><span class="co"># Corrected confidence intervals</span></span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a><span class="fu">confint</span>(fit, <span class="at">correction =</span> <span class="st">&quot;murphy-topel&quot;</span>)</span></code></pre></div>
+</div>
+<div id="latent-class-metafrontier" class="section level2">
+<h2>Latent Class Metafrontier</h2>
+<p>When group membership is unobserved, use
+<code>latent_class_metafrontier()</code>:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(<span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">100</span>, <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="co"># Fit with 2 latent classes</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>lc <span class="ot">&lt;-</span> <span class="fu">latent_class_metafrontier</span>(</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data, <span class="at">n_classes =</span> <span class="dv">2</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>  <span class="at">n_starts =</span> <span class="dv">5</span>, <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>)</span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="fu">print</span>(lc)</span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="fu">summary</span>(lc)</span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="co"># Select optimal number of classes via BIC</span></span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a>bic_table <span class="ot">&lt;-</span> <span class="fu">select_n_classes</span>(</span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2, <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a>  <span class="at">n_classes_range =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">n_starts =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">42</span></span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a>)</span>
+<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a><span class="fu">print</span>(bic_table)  <span class="co"># choose n_classes with lowest BIC</span></span></code></pre></div>
+</div>
+<div id="directional-distance-functions-ddf" class="section level2">
+<h2>Directional Distance Functions (DDF)</h2>
+<p>For additive efficiency decomposition, use DDF-based
+metafrontier:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(<span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">50</span>, <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="co"># Use raw (non-log) data for DEA</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>sim<span class="sc">$</span>data<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">exp</span>(sim<span class="sc">$</span>data<span class="sc">$</span>log_y)</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>sim<span class="sc">$</span>data<span class="sc">$</span>x1 <span class="ot">&lt;-</span> <span class="fu">exp</span>(sim<span class="sc">$</span>data<span class="sc">$</span>log_x1)</span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a>sim<span class="sc">$</span>data<span class="sc">$</span>x2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(sim<span class="sc">$</span>data<span class="sc">$</span>log_x2)</span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a>fit_ddf <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> sim<span class="sc">$</span>data, <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>, <span class="at">type =</span> <span class="st">&quot;directional&quot;</span>, <span class="at">direction =</span> <span class="st">&quot;output&quot;</span></span>
+<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a>)</span>
+<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="fu">summary</span>(fit_ddf)</span>
+<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a><span class="co"># Additive decomposition: beta_meta = beta_group + ddf_tgr</span></span>
+<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">data.frame</span>(</span>
+<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a>  <span class="at">beta_meta =</span> fit_ddf<span class="sc">$</span>beta_meta,</span>
+<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a>  <span class="at">beta_group =</span> fit_ddf<span class="sc">$</span>beta_group,</span>
+<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a>  <span class="at">ddf_tgr =</span> fit_ddf<span class="sc">$</span>ddf_tgr</span>
+<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a>))</span></code></pre></div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ul>
+<li><p>Battese, G.E., Rao, D.S.P. and O’Donnell, C.J. (2004). A
+metafrontier production function for estimation of technical
+efficiencies and technology gaps for firms operating under different
+technologies. <em>Journal of Productivity Analysis</em>, 21(1),
+91–103.</p></li>
+<li><p>Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach
+to estimating the metafrontier production function based on a stochastic
+frontier framework. <em>Journal of Productivity Analysis</em>, 42(3),
+241–254.</p></li>
+<li><p>O’Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
+Metafrontier frameworks for the study of firm-level efficiencies and
+technology ratios. <em>Empirical Economics</em>, 34(2),
+231–255.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

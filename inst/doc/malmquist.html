@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Metafrontier Malmquist Productivity Index</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Metafrontier Malmquist Productivity
+Index</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(metafrontier)</span></code></pre></div>
+<div id="motivation" class="section level2">
+<h2>Motivation</h2>
+<p>Standard Malmquist productivity indices measure productivity change
+over time by decomposing it into efficiency change and technical change.
+When firms operate under different technologies, however, this
+decomposition misses an important dimension: changes in the
+<em>technology gap</em> between a group’s frontier and the global best
+practice.</p>
+<p>The <strong>metafrontier Malmquist TFP index</strong> of O’Donnell,
+Rao, and Battese (2008) extends the standard index with a three-way
+decomposition that separates within-group dynamics from cross-group
+technology convergence or divergence.</p>
+</div>
+<div id="the-three-way-decomposition" class="section level2">
+<h2>The three-way decomposition</h2>
+<p>For a firm observed at times <span class="math inline">\(s\)</span>
+and <span class="math inline">\(t\)</span>, the metafrontier Malmquist
+index decomposes as:</p>
+<p><span class="math display">\[M^* = TEC \times TGC \times
+TC^*\]</span></p>
+<p>where:</p>
+<ul>
+<li><p><strong>TEC</strong> (Technical Efficiency Change) <span class="math inline">\(= TE^{group}_t / TE^{group}_s\)</span> measures
+whether the firm moved closer to or further from its own group’s
+frontier.</p></li>
+<li><p><strong>TGC</strong> (Technology Gap Change) <span class="math inline">\(= TGR_t / TGR_s\)</span> measures whether the
+group’s frontier moved closer to or further from the metafrontier. A
+value above 1 indicates the group is <em>catching up</em>
+technologically.</p></li>
+<li><p><strong>TC*</strong> (Metafrontier Technical Change) measures the
+shift of the global production possibility frontier itself.</p></li>
+</ul>
+<p>Values above 1 indicate improvement; below 1 indicate
+deterioration.</p>
+</div>
+<div id="simulating-panel-data" class="section level2">
+<h2>Simulating panel data</h2>
+<p>The <code>simulate_metafrontier()</code> function generates
+cross-sectional data. For panel data, we call it repeatedly with varying
+parameters to create time-varying technology gaps:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="cf">function</span>(t) {</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    <span class="at">n_groups =</span> <span class="dv">2</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>    <span class="at">n_per_group =</span> <span class="dv">50</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="at">beta_meta =</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>),</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>    <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.3</span> <span class="sc">+</span> <span class="fl">0.03</span> <span class="sc">*</span> t),  <span class="co"># G2 falls behind over time</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.3</span>),</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>    <span class="at">sigma_v =</span> <span class="fl">0.15</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>    <span class="at">seed =</span> <span class="dv">42</span> <span class="sc">+</span> t</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  )</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  sim<span class="sc">$</span>data<span class="sc">$</span>time <span class="ot">&lt;-</span> t</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  sim<span class="sc">$</span>data<span class="sc">$</span>id <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(sim<span class="sc">$</span>data))</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  sim<span class="sc">$</span>data</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>})</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>panel_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, panels)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="fu">table</span>(panel_data<span class="sc">$</span>group, panel_data<span class="sc">$</span>time)</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;     </span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt;       1  2  3  4</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;   G1 50 50 50 50</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;   G2 50 50 50 50</span></span></code></pre></div>
+<p>In this simulation, Group G1 operates at the metafrontier (zero
+technology gap), while G2 has an increasing gap over time. We would
+expect TGC &lt; 1 for G2 (falling behind) and TGC <span class="math inline">\(\approx\)</span> 1 for G1.</p>
+</div>
+<div id="computing-the-index" class="section level2">
+<h2>Computing the index</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>malm <span class="ot">&lt;-</span> <span class="fu">malmquist_meta</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">data =</span> panel_data,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">orientation =</span> <span class="st">&quot;output&quot;</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>)</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>malm</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; Metafrontier Malmquist TFP Index</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; ================================</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; Orientation:  output </span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; RTS:          crs </span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; Groups:       G1, G2 </span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; Periods:      1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; Mean decomposition (M* = TEC x TGC x TC*):</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.085 </span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;   TC*  = 0.9818</span></span></code></pre></div>
+</div>
+<div id="detailed-results" class="section level2">
+<h2>Detailed results</h2>
+<p>The <code>summary()</code> method provides group-level and
+period-level breakdowns:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">summary</span>(malm)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; Metafrontier Malmquist TFP Index Summary</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; =========================================</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; malmquist_meta(formula = log_y ~ log_x1 + log_x2, data = panel_data, </span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, time = &quot;time&quot;, orientation = &quot;output&quot;, rts = &quot;crs&quot;)</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Orientation: output </span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; RTS:         crs </span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Groups:      G1, G2 </span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Periods:     1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; Overall means:</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.085 </span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;   TC*  = 0.9818 </span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; --- Three-Way Decomposition by Group ---</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; M* = TEC x TGC x TC*</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; Group: G1 (n = 150 )</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; 1.0726 1.2388 0.9833 0.9874 </span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; Group: G2 (n = 150 )</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; 1.0962 1.0082 1.2703 0.9766 </span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; --- By Period ---</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; Period 1 -&gt; 2 </span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; 1.1697 1.0360 1.3314 0.9044 </span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt; Period 2 -&gt; 3 </span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; 1.0470 1.5288 1.0757 0.6282 </span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; Period 3 -&gt; 4 </span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; 1.0364 0.8056 0.9732 1.4224 </span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratios ---</span></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt; Group: G1 </span></span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.987 </span></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.9687 </span></span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        0.9833 </span></span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt; Group: G2 </span></span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.7011 </span></span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.8234 </span></span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        1.27</span></span></code></pre></div>
+</div>
+<div id="interpreting-the-decomposition" class="section level2">
+<h2>Interpreting the decomposition</h2>
+<p>The main results table contains one row per firm per consecutive
+period pair:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">head</span>(malm<span class="sc">$</span>malmquist, <span class="dv">10</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt;    id group period_from period_to       MPI       TEC       TGC        TC</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; 1   1    G1           1         2 2.5584365 2.7812965 1.0000000 0.9198719</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; 2   2    G1           1         2 1.6371319 2.2260475 0.8271005 0.8891826</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; 3   3    G1           1         2 0.5330948 0.6482012 0.9164504 0.8973991</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 4   4    G1           1         2 1.0177377 1.1385028 0.9851380 0.9074124</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 5   5    G1           1         2 2.6412214 2.3940135 1.0000000 1.1032609</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; 6   6    G1           1         2 1.3723118 1.5701415 1.0000000 0.8740052</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; 7   7    G1           1         2 0.6848389 0.8406678 1.0000000 0.8146368</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 8   8    G1           1         2 1.7332279 1.8166178 1.0000000 0.9540961</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 9   9    G1           1         2 1.0869101 1.1994245 1.0000000 0.9061930</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; 10 10    G1           1         2 1.3215333 1.7610854 0.8459739 0.8870349</span></span></code></pre></div>
+<p>Each row reports:</p>
+<table>
+<colgroup>
+<col width="47%" />
+<col width="52%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>MPI</code></td>
+<td>Metafrontier Malmquist TFP index (<span class="math inline">\(M^* =
+TEC \times TGC \times TC^*\)</span>)</td>
+</tr>
+<tr class="even">
+<td><code>TEC</code></td>
+<td>Within-group efficiency change</td>
+</tr>
+<tr class="odd">
+<td><code>TGC</code></td>
+<td>Technology gap change</td>
+</tr>
+<tr class="even">
+<td><code>TC</code></td>
+<td>Metafrontier technical change</td>
+</tr>
+</tbody>
+</table>
+<p>The identity can be verified:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>m <span class="ot">&lt;-</span> malm<span class="sc">$</span>malmquist</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>complete <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(m[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)])</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">all.equal</span>(m<span class="sc">$</span>MPI[complete], m<span class="sc">$</span>TEC[complete] <span class="sc">*</span> m<span class="sc">$</span>TGC[complete] <span class="sc">*</span> m<span class="sc">$</span>TC[complete])</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="within-group-vs-metafrontier-malmquist" class="section level2">
+<h2>Within-group vs metafrontier Malmquist</h2>
+<p>The object also stores the standard within-group Malmquist
+decomposition and the metafrontier-level decomposition:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Within-group: MPI_group = EC_group x TC_group</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">head</span>(malm<span class="sc">$</span>group_malmquist)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;   id group period_from period_to MPI_group  EC_group  TC_group</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; 1  1    G1           1         2        NA 2.7812965        NA</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; 2  2    G1           1         2  1.757668 2.2260475 0.7895912</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 3  3    G1           1         2  0.556865 0.6482012 0.8590929</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 4  4    G1           1         2  1.018773 1.1385028 0.8948361</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; 5  5    G1           1         2  2.641221 2.3940135 1.1032609</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; 6  6    G1           1         2  1.325650 1.5701415 0.8442872</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Metafrontier: MPI_meta = EC_meta x TC_meta</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="fu">head</span>(malm<span class="sc">$</span>meta_malmquist)</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt;   id group period_from period_to  MPI_meta   EC_meta   TC_meta</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; 1  1    G1           1         2 2.5584365 2.7812965 0.9198719</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt; 2  2    G1           1         2 1.6371319 1.8411649 0.8891826</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; 3  3    G1           1         2 0.5330948 0.5940443 0.8973991</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; 4  4    G1           1         2 1.0177377 1.1215823 0.9074124</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; 5  5    G1           1         2 2.6412214 2.3940135 1.1032609</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; 6  6    G1           1         2 1.3723118 1.5701415 0.8740052</span></span></code></pre></div>
+<p>The within-group index captures only efficiency change and frontier
+shift <em>within</em> the group. The metafrontier index additionally
+accounts for whether the group is converging toward or diverging from
+the global best practice.</p>
+</div>
+<div id="technology-gap-dynamics" class="section level2">
+<h2>Technology gap dynamics</h2>
+<p>The TGR at each period endpoint is stored in the <code>tgr</code>
+component:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>tgr_df <span class="ot">&lt;-</span> malm<span class="sc">$</span>tgr</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co"># Mean TGR by group and period</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">aggregate</span>(<span class="fu">cbind</span>(TGR_from, TGR_to) <span class="sc">~</span> group, <span class="at">data =</span> tgr_df, <span class="at">FUN =</span> mean)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt;   group  TGR_from    TGR_to</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; 1    G1 0.9869568 0.9686967</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; 2    G2 0.7010526 0.8233954</span></span></code></pre></div>
+<p>For G2, we expect TGR to decline over time (increasing technology
+gap). The TGC column confirms this:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">aggregate</span>(TGC <span class="sc">~</span> group, <span class="at">data =</span> tgr_df, <span class="at">FUN =</span> mean)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt;   group       TGC</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; 1    G1 0.9832828</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; 2    G2 1.2702686</span></span></code></pre></div>
+</div>
+<div id="returns-to-scale-assumptions" class="section level2">
+<h2>Returns to scale assumptions</h2>
+<p>The <code>rts</code> argument controls the DEA technology assumption.
+Under variable returns to scale, scale effects are netted out:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>malm_vrs <span class="ot">&lt;-</span> <span class="fu">malmquist_meta</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">data =</span> panel_data,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># Compare mean MPI under CRS vs VRS</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">colMeans</span>(malm<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">colMeans</span>(malm_vrs<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>)</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;           CRS      VRS</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; MPI 1.0847509 1.018219</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; TEC 1.1234751 1.004931</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt; TGC 1.1267757 1.014285</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; TC  0.9818377 1.005744</span></span></code></pre></div>
+</div>
+<div id="using-real-world-panel-data" class="section level2">
+<h2>Using real-world panel data</h2>
+<p>The <code>plm</code> package provides <code>Produc</code>, a panel of
+48 US states over 1970–1986 with a built-in <code>region</code> grouping
+variable. This is a natural candidate for metafrontier Malmquist
+analysis:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">library</span>(plm)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;Produc&quot;</span>, <span class="at">package =</span> <span class="st">&quot;plm&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>malm_us <span class="ot">&lt;-</span> <span class="fu">malmquist_meta</span>(</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  gsp <span class="sc">~</span> pc <span class="sc">+</span> emp,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">data =</span> Produc,</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;region&quot;</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;year&quot;</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>)</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="fu">summary</span>(malm_us)</span></code></pre></div>
+<p>Similarly, <code>sfaR::utility</code> provides electric utility data
+with a binary <code>regu</code> variable (regulated vs. deregulated)
+over 1986–1996:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">library</span>(sfaR)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;utility&quot;</span>, <span class="at">package =</span> <span class="st">&quot;sfaR&quot;</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>malm_util <span class="ot">&lt;-</span> <span class="fu">malmquist_meta</span>(</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  y <span class="sc">~</span> k <span class="sc">+</span> labor <span class="sc">+</span> fuel,</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  <span class="at">data =</span> utility,</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;regu&quot;</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;year&quot;</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>)</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="fu">summary</span>(malm_util)</span></code></pre></div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ul>
+<li><p>O’Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
+Metafrontier frameworks for the study of firm-level efficiencies and
+technology ratios. <em>Empirical Economics</em>, 34(2),
+231–255.</p></li>
+<li><p>Battese, G.E., Rao, D.S.P. and O’Donnell, C.J. (2004). A
+metafrontier production function for estimation of technical
+efficiencies and technology gaps for firms operating under different
+technologies. <em>Journal of Productivity Analysis</em>, 21(1),
+91–103.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

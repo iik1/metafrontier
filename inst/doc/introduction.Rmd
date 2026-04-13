@@ -1,0 +1,469 @@
+---
+title: "Introduction to metafrontier"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to metafrontier}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## What is a metafrontier?
+
+In efficiency analysis, we often study firms that operate under
+fundamentally different technologies. Steel producers using electric arc
+furnaces (EAF) face a different production possibility set than those using
+the blast furnace-basic oxygen furnace (BF-BOF) route. Hospitals in rural
+areas face different constraints than urban ones. Banks in developing
+economies operate under different regulatory and technological environments
+than those in advanced economies.
+
+Standard stochastic frontier analysis (SFA) or data envelopment analysis
+(DEA) applied to the pooled sample implicitly assumes all firms share the
+same technology -- an assumption that may be unrealistic. Estimating
+separate frontiers for each group solves this problem but makes efficiency
+scores incomparable across groups: a firm that is 90\% efficient relative
+to a less advanced group frontier may actually be less productive than a
+firm that is 70\% efficient relative to a more advanced frontier.
+
+The **metafrontier** framework, introduced by Battese, Rao, and O'Donnell
+(2004) and extended by Huang, Huang, and Liu (2014) and O'Donnell, Rao,
+and Battese (2008), resolves this by:
+
+1. Estimating **group-specific frontiers** for each technology group
+2. Estimating a **metafrontier** that envelops all group frontiers
+3. Decomposing efficiency into two components:
+
+$$TE^*_i = TE_i \times TGR_i$$
+
+where:
+
+- $TE_i$ is efficiency relative to the **group frontier** (within-group
+  inefficiency)
+- $TGR_i$ is the **technology gap ratio**, measuring how close the group
+  frontier is to the metafrontier (between-group technology gap)
+- $TE^*_i$ is efficiency relative to the **metafrontier** (overall
+  efficiency)
+
+The `metafrontier` package provides a unified interface for estimating
+metafrontier models using both SFA and DEA approaches.
+
+
+## Quick start
+
+```{r setup}
+library(metafrontier)
+```
+
+### Simulate data
+
+The package includes `simulate_metafrontier()` for generating data from a
+known data-generating process. This is useful for Monte Carlo studies and
+for learning the package.
+
+```{r simulate}
+sim <- simulate_metafrontier(
+  n_groups = 3,
+  n_per_group = 200,
+  beta_meta = c(1.0, 0.5, 0.3),  # intercept, elasticity_1, elasticity_2
+  tech_gap = c(0, 0.25, 0.5),    # intercept shifts (0 = best technology)
+  sigma_u = c(0.2, 0.3, 0.4),    # inefficiency SD per group
+  sigma_v = 0.15,                 # noise SD
+  seed = 42
+)
+
+str(sim$data[, c("log_y", "log_x1", "log_x2", "group")])
+table(sim$data$group)
+```
+
+The simulation generates a Cobb-Douglas frontier:
+$$\ln y_i = \beta_0^{(j)} + \beta_1 \ln x_{1i} + \beta_2 \ln x_{2i} + v_i - u_i$$
+where the intercept $\beta_0^{(j)} = \beta_0^* - \delta_j$ is shifted down
+from the metafrontier by the technology gap $\delta_j$ for group $j$.
+
+### Estimate the metafrontier
+
+```{r estimate}
+fit <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  method = "sfa",
+  meta_type = "deterministic"
+)
+
+fit
+```
+
+
+## Deterministic SFA metafrontier (Battese, Rao, and O'Donnell, 2004)
+
+The deterministic metafrontier is estimated in two stages:
+
+1. **Stage 1**: Fit separate SFA models for each group via maximum
+   likelihood.
+2. **Stage 2**: Find metafrontier coefficients $\hat\beta^*$ by minimising
+   $$\sum_i \left[\ln f(x_i; \hat\beta^*) - \ln f(x_i; \hat\beta_j)\right]^2$$
+   subject to the constraint that the metafrontier envelops all group
+   frontiers: $\ln f(x_i; \hat\beta^*) \ge \ln f(x_i; \hat\beta_j)$ for
+   all $i$ and $j$.
+
+This is the default method:
+
+```{r deterministic}
+fit_det <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "deterministic"
+)
+
+summary(fit_det)
+```
+
+
+## Stochastic metafrontier (Huang, Huang, and Liu, 2014)
+
+The stochastic metafrontier replaces the LP in Stage 2 with a second-stage
+SFA, using the fitted group frontier values as the dependent variable:
+
+$$\ln \hat{f}(x_i; \hat\beta_j) = x_i'\beta^* + v^*_i - u^*_i$$
+
+where $u^*_i \ge 0$ captures the technology gap stochastically. This
+provides a distributional framework for the TGR, enabling standard errors
+and hypothesis testing.
+
+```{r stochastic}
+fit_sto <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "stochastic"
+)
+
+summary(fit_sto)
+```
+
+The stochastic metafrontier provides a variance-covariance matrix:
+
+```{r vcov}
+vcov(fit_sto)
+```
+
+
+## DEA-based metafrontier
+
+For a nonparametric approach, set `method = "dea"`:
+
+```{r dea}
+fit_dea <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  method = "dea",
+  rts = "vrs"
+)
+
+fit_dea
+```
+
+The DEA metafrontier computes:
+
+1. Group-specific DEA efficiencies under variable returns to scale (VRS),
+   constant returns to scale (CRS), or other assumptions.
+2. A pooled DEA across all observations to form the metafrontier.
+3. $TGR_i = TE^{pool}_i / TE^{group}_i$.
+
+
+## Extracting results
+
+### Efficiency scores
+
+Use `efficiencies()` to extract the three components of the decomposition:
+
+```{r efficiencies}
+te <- efficiencies(fit_det, type = "group")
+tgr <- efficiencies(fit_det, type = "tgr")
+te_star <- efficiencies(fit_det, type = "meta")
+
+# Verify the fundamental identity: TE* = TE x TGR
+all.equal(te_star, te * tgr)
+```
+
+### Technology gap ratio
+
+The `technology_gap_ratio()` function returns TGR values grouped by
+technology:
+
+```{r tgr}
+tgr_by_group <- technology_gap_ratio(fit_det)
+lapply(tgr_by_group, summary)
+```
+
+For a formatted summary table:
+
+```{r tgr-summary}
+tgr_summary(fit_det)
+```
+
+### Coefficients
+
+```{r coefs}
+# Metafrontier coefficients
+coef(fit_det, which = "meta")
+
+# Group-specific coefficients
+coef(fit_det, which = "group")
+```
+
+### Model information
+
+```{r model-info}
+# Log-likelihood (sum of group log-likelihoods for deterministic)
+logLik(fit_det)
+
+# Number of observations
+nobs(fit_det)
+
+# AIC and BIC (available automatically via logLik method)
+AIC(fit_det)
+```
+
+
+## Visualisation
+
+The package provides four built-in plot types:
+
+### TGR distributions
+
+```{r plot-tgr, fig.height=4}
+plot(fit_det, which = "tgr")
+```
+
+### Efficiency scatter
+
+```{r plot-eff, fig.height=4}
+plot(fit_det, which = "efficiency")
+```
+
+Points below the 45-degree line indicate a technology gap (TE* < TE). The
+vertical distance from the line reflects the TGR.
+
+### Efficiency decomposition
+
+```{r plot-decomp, fig.height=4, fig.width=9}
+plot(fit_det, which = "decomposition")
+```
+
+Side-by-side boxplots of TE, TGR, and TE* by group.
+
+
+## Hypothesis testing
+
+### Poolability test
+
+The poolability test evaluates whether group-specific frontiers are
+statistically different from a single pooled frontier:
+
+```{r poolability}
+poolability_test(fit_det)
+```
+
+A significant result (small p-value) indicates that the technology groups
+have genuinely different production technologies, justifying the
+metafrontier approach.
+
+
+## Inefficiency distributions
+
+The package supports three distributional assumptions for the one-sided
+inefficiency term $u_i$ in SFA:
+
+```{r distributions, eval=FALSE}
+# Half-normal (default): u ~ |N(0, sigma_u^2)|
+fit_hn <- metafrontier(log_y ~ log_x1 + log_x2,
+                       data = sim$data, group = "group",
+                       dist = "hnormal")
+
+# Truncated normal: u ~ N+(mu, sigma_u^2)
+fit_tn <- metafrontier(log_y ~ log_x1 + log_x2,
+                       data = sim$data, group = "group",
+                       dist = "tnormal")
+
+# Exponential: u ~ Exp(1/sigma_u)
+fit_exp <- metafrontier(log_y ~ log_x1 + log_x2,
+                        data = sim$data, group = "group",
+                        dist = "exponential")
+```
+
+
+## Comparing true and estimated values
+
+Since we used simulated data, we can compare estimated values against the
+truth:
+
+```{r compare-truth}
+# True vs estimated metafrontier coefficients
+cbind(
+  True = sim$params$beta_meta,
+  Estimated = coef(fit_det, which = "meta")
+)
+
+# True vs estimated mean TGR by group
+true_tgr <- tapply(sim$data$true_tgr, sim$data$group, mean)
+est_tgr <- tapply(fit_det$tgr, fit_det$group_vec, mean)
+cbind(True = true_tgr, Estimated = est_tgr)
+
+# Correlation between true and estimated efficiency
+cor(sim$data$true_te, fit_det$te_group)
+cor(sim$data$true_te_star, fit_det$te_meta)
+```
+
+
+## Panel SFA Metafrontier
+
+The package supports panel data via the Battese-Coelli (1992) and (1995) models. Use the `panel` argument:
+
+```{r panel-sfa, eval=FALSE}
+# Simulate panel data
+panel_sim <- simulate_panel_metafrontier(
+  n_groups = 2, n_firms_per_group = 20, n_periods = 5, seed = 42
+)
+
+# BC92: time-varying inefficiency u_it = u_i * exp(-eta*(t-T))
+fit_panel <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = panel_sim$data,
+  group = "group",
+  panel = list(id = "firm", time = "year"),
+  panel_dist = "bc92"
+)
+summary(fit_panel)
+
+# The eta parameter captures time-varying inefficiency
+# eta > 0: inefficiency decreasing over time
+# eta < 0: inefficiency increasing over time
+```
+
+
+## Bootstrap Confidence Intervals for TGR
+
+The `boot_tgr()` function provides parametric and nonparametric
+bootstrap confidence intervals for the technology gap ratio:
+
+```{r bootstrap, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+
+# Nonparametric bootstrap (case resampling within groups)
+boot <- boot_tgr(fit, R = 499, type = "nonparametric", seed = 1)
+print(boot)
+
+# Observation-level CIs
+ci <- confint(boot)
+head(ci)
+
+# Group-level mean TGR CIs
+boot$ci_group
+
+# Parametric bootstrap (resample from estimated error distributions)
+boot_par <- boot_tgr(fit, R = 499, type = "parametric", seed = 1)
+```
+
+
+## Murphy-Topel Variance Correction
+
+The stochastic metafrontier is a two-stage estimator where Stage 2
+uses fitted values from Stage 1 as regressors. This "generated
+regressor" problem means naive standard errors understate uncertainty.
+The Murphy-Topel (1985) correction adjusts for this:
+
+```{r murphy-topel, eval=FALSE}
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", meta_type = "stochastic")
+
+# Naive (uncorrected) standard errors
+vcov(fit)
+
+# Murphy-Topel corrected standard errors
+vcov(fit, correction = "murphy-topel")
+
+# Corrected confidence intervals
+confint(fit, correction = "murphy-topel")
+```
+
+
+## Latent Class Metafrontier
+
+When group membership is unobserved, use `latent_class_metafrontier()`:
+
+```{r latent-class, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
+
+# Fit with 2 latent classes
+lc <- latent_class_metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data, n_classes = 2,
+  n_starts = 5, seed = 123
+)
+print(lc)
+summary(lc)
+
+# Select optimal number of classes via BIC
+bic_table <- select_n_classes(
+  log_y ~ log_x1 + log_x2, data = sim$data,
+  n_classes_range = 2:4, n_starts = 3, seed = 42
+)
+print(bic_table)  # choose n_classes with lowest BIC
+```
+
+
+## Directional Distance Functions (DDF)
+
+For additive efficiency decomposition, use DDF-based metafrontier:
+
+```{r ddf, eval=FALSE}
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
+# Use raw (non-log) data for DEA
+sim$data$y <- exp(sim$data$log_y)
+sim$data$x1 <- exp(sim$data$log_x1)
+sim$data$x2 <- exp(sim$data$log_x2)
+
+fit_ddf <- metafrontier(
+  y ~ x1 + x2, data = sim$data, group = "group",
+  method = "dea", type = "directional", direction = "output"
+)
+summary(fit_ddf)
+
+# Additive decomposition: beta_meta = beta_group + ddf_tgr
+head(data.frame(
+  beta_meta = fit_ddf$beta_meta,
+  beta_group = fit_ddf$beta_group,
+  ddf_tgr = fit_ddf$ddf_tgr
+))
+```
+
+
+## References
+
+- Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier
+  production function for estimation of technical efficiencies and
+  technology gaps for firms operating under different technologies.
+  *Journal of Productivity Analysis*, 21(1), 91--103.
+
+- Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach to
+  estimating the metafrontier production function based on a stochastic
+  frontier framework. *Journal of Productivity Analysis*, 42(3), 241--254.
+
+- O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008). Metafrontier
+  frameworks for the study of firm-level efficiencies and technology
+  ratios. *Empirical Economics*, 34(2), 231--255.

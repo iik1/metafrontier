@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Metafrontier Methods: Theory and Computation</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Metafrontier Methods: Theory and
+Computation</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(metafrontier)</span></code></pre></div>
+<p>This vignette provides a detailed exposition of the metafrontier
+methods implemented in the package, linking the econometric theory to
+the computational approach used at each step.</p>
+<div id="the-metafrontier-framework" class="section level2">
+<h2>1. The metafrontier framework</h2>
+<div id="group-specific-stochastic-frontiers" class="section level3">
+<h3>1.1 Group-specific stochastic frontiers</h3>
+<p>Consider <span class="math inline">\(J\)</span> groups of firms,
+where group <span class="math inline">\(j\)</span> contains <span class="math inline">\(n_j\)</span> firms. For group <span class="math inline">\(j\)</span>, the stochastic frontier model is:</p>
+<p><span class="math display">\[\ln y_{ij} = x_{ij}&#39;\beta_j + v_{ij}
+- u_{ij}, \quad i = 1, \ldots, n_j\]</span></p>
+<p>where <span class="math inline">\(y_{ij}\)</span> is the output of
+firm <span class="math inline">\(i\)</span> in group <span class="math inline">\(j\)</span>, <span class="math inline">\(x_{ij}\)</span> is a vector of (logged) inputs
+including a constant, <span class="math inline">\(\beta_j\)</span> is
+the group-specific parameter vector, <span class="math inline">\(v_{ij}
+\sim N(0, \sigma_{v,j}^2)\)</span> is symmetric noise, and <span class="math inline">\(u_{ij} \ge 0\)</span> is one-sided
+inefficiency.</p>
+<p>The group-specific technical efficiency is:</p>
+<p><span class="math display">\[TE_{ij} = \exp(-u_{ij}) \in (0,
+1]\]</span></p>
+<p>estimated via the Jondrow et al. (1982) conditional mean
+estimator.</p>
+</div>
+<div id="the-metafrontier" class="section level3">
+<h3>1.2 The metafrontier</h3>
+<p>The metafrontier is defined as a function <span class="math inline">\(f^*(x) = \exp(x&#39;\beta^*)\)</span> such
+that:</p>
+<p><span class="math display">\[x&#39;\beta^* \ge x&#39;\beta_j \quad
+\text{for all } x \text{ and all } j\]</span></p>
+<p>That is, the metafrontier weakly dominates all group frontiers. It
+represents the production technology available to firms with
+unrestricted access to all technologies.</p>
+</div>
+<div id="the-efficiency-decomposition" class="section level3">
+<h3>1.3 The efficiency decomposition</h3>
+<p>For each firm, efficiency relative to the metafrontier decomposes
+as:</p>
+<p><span class="math display">\[TE^*_{ij} = TE_{ij} \times
+TGR_{ij}\]</span></p>
+<p>where the <strong>technology gap ratio</strong> is:</p>
+<p><span class="math display">\[TGR_{ij} =
+\frac{\exp(x_{ij}&#39;\beta_j)}{\exp(x_{ij}&#39;\beta^*)} =
+\exp\left(x_{ij}&#39;(\beta_j - \beta^*)\right) \in (0, 1]\]</span></p>
+<p>A <span class="math inline">\(TGR\)</span> of 1 means the group
+frontier coincides with the metafrontier at that input mix; values below
+1 indicate a technology gap.</p>
+</div>
+</div>
+<div id="deterministic-metafrontier-battese-rao-and-odonnell-2004" class="section level2">
+<h2>2. Deterministic metafrontier (Battese, Rao, and O’Donnell,
+2004)</h2>
+<div id="estimation" class="section level3">
+<h3>2.1 Estimation</h3>
+<p>After obtaining group estimates <span class="math inline">\(\hat\beta_j\)</span> in Stage 1, the metafrontier
+parameters <span class="math inline">\(\hat\beta^*\)</span> are
+estimated by solving:</p>
+<p><span class="math display">\[\min_{\beta^*} \sum_{j=1}^{J}
+\sum_{i=1}^{n_j} \left(x_{ij}&#39;\beta^* -
+x_{ij}&#39;\hat\beta_j\right)^2\]</span> <span class="math display">\[\text{subject to: } x_{ij}&#39;\beta^* \ge
+x_{ij}&#39;\hat\beta_j \quad \forall\, i, j\]</span></p>
+<p>This is a convex quadratic program. The <code>metafrontier</code>
+package solves it using <code>constrOptim()</code> from base R, which
+implements an adaptive barrier algorithm for linearly constrained
+optimisation.</p>
+</div>
+<div id="properties" class="section level3">
+<h3>2.2 Properties</h3>
+<ul>
+<li>The deterministic metafrontier is a <strong>point estimate</strong>
+with no associated standard errors (since Stage 2 is a deterministic
+optimisation, not a statistical model).</li>
+<li>The enveloping constraints guarantee <span class="math inline">\(TGR_{ij} \le 1\)</span> for all observations in
+the estimation sample.</li>
+<li>The metafrontier coefficients depend on the observed input range;
+they are global only within the sample support.</li>
+</ul>
+</div>
+<div id="example" class="section level3">
+<h3>2.3 Example</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">300</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.4</span>),</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.35</span>),</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>fit_det <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>)</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co"># Metafrontier coefficients (no standard errors)</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;   1.0416500   0.4950084   0.1926936</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co"># Group coefficients for comparison</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;group&quot;</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt; $G1</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt;   1.0416500   0.4950084   0.1926936 </span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; $G2</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; (Intercept)      log_x1      log_x2 </span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt;   0.5814439   0.5287600   0.2015517</span></span></code></pre></div>
+<p>The metafrontier intercept should be at least as large as all group
+intercepts:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>meta_b0 <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)[<span class="dv">1</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>group_b0 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;group&quot;</span>), <span class="st">`</span><span class="at">[</span><span class="st">`</span>, <span class="dv">1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>meta_b0 <span class="sc">&gt;=</span> group_b0</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; G1.(Intercept) G2.(Intercept) </span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;           TRUE           TRUE</span></span></code></pre></div>
+</div>
+</div>
+<div id="stochastic-metafrontier-huang-huang-and-liu-2014" class="section level2">
+<h2>3. Stochastic metafrontier (Huang, Huang, and Liu, 2014)</h2>
+<div id="estimation-1" class="section level3">
+<h3>3.1 Estimation</h3>
+<p>Huang, Huang, and Liu (2014) propose treating the technology gap as a
+stochastic variable. In Stage 2, the fitted group frontier values become
+the dependent variable in a second SFA:</p>
+<p><span class="math display">\[\ln \hat{f}(x_{ij}; \hat\beta_j) =
+x_{ij}&#39;\beta^* + v^*_{ij} - u^*_{ij}\]</span></p>
+<p>where <span class="math inline">\(u^*_{ij} \ge 0\)</span> captures
+the technology gap and <span class="math inline">\(v^*_{ij}\)</span> is
+a noise term. This is estimated via MLE, yielding:</p>
+<ul>
+<li>Point estimates <span class="math inline">\(\hat\beta^*\)</span>
+with standard errors</li>
+<li>A variance-covariance matrix for inference</li>
+<li>A distributional <span class="math inline">\(\widehat{TGR}\)</span>
+with associated uncertainty</li>
+</ul>
+</div>
+<div id="advantages-over-the-deterministic-approach" class="section level3">
+<h3>3.2 Advantages over the deterministic approach</h3>
+<ol style="list-style-type: decimal">
+<li><strong>Inference</strong>: Standard errors, confidence intervals,
+and hypothesis tests on metafrontier parameters are available.</li>
+<li><strong>Robustness</strong>: The noise term <span class="math inline">\(v^*_{ij}\)</span> absorbs sampling variation from
+Stage 1, preventing overfitting.</li>
+<li><strong>Consistency</strong>: The metafrontier need not strictly
+envelop all group frontiers in finite samples, which can be more
+realistic.</li>
+</ol>
+</div>
+<div id="caveat-the-generated-regressor-problem" class="section level3">
+<h3>3.3 Caveat: the generated-regressor problem</h3>
+<p>The stochastic metafrontier is a two-stage estimator. In Stage 2, the
+dependent variable <span class="math inline">\(\ln \hat{f}(x_{ij};
+\hat\beta_j)\)</span> is itself an estimate from Stage 1 – it is a
+<em>generated regressor</em> (Murphy and Topel, 1985). The standard
+errors reported by the package are derived from the Stage 2 Hessian
+alone and <strong>do not account for the sampling uncertainty in the
+Stage 1 group frontier estimates</strong>.</p>
+<p>As a result:</p>
+<ul>
+<li>Standard errors, confidence intervals (<code>confint()</code>), and
+hypothesis tests may be <strong>understated</strong> (confidence
+intervals narrower than their nominal coverage warrants).</li>
+<li>This issue does <strong>not</strong> affect point estimates of <span class="math inline">\(\hat\beta^*\)</span> or efficiency scores, only
+inference.</li>
+<li>The bias is negligible when group sample sizes are large relative to
+the number of frontier parameters.</li>
+<li>The Murphy–Topel (1985) correction is available via
+<code>vcov(fit, correction = &quot;murphy-topel&quot;)</code> and
+<code>confint(fit, correction = &quot;murphy-topel&quot;)</code>. This adjusts the
+Stage 2 variance-covariance matrix to account for Stage 1 estimation
+uncertainty.</li>
+</ul>
+</div>
+<div id="example-1" class="section level3">
+<h3>3.4 Example</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>fit_sto <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">summary</span>(fit_sto)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model Summary</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; ==========================</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data, </span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, meta_type = &quot;stochastic&quot;)</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; Method:        sfa </span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:  stochastic </span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; --- Group: G1 (n = 300) ---</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; (Intercept) 1.041650   0.054009   19.29   &lt;2e-16 ***</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; log_x1      0.495008   0.009173   53.97   &lt;2e-16 ***</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; log_x2      0.192694   0.008907   21.64   &lt;2e-16 ***</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 22.685 </span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; --- Group: G2 (n = 300) ---</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.58144    0.05155   11.28   &lt;2e-16 ***</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; log_x1       0.52876    0.01019   51.88   &lt;2e-16 ***</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; log_x2       0.20155    0.01037   19.44   &lt;2e-16 ***</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: -36.696 </span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; --- Metafrontier ---</span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.813734   0.208469   3.903 9.49e-05 ***</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; log_x1      0.513997   0.005155  99.716  &lt; 2e-16 ***</span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; log_x2      0.197514   0.004989  39.588  &lt; 2e-16 ***</span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 181.35 </span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; --- Efficiency Decomposition ---</span></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt;  Group Mean_TE Mean_TGR Mean_TE_star</span></span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt;     G1  0.8433   1.1839       0.9984</span></span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt;     G2  0.7328   0.8306       0.6087</span></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratio Summary ---</span></span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt;  Group   N   Mean     SD    Min     Q1 Median     Q3    Max</span></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt;     G1 300 1.1839 0.0320 1.1222 1.1576 1.1861 1.2087 1.2464</span></span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt;     G2 300 0.8306 0.0181 0.7949 0.8148 0.8300 0.8445 0.8693</span></span></code></pre></div>
+<p>The stochastic metafrontier provides standard errors:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Variance-covariance matrix</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">vcov</span>(fit_sto)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;               (Intercept)        log_x1        log_x2</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; (Intercept)  4.345943e-02 -8.269764e-05 -6.986322e-05</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; log_x1      -8.269764e-05  2.657002e-05  1.867196e-06</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; log_x2      -6.986322e-05  1.867196e-06  2.489219e-05</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co"># Log-likelihood of the metafrontier model</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">logLik</span>(fit_sto)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; 181.3504 (df=3)</span></span></code></pre></div>
+</div>
+<div id="a-note-on-tgr-values" class="section level3">
+<h3>3.5 A note on TGR values</h3>
+<p>Under the stochastic metafrontier, TGR values are not constrained to
+be <span class="math inline">\(\le 1\)</span> in finite samples, since
+the metafrontier need not strictly envelop all group frontiers. Values
+slightly above 1 can occur and are consistent with the stochastic
+framework.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>tgr_vals <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_sto, <span class="at">type =</span> <span class="st">&quot;tgr&quot;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">summary</span>(tgr_vals)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;  0.7949  0.8300  0.9958  1.0072  1.1861  1.2464</span></span></code></pre></div>
+</div>
+</div>
+<div id="dea-based-metafrontier" class="section level2">
+<h2>4. DEA-based metafrontier</h2>
+<div id="approach" class="section level3">
+<h3>4.1 Approach</h3>
+<p>For a nonparametric metafrontier:</p>
+<ol style="list-style-type: decimal">
+<li>Compute group-specific DEA efficiencies <span class="math inline">\(\hat\theta_{ij}^{group}\)</span> using only
+observations from group <span class="math inline">\(j\)</span>.</li>
+<li>Compute pooled DEA efficiencies <span class="math inline">\(\hat\theta_{ij}^{pool}\)</span> using all
+observations.</li>
+<li>The TGR is: <span class="math inline">\(TGR_{ij} =
+\hat\theta_{ij}^{pool} / \hat\theta_{ij}^{group}\)</span>.</li>
+</ol>
+<p>The package solves the DEA linear programs using
+<code>lpSolveAPI</code>.</p>
+</div>
+<div id="returns-to-scale" class="section level3">
+<h3>4.2 Returns to scale</h3>
+<p>The <code>rts</code> argument controls the technology assumption:</p>
+<ul>
+<li><code>&quot;crs&quot;</code> (constant returns to scale): the standard CCR
+model</li>
+<li><code>&quot;vrs&quot;</code> (variable returns to scale): the BCC model</li>
+<li><code>&quot;drs&quot;</code> / <code>&quot;irs&quot;</code> (decreasing / increasing
+returns)</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># CRS metafrontier</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>fit_crs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>)</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co"># VRS metafrontier</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>fit_vrs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>)</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co"># Compare mean TGR</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="fu">cbind</span>(</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean),</span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">tapply</span>(fit_vrs<span class="sc">$</span>tgr, fit_vrs<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>)</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;          CRS       VRS</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; G1 1.0000000 1.0000000</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; G2 0.6014273 0.8180669</span></span></code></pre></div>
+</div>
+</div>
+<div id="comparing-methods" class="section level2">
+<h2>5. Comparing methods</h2>
+<p>The choice between deterministic, stochastic, and DEA metafrontiers
+involves trade-offs:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>Deterministic SFA</th>
+<th>Stochastic SFA</th>
+<th>DEA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Functional form</td>
+<td>Parametric</td>
+<td>Parametric</td>
+<td>Nonparametric</td>
+</tr>
+<tr class="even">
+<td>Noise handling</td>
+<td>Stage 1 only</td>
+<td>Both stages</td>
+<td>None</td>
+</tr>
+<tr class="odd">
+<td>Inference on TGR</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>TGR <span class="math inline">\(\le\)</span> 1 guaranteed</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>Small sample performance</td>
+<td>Moderate</td>
+<td>Moderate</td>
+<td>Poor</td>
+</tr>
+<tr class="even">
+<td>References</td>
+<td>BRO (2004)</td>
+<td>HHL (2014)</td>
+<td>ORB (2008)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Compare TGR estimates across methods</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>tgr_det <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_det<span class="sc">$</span>tgr, fit_det<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>tgr_sto <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_sto<span class="sc">$</span>tgr, fit_sto<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>tgr_dea <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>true_tgr <span class="ot">&lt;-</span> <span class="fu">tapply</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_tgr, sim<span class="sc">$</span>data<span class="sc">$</span>group, mean)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">True =</span> true_tgr,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="at">Deterministic =</span> tgr_det,</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">Stochastic =</span> tgr_sto,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="at">DEA_CRS =</span> tgr_dea</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="fu">round</span>(comparison, <span class="dv">4</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt;      True Deterministic Stochastic DEA_CRS</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; G1 1.0000         1.000     1.1839  1.0000</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt; G2 0.6703         0.702     0.8306  0.6014</span></span></code></pre></div>
+</div>
+<div id="choosing-a-method-practical-guidance" class="section level2">
+<h2>6. Choosing a method: practical guidance</h2>
+<p>Selecting between deterministic SFA, stochastic SFA, and DEA
+metafrontiers depends on the research question, data characteristics,
+and inferential requirements.</p>
+<p><strong>Use the deterministic SFA metafrontier (BRO 2004)
+when:</strong></p>
+<ul>
+<li>You need guaranteed <span class="math inline">\(TGR \le 1\)</span>
+(the metafrontier strictly envelops all group frontiers).</li>
+<li>Inference on metafrontier parameters is not required.</li>
+<li>The goal is descriptive decomposition of efficiency into
+within-group and between-group components.</li>
+</ul>
+<p><strong>Use the stochastic SFA metafrontier (HHL 2014)
+when:</strong></p>
+<ul>
+<li>You need standard errors, confidence intervals, or hypothesis tests
+on the metafrontier parameters.</li>
+<li>You want a distributional framework for the technology gap
+ratio.</li>
+<li>Sample sizes per group are moderate to large (at least 50–100
+observations per group is recommended).</li>
+<li>You are comfortable with the generated-regressor caveat (Section
+3.3).</li>
+</ul>
+<p><strong>Use the DEA metafrontier when:</strong></p>
+<ul>
+<li>You prefer a nonparametric approach with no functional form
+assumptions.</li>
+<li>Multiple inputs and/or multiple outputs are involved.</li>
+<li>Sample sizes are large enough to support DEA (a rough guideline:
+<span class="math inline">\(n \ge 3 \times (m + s)\)</span> per group,
+where <span class="math inline">\(m\)</span> is the number of inputs and
+<span class="math inline">\(s\)</span> the number of outputs).</li>
+<li>The returns-to-scale assumption (<code>rts</code>) is well-justified
+by the application context.</li>
+</ul>
+<p>In many applied studies, it is informative to estimate multiple
+methods and compare TGR estimates for robustness (as shown in Section
+5).</p>
+</div>
+<div id="testing-for-technology-heterogeneity" class="section level2">
+<h2>7. Testing for technology heterogeneity</h2>
+<p>Before estimating a metafrontier, it is useful to test whether
+separate group frontiers are actually needed. The <strong>poolability
+test</strong> uses a likelihood ratio statistic:</p>
+<p><span class="math display">\[LR = -2\left[LL_{pooled} -
+\sum_{j=1}^{J} LL_j\right] \sim \chi^2_{df}\]</span></p>
+<p>where <span class="math inline">\(LL_{pooled}\)</span> is the
+log-likelihood of a single frontier estimated on the pooled sample and
+<span class="math inline">\(LL_j\)</span> are the group-specific
+log-likelihoods.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">poolability_test</span>(fit_det)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Poolability of Group Frontiers</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; data:  metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data,     group = &quot;group&quot;, meta_type = &quot;deterministic&quot;)</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; LR = 442.35, df = 5, p-value &lt; 2.2e-16</span></span></code></pre></div>
+<p>A significant test (p &lt; 0.05) confirms that the groups operate
+under different technologies and the metafrontier decomposition is
+warranted.</p>
+</div>
+<div id="simulation-for-monte-carlo-studies" class="section level2">
+<h2>8. Simulation for Monte Carlo studies</h2>
+<p>The <code>simulate_metafrontier()</code> function generates data from
+a known DGP, enabling parameter recovery studies:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Monte Carlo: check parameter recovery over 100 replications</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>n_rep <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>beta_hat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, n_rep, <span class="dv">3</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="fu">seq_len</span>(n_rep)) {</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  sim_r <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>    <span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">200</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>    <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>    <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.3</span>),</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>    <span class="at">sigma_v =</span> <span class="fl">0.15</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  )</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  fit_r <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>    log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    <span class="at">data =</span> sim_r<span class="sc">$</span>data,</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>    <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  )</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  beta_hat[r, ] <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_r, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>}</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co"># Bias</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="fu">colMeans</span>(beta_hat) <span class="sc">-</span> true_beta</span></code></pre></div>
+<p>The <code>simulate_metafrontier()</code> function supports:</p>
+<ul>
+<li>Arbitrary number of groups (<code>n_groups</code>)</li>
+<li>Unequal group sizes (<code>n_per_group</code> as a vector)</li>
+<li>Custom metafrontier coefficients (<code>beta_meta</code>)</li>
+<li>Group-specific technology gaps (<code>tech_gap</code>)</li>
+<li>Group-specific inefficiency dispersion (<code>sigma_u</code>)</li>
+<li>Reproducible results via <code>seed</code></li>
+</ul>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ul>
+<li><p>Battese, G.E., Rao, D.S.P. and O’Donnell, C.J. (2004). A
+metafrontier production function for estimation of technical
+efficiencies and technology gaps for firms operating under different
+technologies. <em>Journal of Productivity Analysis</em>, 21(1),
+91–103.</p></li>
+<li><p>Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach
+to estimating the metafrontier production function based on a stochastic
+frontier framework. <em>Journal of Productivity Analysis</em>, 42(3),
+241–254.</p></li>
+<li><p>Jondrow, J., Lovell, C.A.K., Materov, I.S. and Schmidt, P.
+(1982). On the estimation of technical inefficiency in the stochastic
+frontier production function model. <em>Journal of Econometrics</em>,
+19(2–3), 233–238.</p></li>
+<li><p>O’Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
+Metafrontier frameworks for the study of firm-level efficiencies and
+technology ratios. <em>Empirical Economics</em>, 34(2),
+231–255.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
