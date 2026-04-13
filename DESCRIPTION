@@ -15,7 +15,11 @@ Description: Implements metafrontier production function models for
     the stochastic metafrontier of Huang, Huang, and Liu (2014)
     <doi:10.1007/s11123-014-0397-1>, and the metafrontier Malmquist
     productivity index of O'Donnell, Rao, and Battese (2008)
-    <doi:10.1007/s00181-006-0095-0>.
+    <doi:10.1007/s00181-006-0095-0>. Additional features include
+    panel SFA with time-varying inefficiency, bootstrap confidence
+    intervals for technology gap ratios, latent class metafrontier
+    estimation via the EM algorithm, Murphy-Topel corrected standard
+    errors, and 'ggplot2' visualisation methods.
 License: GPL (>= 3)
 Encoding: UTF-8
 RoxygenNote: 7.3.3
