@@ -28,7 +28,7 @@ utils::globalVariables(".data")
 #' }
 #' }
 #'
-#' @export
+#' @exportS3Method ggplot2::autoplot
 autoplot.metafrontier <- function(object,
                                   which = c("tgr", "efficiency",
                                             "decomposition", "frontier"),
@@ -173,7 +173,7 @@ autoplot.metafrontier <- function(object,
 #' }
 #' }
 #'
-#' @export
+#' @exportS3Method ggplot2::autoplot
 autoplot.malmquist_meta <- function(object,
                                     which = c("decomposition",
                                               "tgr_evolution",
@@ -273,7 +273,7 @@ autoplot.malmquist_meta <- function(object,
 #' }
 #' }
 #'
-#' @export
+#' @exportS3Method ggplot2::autoplot
 autoplot.boot_tgr <- function(object,
                               which = c("distribution", "ci"),
                               ...) {

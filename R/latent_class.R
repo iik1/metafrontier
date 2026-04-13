@@ -93,8 +93,8 @@ latent_class_metafrontier <- function(formula, data,
     exponential = .loglik_exponential_obs
   )
 
-  # Number of params per class
-  n_params_class <- k + 2  # beta + log_sigma_v + log_sigma_u
+  # Number of params per class: beta + log_sigma_v + log_sigma_u (+ mu for tnormal)
+  n_params_class <- if (dist == "tnormal") k + 3L else k + 2L
 
   # --- Multiple starts ---
   best_ll <- -Inf
@@ -248,11 +248,20 @@ select_n_classes <- function(formula, data,
     resid <- y - X %*% beta_init
     sigma_ols <- sqrt(max(sum(w * resid^2) / sum(w), 0.01))
 
-    class_params[[c]] <- c(
-      as.numeric(beta_init),
-      log_sigma_v = log(max(sigma_ols * 0.5, 0.05)),
-      log_sigma_u = log(max(sigma_ols * 0.5, 0.05))
-    )
+    if (dist == "tnormal") {
+      class_params[[c]] <- c(
+        as.numeric(beta_init),
+        log_sigma_v = log(max(sigma_ols * 0.5, 0.05)),
+        mu = 0,
+        log_sigma_u = log(max(sigma_ols * 0.5, 0.05))
+      )
+    } else {
+      class_params[[c]] <- c(
+        as.numeric(beta_init),
+        log_sigma_v = log(max(sigma_ols * 0.5, 0.05)),
+        log_sigma_u = log(max(sigma_ols * 0.5, 0.05))
+      )
+    }
   }
 
   prev_ll <- -Inf
@@ -336,13 +345,29 @@ select_n_classes <- function(formula, data,
 .loglik_to_u_hat <- function(params, y, X, k, dist) {
   beta <- params[seq_len(k)]
   sigma_v <- exp(params[k + 1])
-  sigma_u <- exp(params[k + 2])
   eps <- as.numeric(y - X %*% beta)
-  sigma_sq <- sigma_v^2 + sigma_u^2
-  lambda <- sigma_u / sigma_v
-  mu_star <- -eps * sigma_u^2 / sigma_sq
-  sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
-  u_hat <- mu_star + sigma_star * .safe_mills_lc(mu_star / sigma_star)
+
+  if (dist == "exponential") {
+    # Exponential JLMS conditional mean (Jondrow et al. 1982)
+    sigma_u <- exp(params[k + 2])
+    mu_star <- -eps - sigma_v^2 / sigma_u
+    u_hat <- mu_star + sigma_v * .safe_mills_lc(mu_star / sigma_v)
+  } else if (dist == "tnormal") {
+    # Truncated-normal JLMS conditional mean
+    mu <- params[k + 2]  # mu sits between log_sigma_v and log_sigma_u
+    sigma_u <- exp(params[k + 3])
+    sigma_sq <- sigma_v^2 + sigma_u^2
+    mu_star <- (mu * sigma_v^2 - eps * sigma_u^2) / sigma_sq
+    sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
+    u_hat <- mu_star + sigma_star * .safe_mills_lc(mu_star / sigma_star)
+  } else {
+    # Half-normal JLMS conditional mean (default)
+    sigma_u <- exp(params[k + 2])
+    sigma_sq <- sigma_v^2 + sigma_u^2
+    mu_star <- -eps * sigma_u^2 / sigma_sq
+    sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
+    u_hat <- mu_star + sigma_star * .safe_mills_lc(mu_star / sigma_star)
+  }
   pmax(u_hat, 0)
 }
 

@@ -94,11 +94,21 @@ as_metafrontier_model.default <- function(x, ...) {
   peers <- if (!is.null(model$PEERS)) model$PEERS else NULL
   lambda <- if (!is.null(model$LAMBDA)) model$LAMBDA else NULL
 
+  # Attempt to retrieve X and Y from the Farrell object.
+  # Benchmarking::dea() does not store X/Y in its return value,
+
+  # so these will generally be NULL.  The efficiency scores are
+  # still usable for direct comparison, but the object cannot be
+  # passed through metafrontier(models = ...) which requires X,
+  # y, and beta for metafrontier envelope construction.
+  X_ref <- model$XREF
+  Y_ref <- model$YREF
+
   list(
     beta = NULL,  # DEA is nonparametric
     te = eff,
-    X = NULL,
-    y = NULL,
+    X = X_ref,
+    y = if (!is.null(Y_ref)) as.numeric(Y_ref[, 1]) else NULL,
     sigma_v = NA_real_,
     sigma_u = NA_real_,
     logLik = NA_real_,

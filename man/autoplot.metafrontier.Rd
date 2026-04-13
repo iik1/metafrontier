@@ -4,7 +4,7 @@
 \alias{autoplot.metafrontier}
 \title{Autoplot Method for Metafrontier Objects}
 \usage{
-autoplot.metafrontier(
+\method{autoplot}{metafrontier}(
   object,
   which = c("tgr", "efficiency", "decomposition", "frontier"),
   ...
@@ -14,10 +14,12 @@ autoplot.metafrontier(
 \item{object}{a \code{"metafrontier"} object.}
 
 \item{which}{character. Which plot to produce:
-\code{"tgr"} (default) for TGR distributions by group,
-\code{"efficiency"} for the TE decomposition,
-\code{"decomposition"} for a stacked bar of TE vs TGR,
-\code{"frontier"} for metafrontier vs group frontiers.}
+\code{"tgr"} (default) for TGR density distributions by group
+(degenerate groups with zero-variance TGR are annotated and excluded
+from the density),
+\code{"efficiency"} for the TE/TGR/TE* decomposition (boxplots),
+\code{"decomposition"} for grouped bars of mean TE, TGR, and TE*,
+\code{"frontier"} for metafrontier vs group frontiers scatter plot.}
 
 \item{...}{additional arguments (currently unused).}
 }

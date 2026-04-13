@@ -331,6 +331,19 @@ metafrontier <- function(formula = NULL,
   # Extract components from each model
   extracted <- lapply(models, .extract_model_components)
 
+  # Validate that all models provide X, y, and beta
+
+  for (g in names(extracted)) {
+    ex <- extracted[[g]]
+    if (is.null(ex$beta) || is.null(ex$X) || is.null(ex$y)) {
+      stop("Model '", g, "' does not provide coefficients, X, or y. ",
+           "Nonparametric (DEA) models from Benchmarking cannot be used ",
+           "with the 'models' argument. Use the formula interface with ",
+           "method = \"dea\" instead.",
+           call. = FALSE)
+    }
+  }
+
   # Build internal group_models structure
   group_models <- vector("list", n_groups)
   names(group_models) <- group_levels

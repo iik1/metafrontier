@@ -110,6 +110,13 @@ consecutive pair of periods \eqn{(s, t)}, eight sets of LP
 problems are solved: within-group and pooled efficiencies at
 each period, plus cross-period evaluations for the geometric
 mean formulation of technical change.
+
+\strong{Balanced panel assumption:} Firms are matched across
+periods by position within each group. The data should contain
+a balanced panel (the same firms observed in every period) with
+consistent ordering. If group sizes differ across periods,
+only the first \code{min(n_s, n_t)} firms per group are paired
+and unmatched observations are silently dropped.
 }
 \examples{
 # Simulate panel data for 2 groups, 3 time periods
