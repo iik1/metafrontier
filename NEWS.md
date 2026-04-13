@@ -1,3 +1,32 @@
+# metafrontier 0.2.2
+
+## Bug fixes
+
+- `boot_tgr()`: Fixed orientation/rts not propagating to bootstrap
+  replicates (always defaulted to output/CRS).
+- `boot_tgr()`: Fixed hardcoded group column name; now respects
+  the user's original group variable.
+- Latent class `.loglik_to_u_hat()` now respects the `dist` argument
+  with correct JLMS formulas for half-normal, truncated-normal, and
+  exponential distributions.
+- Latent class parameter count now correct for truncated-normal
+  (k+3 instead of k+2).
+- Fixed two incorrect DOIs: Huang et al. (2014) and O'Donnell et al.
+  (2008) now link to the correct papers.
+
+## Improvements
+
+- `autoplot` methods now use proper conditional S3 registration
+  (`@exportS3Method ggplot2::autoplot`) instead of direct `export()`.
+- `.extract_benchmarking()` now attempts to retrieve XREF/YREF from
+  Farrell objects and `.estimate_from_models()` gives a clear error
+  when DEA models lack the required X/y/beta.
+- `technology_gap_ratio()` documentation now correctly notes that TGR
+  can exceed 1 under the stochastic metafrontier.
+- Pre-built vignettes included in inst/doc for reliable R CMD check.
+
+---
+
 # metafrontier 0.2.1
 
 ## New features

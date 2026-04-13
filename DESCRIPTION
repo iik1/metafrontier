@@ -1,7 +1,7 @@
 Package: metafrontier
 Type: Package
 Title: Analysis of Metafrontier Models for Efficiency and Productivity
-Version: 0.2.1
+Version: 0.2.2
 Authors@R: c(
     person("Erik", "Enstad", email = "erik.enstad@nhh.no",
            role = c("aut", "cre"),
@@ -13,9 +13,9 @@ Description: Implements metafrontier production function models for
     metafrontiers. Includes the deterministic metafrontier of Battese,
     Rao, and O'Donnell (2004) <doi:10.1023/B:PROD.0000012454.06094.29>,
     the stochastic metafrontier of Huang, Huang, and Liu (2014)
-    <doi:10.1007/s11123-014-0397-1>, and the metafrontier Malmquist
+    <doi:10.1007/s11123-014-0402-2>, and the metafrontier Malmquist
     productivity index of O'Donnell, Rao, and Battese (2008)
-    <doi:10.1007/s00181-006-0095-0>. Additional features include
+    <doi:10.1007/s00181-007-0119-4>. Additional features include
     panel SFA with time-varying inefficiency, bootstrap confidence
     intervals for technology gap ratios, latent class metafrontier
     estimation via the EM algorithm, Murphy-Topel corrected standard

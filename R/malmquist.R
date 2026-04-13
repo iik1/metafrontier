@@ -93,7 +93,7 @@
 #' O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 #' Metafrontier frameworks for the study of firm-level efficiencies
 #' and technology ratios. \emph{Empirical Economics}, 34(2),
-#' 231--255. \doi{10.1007/s00181-006-0095-0}
+#' 231--255. \doi{10.1007/s00181-007-0119-4}
 #'
 #' @examples
 #' # Simulate panel data for 2 groups, 3 time periods

@@ -27,10 +27,15 @@ to the global metafrontier at each observation's input mix.
 }
 \details{
 The technology gap ratio is defined as:
-\deqn{TGR_i = \frac{f(x_i; \hat\beta_j)}{f(x_i; \hat\beta^*)} \in (0, 1]}
+\deqn{TGR_i = \frac{f(x_i; \hat\beta_j)}{f(x_i; \hat\beta^*)}}
 for SFA-based metafrontiers, and
-\deqn{TGR_i = \frac{TE^*_i}{TE^{group}_i} \in (0, 1]}
+\deqn{TGR_i = \frac{TE^*_i}{TE^{group}_i}}
 for DEA-based metafrontiers.
+
+Under the deterministic metafrontier and DEA, TGR lies in (0, 1]
+by construction. Under the stochastic metafrontier of Huang, Huang,
+and Liu (2014), TGR can exceed 1 for some observations because the
+metafrontier need not envelop the group frontiers at every point.
 
 A TGR of 1 means the group frontier coincides with the
 metafrontier at that input mix. Values less than 1 indicate a
