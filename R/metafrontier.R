@@ -122,7 +122,7 @@
 #' metafrontier production function for estimation of technical
 #' efficiencies and technology gaps for firms operating under different
 #' technologies. \emph{Journal of Productivity Analysis}, 21(1),
-#' 91--103. \doi{10.1023/B:PROD.0000016869.68578.b7}
+#' 91--103. \doi{10.1023/B:PROD.0000012454.06094.29}
 #'
 #' Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach
 #' to estimating the metafrontier production function based on a
@@ -200,6 +200,11 @@ metafrontier <- function(formula = NULL,
   result$meta_type <- meta_type
   result$orientation <- orientation
   result$rts <- rts
+  if (is.character(group) && length(group) == 1L) {
+    result$group_col <- group
+  } else {
+    result$group_col <- "group"
+  }
 
   class(result) <- c(
     paste0("metafrontier_", method),

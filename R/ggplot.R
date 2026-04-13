@@ -7,10 +7,12 @@ utils::globalVariables(".data")
 #'
 #' @param object a \code{"metafrontier"} object.
 #' @param which character. Which plot to produce:
-#'   \code{"tgr"} (default) for TGR distributions by group,
-#'   \code{"efficiency"} for the TE decomposition,
-#'   \code{"decomposition"} for a stacked bar of TE vs TGR,
-#'   \code{"frontier"} for metafrontier vs group frontiers.
+#'   \code{"tgr"} (default) for TGR density distributions by group
+#'   (degenerate groups with zero-variance TGR are annotated and excluded
+#'   from the density),
+#'   \code{"efficiency"} for the TE/TGR/TE* decomposition (boxplots),
+#'   \code{"decomposition"} for grouped bars of mean TE, TGR, and TE*,
+#'   \code{"frontier"} for metafrontier vs group frontiers scatter plot.
 #' @param ... additional arguments (currently unused).
 #'
 #' @return A \code{ggplot} object.
@@ -47,14 +49,28 @@ autoplot.metafrontier <- function(object,
   )
 
   if (which == "tgr") {
-    p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$tgr,
-                                           fill = .data$group)) +
+    # Filter out degenerate groups (near-zero variance, e.g. TGR = 1 exactly)
+    group_sds <- tapply(df$tgr, df$group, stats::sd, na.rm = TRUE)
+    degenerate <- names(group_sds)[group_sds < 1e-8]
+    df_plot <- df[!df$group %in% degenerate, , drop = FALSE]
+
+    p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = .data$tgr,
+                                                fill = .data$group)) +
       ggplot2::geom_density(alpha = 0.5) +
       ggplot2::labs(x = "Technology Gap Ratio",
                     y = "Density",
                     title = "TGR Distribution by Group",
                     fill = "Group") +
       ggplot2::theme_minimal()
+
+    if (length(degenerate) > 0) {
+      label <- paste0(degenerate, ": TGR = ",
+                      round(group_sds[degenerate] + 1, 4),
+                      collapse = "; ")
+      p <- p + ggplot2::annotate("text", x = 1, y = Inf, label = label,
+                                  hjust = 1, vjust = 1.5, size = 3,
+                                  colour = "grey40")
+    }
 
   } else if (which == "efficiency") {
     df_long <- data.frame(
@@ -77,25 +93,33 @@ autoplot.metafrontier <- function(object,
       ggplot2::theme_minimal()
 
   } else if (which == "decomposition") {
+    # Grouped bars showing TE, TGR, TE* (multiplicative decomposition)
     df_summary <- do.call(rbind, lapply(unique(df$group), function(g) {
       idx <- df$group == g
       data.frame(
         group = g,
-        component = c("TE (group)", "Technology Gap"),
+        component = c("TE", "TGR", "TE*"),
         value = c(mean(df$te_group[idx]),
-                  1 - mean(df$tgr[idx])),
+                  mean(df$tgr[idx]),
+                  mean(df$te_meta[idx])),
         stringsAsFactors = FALSE
       )
     }))
+    df_summary$component <- factor(df_summary$component,
+                                    levels = c("TE", "TGR", "TE*"))
 
     p <- ggplot2::ggplot(df_summary,
                          ggplot2::aes(x = .data$group,
                                       y = .data$value,
                                       fill = .data$component)) +
-      ggplot2::geom_col(position = "stack") +
-      ggplot2::labs(x = "Group", y = "Value",
-                    title = "Efficiency vs Technology Gap",
+      ggplot2::geom_col(position = ggplot2::position_dodge(0.8),
+                        width = 0.7, alpha = 0.85) +
+      ggplot2::geom_hline(yintercept = 1, linetype = "dashed",
+                          colour = "grey40") +
+      ggplot2::labs(x = "Group", y = "Mean Efficiency",
+                    title = "Efficiency Decomposition (TE* = TE x TGR)",
                     fill = "Component") +
+      ggplot2::coord_cartesian(ylim = c(0, 1.05)) +
       ggplot2::theme_minimal()
 
   } else if (which == "frontier") {

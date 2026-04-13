@@ -197,11 +197,13 @@ boot_tgr <- function(object, R = 999,
     boot_data <- .nonparametric_resample(data, group_vec, groups)
   }
 
-  # Re-fit the metafrontier
+  # Re-fit the metafrontier using the original group column name
+  group_col <- if (!is.null(object$group_col)) object$group_col else "group"
+
   boot_fit <- metafrontier(
     formula = formula,
     data = boot_data,
-    group = "group",
+    group = group_col,
     method = object$method,
     meta_type = object$meta_type,
     dist = if (object$method == "sfa" &&
@@ -209,12 +211,12 @@ boot_tgr <- function(object, R = 999,
       object$group_models[[1]]$dist
     } else "hnormal",
     orientation = if (object$method == "dea" &&
-                      !is.null(attr(object, "orientation"))) {
-      attr(object, "orientation")
+                      !is.null(object$orientation)) {
+      object$orientation
     } else "output",
     rts = if (object$method == "dea" &&
-              !is.null(attr(object, "rts"))) {
-      attr(object, "rts")
+              !is.null(object$rts)) {
+      object$rts
     } else "crs",
     ...
   )
