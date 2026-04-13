@@ -152,7 +152,7 @@ browseVignettes("metafrontier")
 
 ## References
 
-- Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier production function for estimation of technical efficiencies and technology gaps for firms operating under different technologies. *Journal of Productivity Analysis*, 21(1), 91--103. [doi:10.1023/B:PROD.0000016869.68578.b7](https://doi.org/10.1023/B:PROD.0000016869.68578.b7)
+- Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier production function for estimation of technical efficiencies and technology gaps for firms operating under different technologies. *Journal of Productivity Analysis*, 21(1), 91--103. [doi:10.1023/B:PROD.0000012454.06094.29](https://doi.org/10.1023/B:PROD.0000012454.06094.29)
 - Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach to estimating the metafrontier production function based on a stochastic frontier framework. *Journal of Productivity Analysis*, 42(3), 241--254. [doi:10.1007/s11123-014-0397-1](https://doi.org/10.1007/s11123-014-0397-1)
 - O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008). Metafrontier frameworks for the study of firm-level efficiencies and technology ratios. *Empirical Economics*, 34(2), 231--255. [doi:10.1007/s00181-006-0095-0](https://doi.org/10.1007/s00181-006-0095-0)
 
