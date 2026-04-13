@@ -63,9 +63,10 @@ fit_sto <- metafrontier(log_y ~ log_x1 + log_x2,
                         data = sim$data, group = "group",
                         meta_type = "stochastic")
 
-# DEA-based metafrontier
-fit_dea <- metafrontier(log_y ~ log_x1 + log_x2,
-                        data = sim$data, group = "group",
+# DEA-based metafrontier (requires level-scale inputs/outputs)
+dat_lev <- within(sim$data, { y <- exp(log_y); x1 <- exp(log_x1); x2 <- exp(log_x2) })
+fit_dea <- metafrontier(y ~ x1 + x2,
+                        data = dat_lev, group = "group",
                         method = "dea", rts = "vrs")
 
 # Inspect results
@@ -88,22 +89,22 @@ boot_par <- boot_tgr(fit_det, R = 999, ncores = 4, seed = 1)
 
 ```r
 # Simulate panel data
-panel <- simulate_panel_metafrontier(n_groups = 3, n_per_group = 50,
-                                     n_time = 5, seed = 42)
+panel <- simulate_panel_metafrontier(n_groups = 3, n_firms_per_group = 50,
+                                     n_periods = 5, seed = 42)
 
 # Three-way Malmquist decomposition
 malm <- malmquist_meta(log_y ~ log_x1 + log_x2,
                        data = panel$data, group = "group",
-                       time = "time")
+                       time = "year")
 summary(malm)
 ```
 
 ### Latent class metafrontier
 
 ```r
-# Automatic class selection via BIC
+# Automatic class selection via BIC (discovers groups endogenously)
 lc <- latent_class_metafrontier(log_y ~ log_x1 + log_x2,
-                                data = sim$data, group = "group",
+                                data = sim$data,
                                 n_classes = 3)
 summary(lc)
 ```
