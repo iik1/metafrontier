@@ -211,7 +211,7 @@
   # Ensure non-negative inefficiency
   u_hat <- pmax(as.numeric(u_hat), 0)
 
-  # Battese-Coelli (1988) efficiency estimator
+  # JLMS (Jondrow et al., 1982) point efficiency: exp(-E[u|eps])
   te <- as.numeric(exp(-u_hat))
 
   # Frontier values
