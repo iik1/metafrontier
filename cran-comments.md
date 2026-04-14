@@ -8,9 +8,21 @@ These are correct domain-specific terms.)
 
 ## Resubmission
 
-Previous submission returned 2 WARNINGs due to missing pre-built
-vignettes in inst/doc. This has been fixed — all three vignettes
-are now pre-built and included.
+This is a resubmission of v0.2.2 (previous CRAN version: 0.2.1).
+
+Changes since v0.2.1:
+
+- Fixed two bugs in `boot_tgr()`: orientation/rts now propagate
+  correctly to bootstrap replicates, and the group column name
+  is no longer hardcoded.
+- Fixed latent class `.loglik_to_u_hat()` to respect the `dist`
+  argument with correct JLMS formulas for all three distributions.
+- Fixed latent class parameter count for truncated-normal (k+3).
+- Fixed two incorrect DOIs in DESCRIPTION: Huang et al. (2014)
+  and O'Donnell et al. (2008) now link to the correct papers.
+- `autoplot` methods now use proper conditional S3 registration
+  via `@exportS3Method ggplot2::autoplot`.
+- Pre-built vignettes included in inst/doc.
 
 ## Test environments
 
