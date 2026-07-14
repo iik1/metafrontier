@@ -8,7 +8,10 @@
 #' @noRd
 .estimate_sfa_metafrontier <- function(formula, data, group_vec,
                                        group_levels, group_models,
-                                       meta_type, dist, control) {
+                                       meta_type, dist, control,
+                                       objective = c("lp", "qp")) {
+
+  objective <- match.arg(objective)
 
   n <- nrow(data)
   n_groups <- length(group_levels)
@@ -51,7 +54,8 @@
 
   if (meta_type == "deterministic") {
     meta_result <- .deterministic_metafrontier_lp(
-      X, group_frontier, group_vec_valid, group_levels, group_coef, k
+      X, group_frontier, group_vec_valid, group_levels, group_coef, k,
+      objective = objective
     )
   } else {
     meta_result <- .stochastic_metafrontier(
@@ -83,6 +87,8 @@
     logLik_groups = sapply(group_models, function(m) m$logLik),
     meta_logLik = meta_result$meta_logLik,
     meta_convergence = meta_result$convergence,
+    meta_solver = meta_result$meta_solver,
+    objective = objective,
     meta_opt = meta_result$meta_opt,
     meta_dist = meta_result$meta_dist,
     valid_rows = valid_rows,
@@ -91,76 +97,134 @@
 }
 
 
-#' Deterministic metafrontier via LP (Battese, Rao, O'Donnell 2004)
+#' Deterministic metafrontier (Battese, Rao, O'Donnell 2004)
 #'
-#' Minimises the sum of deviations of the metafrontier from
-#' group frontiers via linear programming, subject to the
+#' Estimates the deterministic metafrontier subject to the
 #' envelopment constraint that the metafrontier weakly dominates
-#' all group frontiers at all observed input mixes.
+#' all group frontiers at all observed input mixes. Battese, Rao
+#' and O'Donnell (2004) propose two estimation criteria:
 #'
-#' LP formulation (BRO 2004):
-#'   min  sum_i (x_i' beta* - gf_i)   [= colSums(X)' beta* - sum(gf)]
-#'   s.t. x_i' beta* >= gf_i          for all i (envelopment)
+#' 1. Minimum sum of absolute deviations. Because the envelopment
+#'    constraints force all deviations to be non-negative, this
+#'    reduces to a linear programme (O'Donnell, Rao and Battese
+#'    2008, eqs. 23--25):
+#'      min  sum_i (x_i' beta* - gf_i)   [= colSums(X)' beta* - sum(gf)]
+#'      s.t. x_i' beta* >= gf_i          for all i (envelopment)
 #'
-#' Falls back to QP via constrOptim if the LP solver fails.
+#' 2. Minimum sum of squared deviations, a quadratic programme:
+#'      min  sum_i (x_i' beta* - gf_i)^2
+#'      s.t. x_i' beta* >= gf_i          for all i (envelopment)
+#'
+#' The `objective` argument selects the criterion ("lp" for the
+#' first, "qp" for the second). The QP is solved with
+#' quadprog::solve.QP when available, otherwise with a
+#' logarithmic-barrier method via constrOptim. If the LP solver
+#' fails, the estimation falls back to the QP machinery (with a
+#' warning, since the criterion then changes). The `meta_solver`
+#' element of the return value records which solver produced the
+#' estimate: "lp", "qp" or "qp-barrier".
 #'
 #' @keywords internal
 #' @noRd
 .deterministic_metafrontier_lp <- function(X, group_frontier,
                                            group_vec, group_levels,
-                                           group_coef, k) {
+                                           group_coef, k,
+                                           objective = c("lp", "qp")) {
 
+  objective <- match.arg(objective)
   n <- length(group_frontier)
 
-  # ----- Primary: LP via lpSolveAPI (BRO 2004 formulation) -----
+  # ----- LP via lpSolveAPI: minimum sum of absolute deviations -----
   # Variables: beta* (k free variables)
   # Objective: min colSums(X)' beta* (constant -sum(gf) dropped)
   # Constraints: x_i' beta* >= gf_i for all i
 
-  lp_result <- tryCatch({
-    lp <- lpSolveAPI::make.lp(nrow = n, ncol = k)
+  if (objective == "lp") {
+    lp_result <- tryCatch({
+      lp <- lpSolveAPI::make.lp(nrow = n, ncol = k)
 
-    # Set columns (variables beta*)
-    for (j in seq_len(k)) {
-      lpSolveAPI::set.column(lp, j, X[, j])
-    }
+      # Set columns (variables beta*)
+      for (j in seq_len(k)) {
+        lpSolveAPI::set.column(lp, j, X[, j])
+      }
 
-    # Objective: min sum_i x_i' beta* = colSums(X)' beta*
-    lpSolveAPI::set.objfn(lp, colSums(X))
-    lpSolveAPI::lp.control(lp, sense = "min")
+      # Objective: min sum_i x_i' beta* = colSums(X)' beta*
+      lpSolveAPI::set.objfn(lp, colSums(X))
+      lpSolveAPI::lp.control(lp, sense = "min")
 
-    # Constraints: x_i' beta* >= gf_i
-    for (i in seq_len(n)) {
-      lpSolveAPI::set.constr.type(lp, type = ">=", constraints = i)
-      lpSolveAPI::set.rhs(lp, b = group_frontier[i], constraints = i)
-    }
+      # Constraints: x_i' beta* >= gf_i
+      for (i in seq_len(n)) {
+        lpSolveAPI::set.constr.type(lp, type = ">=", constraints = i)
+        lpSolveAPI::set.rhs(lp, b = group_frontier[i], constraints = i)
+      }
 
-    # beta* variables are free (unbounded)
-    for (j in seq_len(k)) {
-      lpSolveAPI::set.bounds(lp, lower = -1e30, upper = 1e30, columns = j)
-    }
+      # beta* variables are free (unbounded)
+      for (j in seq_len(k)) {
+        lpSolveAPI::set.bounds(lp, lower = -1e30, upper = 1e30, columns = j)
+      }
 
-    status <- lpSolveAPI::solve.lpExtPtr(lp)
-    if (status != 0L) stop("lpSolveAPI returned status ", status)
+      status <- lpSolveAPI::solve.lpExtPtr(lp)
+      if (status != 0L) stop("lpSolveAPI returned status ", status)
 
-    meta_coef <- lpSolveAPI::get.variables(lp)
-    names(meta_coef) <- colnames(X)
+      meta_coef <- lpSolveAPI::get.variables(lp)
+      names(meta_coef) <- colnames(X)
 
-    list(
-      meta_coef = meta_coef,
-      meta_vcov = NULL,
-      meta_logLik = NULL,
-      convergence = 0L
-    )
-  }, error = function(e) {
-    warning("LP solver failed (", conditionMessage(e),
-            "); falling back to QP via constrOptim.", call. = FALSE)
-    NULL
-  })
+      list(
+        meta_coef = meta_coef,
+        meta_vcov = NULL,
+        meta_logLik = NULL,
+        convergence = 0L,
+        meta_solver = "lp"
+      )
+    }, error = function(e) {
+      warning("LP solver failed (", conditionMessage(e),
+              "); falling back to quadratic programming. Note that the ",
+              "estimation objective then changes from minimum absolute ",
+              "deviations to minimum squared deviations.", call. = FALSE)
+      NULL
+    })
 
-  if (!is.null(lp_result)) return(lp_result)
+    if (!is.null(lp_result)) return(lp_result)
+  }
 
-  # ----- Fallback: QP via constrOptim -----
+  # ----- QP: minimum sum of squared deviations -----
+  # min sum((X b - gf)^2) = b' X'X b - 2 gf' X b + const, so the
+  # quadprog form uses Dmat = X'X and dvec = X'gf (the factor-of-two
+  # scaling does not change the argmin).
+  if (requireNamespace("quadprog", quietly = TRUE)) {
+    qp_result <- tryCatch({
+      sol <- quadprog::solve.QP(
+        Dmat = crossprod(X),
+        dvec = crossprod(X, group_frontier),
+        Amat = t(X),
+        bvec = group_frontier,
+        meq = 0
+      )
+
+      meta_coef <- sol$solution
+      names(meta_coef) <- colnames(X)
+
+      list(
+        meta_coef = meta_coef,
+        meta_vcov = NULL,
+        meta_logLik = NULL,
+        convergence = 0L,
+        meta_solver = "qp"
+      )
+    }, error = function(e) {
+      message("quadprog::solve.QP failed (", conditionMessage(e),
+              "); solving the QP with a logarithmic-barrier method via ",
+              "constrOptim instead.")
+      NULL
+    })
+
+    if (!is.null(qp_result)) return(qp_result)
+  } else {
+    message("Package 'quadprog' is not installed; solving the QP with a ",
+            "logarithmic-barrier method via constrOptim instead.")
+  }
+
+  # ----- Fallback: QP via constrOptim (logarithmic barrier) -----
   obj_fn <- function(beta_star) {
     fitted_meta <- X %*% beta_star
     sum((fitted_meta - group_frontier)^2)
@@ -200,15 +264,26 @@
   ui <- X
   ci <- group_frontier
 
-  result <- constrOptim(
-    theta = beta_start,
-    f = obj_fn,
-    grad = grad_fn,
-    ui = ui,
-    ci = ci - 1e-6,
-    method = "BFGS",
-    control = list(maxit = 10000, reltol = 1e-12)
+  result <- tryCatch(
+    constrOptim(
+      theta = beta_start,
+      f = obj_fn,
+      grad = grad_fn,
+      ui = ui,
+      ci = ci - 1e-6,
+      method = "BFGS",
+      control = list(maxit = 10000, reltol = 1e-12)
+    ),
+    error = function(e) {
+      stop("Deterministic metafrontier QP (barrier) optimisation failed: ",
+           conditionMessage(e), call. = FALSE)
+    }
   )
+
+  if (result$convergence != 0L) {
+    warning("Deterministic metafrontier QP (barrier) optimisation did not ",
+            "converge (code ", result$convergence, ").", call. = FALSE)
+  }
 
   meta_coef <- result$par
   names(meta_coef) <- colnames(X)
@@ -217,7 +292,8 @@
     meta_coef = meta_coef,
     meta_vcov = NULL,
     meta_logLik = NULL,
-    convergence = result$convergence
+    convergence = result$convergence,
+    meta_solver = "qp-barrier"
   )
 }
 

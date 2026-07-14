@@ -6,8 +6,10 @@ knitr::opts_chunk$set(
   fig.height = 5
 )
 
+
 ## ----setup--------------------------------------------------------------------
 library(metafrontier)
+
 
 ## ----det-example--------------------------------------------------------------
 sim <- simulate_metafrontier(
@@ -30,10 +32,28 @@ coef(fit_det, which = "meta")
 # Group coefficients for comparison
 coef(fit_det, which = "group")
 
+
 ## ----verify-envelop-----------------------------------------------------------
 meta_b0 <- coef(fit_det, which = "meta")[1]
 group_b0 <- sapply(coef(fit_det, which = "group"), `[`, 1)
 meta_b0 >= group_b0
+
+
+## ----det-qp-------------------------------------------------------------------
+fit_qp <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "deterministic",
+  objective = "qp"
+)
+
+# LP and QP criteria typically give very similar coefficients
+cbind(
+  LP = coef(fit_det, which = "meta"),
+  QP = coef(fit_qp, which = "meta")
+)
+
 
 ## ----sto-example--------------------------------------------------------------
 fit_sto <- metafrontier(
@@ -45,6 +65,7 @@ fit_sto <- metafrontier(
 
 summary(fit_sto)
 
+
 ## ----sto-inference------------------------------------------------------------
 # Variance-covariance matrix
 vcov(fit_sto)
@@ -52,9 +73,11 @@ vcov(fit_sto)
 # Log-likelihood of the metafrontier model
 logLik(fit_sto)
 
+
 ## ----tgr-range----------------------------------------------------------------
 tgr_vals <- efficiencies(fit_sto, type = "tgr")
 summary(tgr_vals)
+
 
 ## ----dea-example--------------------------------------------------------------
 # CRS metafrontier
@@ -81,6 +104,7 @@ cbind(
   VRS = tapply(fit_vrs$tgr, fit_vrs$group_vec, mean)
 )
 
+
 ## ----compare-methods----------------------------------------------------------
 # Compare TGR estimates across methods
 tgr_det <- tapply(fit_det$tgr, fit_det$group_vec, mean)
@@ -96,8 +120,10 @@ comparison <- data.frame(
 )
 round(comparison, 4)
 
+
 ## ----poolability--------------------------------------------------------------
 poolability_test(fit_det)
+
 
 ## ----monte-carlo, eval=FALSE--------------------------------------------------
 # # Monte Carlo: check parameter recovery over 100 replications

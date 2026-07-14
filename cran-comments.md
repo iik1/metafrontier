@@ -2,27 +2,32 @@
 
 0 errors | 0 warnings | 0 notes
 
-(CRAN incoming checks may show 1 NOTE for new submission and
-possibly misspelled words: Battese, Malmquist, Metafrontier, SFA.
-These are correct domain-specific terms.)
+(CRAN incoming checks may show 1 NOTE for possibly misspelled words:
+Battese, Malmquist, Metafrontier, SFA. These are correct
+domain-specific terms.)
 
-## Resubmission
+## Release summary
 
-This is a resubmission of v0.2.2 (previous CRAN version: 0.2.1).
+metafrontier 0.3.0 (previous CRAN version: 0.2.2).
 
-Changes since v0.2.1:
-
-- Fixed two bugs in `boot_tgr()`: orientation/rts now propagate
-  correctly to bootstrap replicates, and the group column name
-  is no longer hardcoded.
-- Fixed latent class `.loglik_to_u_hat()` to respect the `dist`
-  argument with correct JLMS formulas for all three distributions.
-- Fixed latent class parameter count for truncated-normal (k+3).
-- Fixed two incorrect DOIs in DESCRIPTION: Huang et al. (2014)
-  and O'Donnell et al. (2008) now link to the correct papers.
-- `autoplot` methods now use proper conditional S3 registration
-  via `@exportS3Method ggplot2::autoplot`.
-- Pre-built vignettes included in inst/doc.
+- New default efficiency estimator: the Battese-Coelli (1988)
+  conditional expectation (`estimator = "bc88"`); the JLMS estimator
+  remains available, both are stored on every fit, and the change is
+  documented as a breaking change in NEWS.md.
+- Both identification criteria for the deterministic metafrontier
+  (`objective = c("lp", "qp")`; quadprog added to Suggests).
+- Backend delegation via `engine = c("internal", "sfaR", "frontier",
+  "Benchmarking")`.
+- `malmquist_meta()` gains id-based firm matching with strict checks
+  and counted infeasibility warnings.
+- New `check_convergence()` diagnostic; convergence reporting in
+  `print()` and `summary()`.
+- DEA additions: FDH, hyperbolic efficiency, user-supplied direction
+  vectors, two-stage slack analysis; permutation poolability test for
+  DEA fits.
+- Bug fixes, including a row-alignment fix for panel SFA
+  efficiencies, BC92 decay anchoring on unbalanced panels, and an
+  erroneous lower bound in cross-period DEA programs. See NEWS.md.
 
 ## Test environments
 

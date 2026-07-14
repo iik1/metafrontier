@@ -4,19 +4,28 @@
 \alias{poolability_test}
 \title{Test Poolability of Group Frontiers}
 \usage{
-poolability_test(object, ...)
+poolability_test(object, B = 199, seed = NULL, ...)
 }
 \arguments{
 \item{object}{a fitted \code{"metafrontier"} object with
-\code{method = "sfa"}.}
+\code{method = "sfa"} or \code{method = "dea"}.}
+
+\item{B}{integer. Number of permutation replicates for the DEA
+permutation test (default 199). Ignored for SFA objects.}
+
+\item{seed}{integer or \code{NULL}. Random seed for the DEA
+permutation test, for reproducibility. Ignored for SFA objects.}
 
 \item{...}{additional arguments (currently unused).}
 }
 \value{
 A list of class \code{"htest"} with components:
   \describe{
-    \item{statistic}{the LR test statistic}
-    \item{parameter}{degrees of freedom}
+    \item{statistic}{the test statistic (LR statistic for SFA; the
+      mean technology gap, \eqn{\bar{S} = \mathrm{mean}(1 - TGR)},
+      for DEA)}
+    \item{parameter}{degrees of freedom (SFA) or the effective
+      number of permutation replicates (DEA)}
     \item{p.value}{p-value of the test}
     \item{method}{description of the test}
   }
@@ -24,11 +33,12 @@ A list of class \code{"htest"} with components:
 \description{
 Tests the null hypothesis that all groups share a common frontier
 (i.e., the metafrontier coincides with all group frontiers) against
-the alternative that group-specific frontiers differ. Uses a
-likelihood ratio test.
+the alternative that group-specific frontiers differ. For SFA-based
+metafrontiers a likelihood ratio test is used; for DEA-based
+metafrontiers a permutation test is used.
 }
 \details{
-The LR statistic is:
+\strong{Likelihood ratio test (SFA).} The LR statistic is:
 \deqn{LR = -2 [LL_{pooled} - \sum_j LL_j]}
 where \eqn{LL_{pooled}} is the log-likelihood of the pooled (single
 frontier) model and \eqn{LL_j} are the group-specific
@@ -41,7 +51,27 @@ For \eqn{J} groups each with \eqn{p} frontier parameters plus
 distributional parameters, this equals
 \eqn{(J - 1) \times p_{total}} where \eqn{p_{total}} includes
 frontier coefficients, \eqn{\sigma_v}, and \eqn{\sigma_u}
-(and \eqn{\mu} for truncated-normal).
+(and \eqn{\mu} for truncated-normal). This test requires a
+likelihood and is therefore only available for SFA-based
+metafrontiers.
+
+\strong{Permutation test (DEA).} DEA has no likelihood, so the
+poolability hypothesis is assessed by a permutation test. Under the
+null of a single pooled technology, group labels are exchangeable:
+reassigning observations to groups at random should not
+systematically change the distance between the group frontiers and
+the metafrontier. The observed statistic is the mean technology gap,
+\eqn{S_{obs} = \mathrm{mean}(1 - TGR_i)}, and its null distribution
+is approximated by refitting the metafrontier on \code{B} random
+permutations of the group labels. The p-value is
+\eqn{(1 + \#\{S_b \ge S_{obs}\}) / (B + 1)}, following the
+aggregate-efficiency inference logic of Simar and Zelenyuk (2007).
+The smoothed subsampling approach of Kneip, Simar, and Wilson (2016)
+is the asymptotically rigorous alternative for testing hypotheses in
+nonparametric production models; the permutation test offered here
+is a computationally simple approximation. The default \code{B = 199}
+is a pragmatic choice; p-values have resolution \eqn{1/(B + 1)}, so
+increase \code{B} for finer resolution.
 }
 \examples{
 set.seed(42)
@@ -51,4 +81,22 @@ fit <- metafrontier(log_y ~ log_x1 + log_x2,
                     data = sim$data, group = "group")
 poolability_test(fit)
 
+\donttest{
+# DEA permutation test
+fit_dea <- metafrontier(log_y ~ log_x1 + log_x2,
+                        data = sim$data, group = "group",
+                        method = "dea")
+poolability_test(fit_dea, B = 99, seed = 1)
+}
+
+}
+\references{
+Simar, L. and Zelenyuk, V. (2007). Statistical inference for
+aggregates of Farrell-type efficiencies. \emph{Journal of Applied
+Econometrics}, 22(7), 1367--1394. \doi{10.1002/jae.991}
+
+Kneip, A., Simar, L. and Wilson, P.W. (2016). Testing hypotheses
+in nonparametric models of production. \emph{Journal of Business &
+Economic Statistics}, 34(3), 435--447.
+\doi{10.1080/07350015.2015.1049747}
 }

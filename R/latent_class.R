@@ -5,6 +5,11 @@
 #' probabilities, class-specific frontier parameters, and the
 #' metafrontier.
 #'
+#' Latent class estimation is available for SFA-based metafrontiers
+#' only: the EM posterior class probabilities require a parametric
+#' observation-level likelihood, which DEA does not provide. For DEA
+#' fits with observed groups, see \code{\link{poolability_test}}.
+#'
 #' @param formula a \code{Formula} object (y ~ x1 + x2).
 #' @param data a data frame.
 #' @param n_classes integer. Number of latent classes (default 2).
@@ -145,6 +150,13 @@ latent_class_metafrontier <- function(formula, data,
   n_total_params <- n_classes * n_params_class + (n_classes - 1)
   bic <- -2 * best_ll + n_total_params * log(n)
 
+  if (isFALSE(best_result$converged)) {
+    warning("The best EM start reached max_iter = ", max_iter,
+            " without meeting the convergence tolerance; results may ",
+            "not be at a local optimum. Consider increasing 'max_iter' ",
+            "or 'n_starts'.", call. = FALSE)
+  }
+
   out <- list(
     class_assignment = class_names[class_assign_sorted],
     posterior = best_result$posterior[, class_order],
@@ -155,6 +167,7 @@ latent_class_metafrontier <- function(formula, data,
     BIC = bic,
     n_classes = n_classes,
     n_iter = best_result$n_iter,
+    em_converged = isTRUE(best_result$converged),
     n = n
   )
   class(out) <- "lc_metafrontier"
@@ -164,19 +177,24 @@ latent_class_metafrontier <- function(formula, data,
 
 #' Select Number of Latent Classes via BIC
 #'
+#' Fits a latent class metafrontier model for each value in
+#' \code{n_classes_range} and tabulates the Bayesian information
+#' criterion (BIC) and marginal log-likelihood of each fit. The
+#' optimal number of classes minimises BIC. Fits that fail are
+#' silently dropped from the table. Because the EM algorithm can
+#' converge to local optima, the ranking is sensitive to the number
+#' of random starts: pass \code{n_starts} (forwarded to
+#' \code{\link{latent_class_metafrontier}}) and increase it for a
+#' more reliable comparison across class counts.
+#'
 #' @param formula formula.
 #' @param data data frame.
 #' @param n_classes_range integer vector of class counts to try.
 #' @param ... additional arguments passed to
-#'   \code{\link{latent_class_metafrontier}}.
+#'   \code{\link{latent_class_metafrontier}}, notably \code{n_starts}.
 #'
 #' @return A data frame with columns \code{n_classes}, \code{BIC},
 #'   and \code{marginal_ll}.
-#'
-#' @details
-#' Fits latent class metafrontier models for each value in
-#' \code{n_classes_range} and returns BIC values. The optimal
-#' number of classes minimises BIC.
 #'
 #' @examples
 #' \donttest{
@@ -265,6 +283,7 @@ select_n_classes <- function(formula, data,
   }
 
   prev_ll <- -Inf
+  em_converged <- FALSE
   ctrl <- list(fnscale = -1, maxit = 50, reltol = 1e-8)
   ctrl[names(control)] <- control
 
@@ -283,15 +302,13 @@ select_n_classes <- function(formula, data,
     tau <- exp(log_tau)
     tau <- tau / rowSums(tau)
 
-    # Marginal LL
+    # Marginal LL: sum_i log(sum_c pi_c * L_c(y_i)), computed on the
+    # max-shifted scale for numerical stability
     marginal_ll <- sum(log_tau_max + log(rowSums(exp(log_tau))))
-    # Correction: we already subtracted max, so add it back
-    # Actually: marginal_ll = sum(log(sum_c pi_c * L_c(y_i)))
-    log_lik_mix <- log_tau_max + log(rowSums(exp(log_tau)))
-    marginal_ll <- sum(log_lik_mix)
 
     # Convergence check
     if (iter > 1 && abs(marginal_ll - prev_ll) < tol * abs(prev_ll)) {
+      em_converged <- TRUE
       break
     }
     prev_ll <- marginal_ll
@@ -326,7 +343,8 @@ select_n_classes <- function(formula, data,
     pi = pi_c,
     class_params = class_params,
     marginal_ll = marginal_ll,
-    n_iter = iter
+    n_iter = iter,
+    converged = em_converged
   )
 }
 

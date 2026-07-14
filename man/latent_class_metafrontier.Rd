@@ -64,6 +64,12 @@ probabilities, class-specific frontier parameters, and the
 metafrontier.
 }
 \details{
+Latent class estimation is available for SFA-based metafrontiers
+only: the EM posterior class probabilities require a parametric
+observation-level likelihood, which DEA does not provide. For DEA
+fits with observed groups, see \code{\link{poolability_test}}.
+
+
 The EM algorithm iterates between:
 \itemize{
   \item \strong{E-step}: compute posterior class membership probabilities

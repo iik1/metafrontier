@@ -13,7 +13,8 @@ simulate_panel_metafrontier(
   sigma_u = 0.3,
   sigma_v = 0.2,
   eta = 0.05,
-  seed = NULL
+  seed = NULL,
+  attrition = 0
 )
 }
 \arguments{
@@ -34,6 +35,15 @@ simulate_panel_metafrontier(
 \item{eta}{numeric. Time-decay parameter for BC92.}
 
 \item{seed}{integer or NULL. Random seed.}
+
+\item{attrition}{numeric in [0, 0.5]. Probability that each
+firm-period observation after a firm's first period is dropped
+independently, producing an unbalanced panel. Every firm's first
+period is always kept, so all firms remain in the data. The
+attrition draws are made after all other random numbers, so
+\code{attrition = 0} (the default) reproduces legacy balanced
+datasets exactly for the same seed. The realised share of at-risk
+observations dropped is stored in \code{params$attrition_share}.}
 }
 \value{
 A list with components:
@@ -41,7 +51,9 @@ A list with components:
     \item{data}{data frame with columns: \code{firm}, \code{year},
       \code{group}, \code{log_y}, \code{log_x1}, \code{log_x2},
       \code{true_te}, \code{true_u}, \code{true_v}}
-    \item{params}{list of true parameter values used in generation}
+    \item{params}{list of true parameter values used in generation,
+      including \code{attrition} and the realised
+      \code{attrition_share}}
   }
 }
 \description{
@@ -56,5 +68,9 @@ sim <- simulate_panel_metafrontier(
 )
 head(sim$data)
 str(sim$params)
+
+# An unbalanced panel with roughly 20\% attrition
+sim_unbal <- simulate_panel_metafrontier(seed = 42, attrition = 0.2)
+table(table(sim_unbal$data$firm))
 
 }

@@ -15,7 +15,11 @@
 Invisibly returns \code{x}.
 }
 \description{
-Print a Metafrontier Object
+Prints a compact overview of a fitted metafrontier model: the
+estimation method and metafrontier type, the efficiency estimator
+and identification objective (where applicable), the groups and
+their sample sizes, group log-likelihoods, mean technology gap
+ratio by group, and a one-line convergence status.
 }
 \examples{
 sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)

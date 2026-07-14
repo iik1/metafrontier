@@ -10,6 +10,16 @@
 #'   \code{"group"} for efficiency relative to the group frontier,
 #'   \code{"meta"} (default) for efficiency relative to the
 #'   metafrontier, or \code{"tgr"} for the technology gap ratio.
+#' @param estimator optional character. Override the efficiency
+#'   estimator used at fit time: \code{"bc88"} for the Battese-Coelli
+#'   (1988) conditional expectation \eqn{E[\exp(-u)|\varepsilon]} or
+#'   \code{"jlms"} for \eqn{\exp(-E[u|\varepsilon])} (Jondrow et al.,
+#'   1982). Both are stored on SFA fits, so no refitting is needed;
+#'   \code{type = "meta"} is recomputed as \eqn{TE \times TGR}. The
+#'   TGR itself does not depend on the estimator. Ignored (with a
+#'   warning) for DEA fits and externally fitted group models that do
+#'   not carry both estimators. Default \code{NULL} returns the
+#'   scores selected at fit time.
 #' @param ... additional arguments (currently unused).
 #'
 #' @return A numeric vector of efficiency scores of length
@@ -49,12 +59,43 @@ efficiencies <- function(object, ...) {
 #' @export
 efficiencies.metafrontier <- function(object,
                                       type = c("meta", "group", "tgr"),
+                                      estimator = NULL,
                                       ...) {
   type <- match.arg(type)
 
+  if (is.null(estimator)) {
+    return(switch(type,
+      meta  = object$te_meta,
+      group = object$te_group,
+      tgr   = object$tgr
+    ))
+  }
+
+  estimator <- match.arg(estimator, c("bc88", "jlms"))
+  field <- paste0("efficiency_", estimator)
+
+  # Rebuild group-level TE from the stored per-estimator vectors
+  te_group <- object$te_group
+  available <- TRUE
+  for (g in object$groups) {
+    gm <- object$group_models[[g]]
+    if (is.null(gm[[field]])) {
+      available <- FALSE
+      break
+    }
+    te_group[object$group_vec == g] <- gm[[field]]
+  }
+
+  if (!available) {
+    warning("Estimator-specific efficiencies are not stored for all ",
+            "groups (DEA or externally fitted models); returning the ",
+            "scores selected at fit time.", call. = FALSE)
+    te_group <- object$te_group
+  }
+
   switch(type,
-    meta  = object$te_meta,
-    group = object$te_group,
-    tgr   = object$tgr
+    group = te_group,
+    tgr   = object$tgr,
+    meta  = te_group * object$tgr
   )
 }
