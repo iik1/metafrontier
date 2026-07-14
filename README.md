@@ -4,26 +4,28 @@ Analysis of Metafrontier Models for Efficiency and Productivity
 
 ## Overview
 
-`metafrontier` provides a unified R implementation of metafrontier production function models for estimating technical efficiencies and technology gaps across groups of firms operating under different technologies.
+`metafrontier` provides a unified R implementation of metafrontier production function models for estimating technical efficiencies and technology gaps across groups of firms that face different restrictions of a common underlying metatechnology (group-specific technologies in the sense of Battese, Rao & O'Donnell, 2004).
 
 ### Estimation methods
 
-- **Deterministic metafrontier** (Battese, Rao & O'Donnell, 2004) via constrained LP/QP optimisation
+- **Deterministic metafrontier** (Battese, Rao & O'Donnell, 2004) identified by minimum sum of absolute deviations (LP, default) or minimum sum of squared deviations (QP)
 - **Stochastic metafrontier** (Huang, Huang & Liu, 2014) via second-stage SFA with Murphy-Topel corrected standard errors
-- **DEA-based metafrontier** with CRS, VRS, DRS, and IRS technology assumptions
+- **DEA-based metafrontier** with CRS, VRS, DRS, IRS, and FDH technology assumptions
 - **Latent class metafrontier** via EM algorithm with BIC-based class selection
+- **Efficiency estimators**: BC88 (default) and JLMS, both stored so `efficiencies(fit, estimator = )` switches without refitting
 
 ### Productivity analysis
 
-- **Metafrontier Malmquist TFP index** (O'Donnell, Rao & Battese, 2008) with three-way decomposition (TEC x TGC x TC*)
-- **Panel SFA** with time-varying inefficiency (BC92 and BC95 specifications)
-- **Directional distance functions** for DEA-based efficiency measurement
+- **Metafrontier Malmquist TFP index** (O'Donnell, Rao & Battese, 2008) with three-way decomposition (TEC x TGC x TC*), firm matching via `id =`, and explicit accounting of cross-period infeasibilities
+- **Panel SFA** with time-varying inefficiency (BC92 and BC95 specifications), including unbalanced panels
+- **Directional distance functions** for DEA-based efficiency measurement, including hyperbolic orientation, custom numeric direction vectors, and two-stage slack computation
 
 ### Inference and diagnostics
 
 - **Bootstrap confidence intervals** for TGR (parametric and nonparametric; percentile and BCa)
 - **Murphy-Topel variance correction** for stochastic metafrontier standard errors
-- **Poolability tests** (likelihood ratio) for common vs group-specific frontiers
+- **Poolability tests** for common vs group-specific frontiers: likelihood ratio (SFA) and a permutation test (DEA)
+- **Convergence diagnostics** via `check_convergence()`, with convergence status reported in `print()` and `summary()`
 - **Half-normal, exponential, and truncated-normal** inefficiency distributions
 
 ### Visualisation
@@ -33,9 +35,9 @@ Analysis of Metafrontier Models for Efficiency and Productivity
 
 ### Interoperability
 
-- Import pre-fitted models from `sfaR`, `frontier`, and `Benchmarking` via `as_metafrontier_model()`
+- Import pre-fitted models from `sfaR`, `frontier`, and `Benchmarking` via `as_metafrontier_model()`, or delegate group estimation directly with `engine = c("internal", "sfaR", "frontier", "Benchmarking")`
 - Formula interface with heteroscedastic SFA support (`y ~ x1 + x2 | z1 + z2`)
-- Full S3 method suite: `print`, `summary`, `coef`, `vcov`, `logLik`, `fitted`, `residuals`, `nobs`, `confint`, `predict`, `plot`
+- Full S3 method suite: `print`, `summary`, `coef`, `vcov`, `logLik`, `fitted`, `residuals`, `nobs`, `confint`, `predict`, `plot`; `coef()` and `vcov()` expose auxiliary parameters (e.g. `eta`, variance parameters) via `extraPar = TRUE`
 
 ## Installation
 

@@ -13,9 +13,16 @@
 ^QA_ROUND2_EDITORIAL_REPORT\.md$
 ^ROADMAP\.md$
 ^mc_review_r10\.R$
+^mc_murphy_topel\.R$
+^review_malmquist_r14\.R$
 ^reviewer2_dso_test\.R$
+^reviewer4_dea_test\.R$
+^reviewer8_test\.R$
 ^test_edge_cases\.R$
 ^test_panel_review\.R$
 ^test_reviewer16_edgecases\.R$
 ^test_reviewer9\.R$
 ^test_steel_review\.R$
+^test_vignette\.R$
+^submit_cran2\.R$
+^metafrontier_0\.2\.1\.tar\.gz$

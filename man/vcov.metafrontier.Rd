@@ -4,7 +4,13 @@
 \alias{vcov.metafrontier}
 \title{Variance-Covariance Matrix for Metafrontier Coefficients}
 \usage{
-\method{vcov}{metafrontier}(object, correction = c("none", "murphy-topel"), ...)
+\method{vcov}{metafrontier}(
+  object,
+  correction = c("none", "murphy-topel"),
+  which = c("meta", "group"),
+  extraPar = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{a \code{"metafrontier"} object.}
@@ -15,13 +21,38 @@ the Murphy and Topel (1985) correction for first-stage estimation
 uncertainty (the generated-regressor problem). Only available for
 stochastic metafrontiers.}
 
+\item{which}{character. \code{"meta"} (default) returns the
+metafrontier (Stage 2) variance-covariance matrix;
+\code{"group"} returns a named list with one full
+variance-covariance matrix per group (from the inverse negative
+Hessian of the group MLE), with \code{NULL} entries for groups
+without a stored Hessian.}
+
+\item{extraPar}{logical. If \code{TRUE} and \code{which = "meta"},
+the full Stage 2 matrix is returned, including the rows and
+columns for the auxiliary parameters (raw MLE parameterisation,
+e.g. \code{log_sigma_v}); the default returns only the block for
+the frontier coefficients.}
+
 \item{...}{additional arguments (currently unused).}
 }
 \value{
-A variance-covariance matrix, or \code{NULL} if unavailable.
+A variance-covariance matrix (\code{which = "meta"}), a
+  named list of matrices (\code{which = "group"}), or \code{NULL}
+  if unavailable.
 }
 \description{
-Variance-Covariance Matrix for Metafrontier Coefficients
+Returns the variance-covariance matrix of the Stage 2
+(metafrontier) coefficients, or, with \code{which = "group"}, the
+per-group matrices from the Stage 1 maximum likelihood fits.
+\code{NULL} is returned when no Stage 2 Hessian exists: the
+deterministic metafrontier is fitted by LP/QP optimisation and has
+no sampling variance in this framework, so \code{which = "meta"}
+returns \code{NULL} with a warning; with \code{which = "group"},
+list entries are \code{NULL} for groups without a stored Hessian
+(e.g. externally fitted models). DEA-based metafrontiers are
+nonparametric and \code{vcov()} signals an error; use
+\code{\link{boot_tgr}} for inference instead.
 }
 \examples{
 sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)

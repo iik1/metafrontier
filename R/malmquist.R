@@ -17,17 +17,30 @@
 #' @param time a character string naming the column in \code{data}
 #'   that identifies time periods, or a vector of time indicators.
 #'   Periods must be consecutive integers or sortable.
+#' @param id optional. A character string naming the column in
+#'   \code{data} that identifies firms across periods, or a vector
+#'   of firm identifiers. When supplied, firms are matched across
+#'   consecutive periods by identifier within each group. When
+#'   \code{NULL} (default), firms are matched by row position within
+#'   each group, which is valid only for balanced panels sorted
+#'   identically in every period (see Details).
 #' @param method character. \code{"dea"} (default) for DEA-based
 #'   distance functions or \code{"sfa"} for SFA-based parametric
-#'   distance functions.
+#'   distance functions (an approximation; see Details).
 #' @param dist character. Distribution of the inefficiency term
 #'   when \code{method = "sfa"}: \code{"hnormal"} (default),
 #'   \code{"tnormal"}, or \code{"exponential"}.
+#' @param estimator character. Technical efficiency estimator used
+#'   when \code{method = "sfa"}: \code{"bc88"} (default) for the
+#'   Battese and Coelli (1988) estimator
+#'   \eqn{E[\exp(-u)|\varepsilon]}, or \code{"jlms"} for the Jondrow
+#'   et al. (1982) estimator \eqn{\exp(-E[u|\varepsilon])}. Passed to
+#'   the group SFA fitter.
 #' @param orientation character. \code{"output"} (default) or
 #'   \code{"input"}.
 #' @param rts character. Returns to scale assumption:
-#'   \code{"crs"} (default), \code{"vrs"}, \code{"drs"}, or
-#'   \code{"irs"}.
+#'   \code{"crs"} (default), \code{"vrs"}, \code{"drs"},
+#'   \code{"irs"}, or \code{"fdh"}.
 #' @param control a list of control parameters for the SFA optimiser.
 #' @param ... additional arguments (currently unused).
 #'
@@ -39,7 +52,9 @@
 #'       \code{MPI} (metafrontier Malmquist TFP index),
 #'       \code{TEC} (technical efficiency change),
 #'       \code{TGC} (technology gap change),
-#'       \code{TC} (metafrontier technical change)}
+#'       \code{TC} (metafrontier technical change). The \code{id}
+#'       column holds the supplied firm identifiers when \code{id}
+#'       is given, and the within-group match position otherwise.}
 #'     \item{group_malmquist}{data frame with the within-group
 #'       Malmquist index decomposition: \code{MPI_group},
 #'       \code{EC_group}, \code{TC_group}}
@@ -53,10 +68,17 @@
 #'       end period), and \code{TGC} (technology gap change,
 #'       \code{TGR_to / TGR_from})}
 #'     \item{call}{the matched function call}
+#'     \item{method}{the estimation method used (\code{"dea"} or
+#'       \code{"sfa"})}
 #'     \item{orientation}{the orientation used}
 #'     \item{rts}{the returns to scale assumption}
 #'     \item{groups}{group labels}
 #'     \item{periods}{time periods}
+#'     \item{n_infeasible}{total number of infeasible cross-period
+#'       DEA programs (always \code{0} for \code{method = "sfa"})}
+#'     \item{infeasible_by_period}{data frame with the number of
+#'       infeasible cross-period DEA programs per period pair
+#'       (\code{method = "dea"} only)}
 #'   }
 #'
 #' @details
@@ -76,24 +98,65 @@
 #'     the shift of the global production possibility frontier
 #' }
 #'
-#' Computation uses DEA-based distance functions. For each
-#' consecutive pair of periods \eqn{(s, t)}, eight sets of LP
-#' problems are solved: within-group and pooled efficiencies at
-#' each period, plus cross-period evaluations for the geometric
-#' mean formulation of technical change.
+#' \strong{Firm matching:} when \code{id} is supplied, firms are
+#' matched across consecutive periods by identifier within each
+#' technology group. Duplicated (id, period) combinations within a
+#' group are an error. Observations without a within-group match in
+#' the adjacent period, either because the panel is unbalanced or
+#' because a firm switches group between periods, are dropped, and a
+#' single consolidated warning reports the number dropped per period
+#' pair. When \code{id} is \code{NULL}, firms are matched by row
+#' position within each group; this is valid only for balanced
+#' panels sorted identically in every period, so a message is
+#' emitted as a reminder, and a warning is issued when group sizes
+#' differ across a period pair (the unmatched observations are
+#' dropped). Supplying \code{id} is recommended.
 #'
-#' \strong{Balanced panel assumption:} Firms are matched across
-#' periods by position within each group. The data should contain
-#' a balanced panel (the same firms observed in every period) with
-#' consistent ordering. If group sizes differ across periods,
-#' only the first \code{min(n_s, n_t)} firms per group are paired
-#' and unmatched observations are silently dropped.
+#' \strong{DEA-based computation (\code{method = "dea"}):} for each
+#' consecutive pair of periods \eqn{(s, t)}, eight sets of LP
+#' problems are solved: within-group and pooled efficiencies at each
+#' period, plus cross-period evaluations for the geometric mean
+#' formulation of technical change. Distances to the metafrontier
+#' are exact distances to the pooled-data frontier, as in O'Donnell,
+#' Rao and Battese (2008).
+#'
+#' \strong{SFA-based computation is an approximation
+#' (\code{method = "sfa"}):} period-specific group SFA frontiers are
+#' estimated, and each observation's metafrontier distance is
+#' approximated by the pointwise maximum of the estimated group
+#' frontier functions evaluated at its inputs; no enveloping
+#' metafrontier is re-estimated. This coincides with the O'Donnell
+#' et al. (2008) metafrontier wherever a single group frontier
+#' dominates, but can understate the metafrontier where group
+#' frontiers cross, which affects TGC and TC*. Prefer
+#' \code{method = "dea"} when an exact decomposition is required.
+#'
+#' \strong{Infeasible cross-period programs:} under
+#' \code{rts = "vrs"}, \code{"drs"}, \code{"irs"}, or \code{"fdh"},
+#' cross-period LPs can be genuinely infeasible because the
+#' reference technology cannot reach the evaluated observation. Such
+#' cases yield \code{NA} (never \code{Inf}), are excluded from the
+#' reported means, and are counted in a single consolidated warning;
+#' the counts are stored in the \code{n_infeasible} and
+#' \code{infeasible_by_period} components. \code{rts = "crs"} avoids
+#' the issue, as does the hyperbolic orientation available in
+#' \code{\link{metafrontier}}.
+#'
+#' Note that the standard Malmquist index is not a \sQuote{proper}
+#' (multiplicatively complete and transitive) TFP index in the sense
+#' of O'Donnell (2012), so chained comparisons of index levels
+#' across more than two periods should be avoided.
 #'
 #' @references
 #' O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 #' Metafrontier frameworks for the study of firm-level efficiencies
 #' and technology ratios. \emph{Empirical Economics}, 34(2),
 #' 231--255. \doi{10.1007/s00181-007-0119-4}
+#'
+#' O'Donnell, C.J. (2012). An aggregate quantity framework for
+#' measuring and decomposing productivity change.
+#' \emph{Journal of Productivity Analysis}, 38(3), 255--272.
+#' \doi{10.1007/s11123-012-0275-1}
 #'
 #' @examples
 #' # Simulate panel data for 2 groups, 3 time periods
@@ -111,12 +174,13 @@
 #' })
 #' panel_data <- do.call(rbind, panels)
 #'
-#' # Compute metafrontier Malmquist index
+#' # Compute metafrontier Malmquist index, matching firms by id
 #' malm <- malmquist_meta(
 #'   log_y ~ log_x1 + log_x2,
 #'   data = panel_data,
 #'   group = "group",
-#'   time = "time"
+#'   time = "time",
+#'   id = "id"
 #' )
 #' summary(malm)
 #'
@@ -125,16 +189,19 @@ malmquist_meta <- function(formula = NULL,
                            data = NULL,
                            group = NULL,
                            time = NULL,
+                           id = NULL,
                            method = c("dea", "sfa"),
                            dist = c("hnormal", "tnormal", "exponential"),
+                           estimator = c("bc88", "jlms"),
                            orientation = c("output", "input"),
-                           rts = c("crs", "vrs", "drs", "irs"),
+                           rts = c("crs", "vrs", "drs", "irs", "fdh"),
                            control = list(),
                            ...) {
 
   cl <- match.call()
   method <- match.arg(method)
   dist <- match.arg(dist)
+  estimator <- match.arg(estimator)
   orientation <- match.arg(orientation)
   rts <- match.arg(rts)
 
@@ -166,6 +233,22 @@ malmquist_meta <- function(formula = NULL,
     time_vec <- time
   }
 
+  # Parse id variable
+  if (is.null(id)) {
+    id_vec <- NULL
+  } else if (is.character(id) && length(id) == 1L) {
+    if (!id %in% names(data)) {
+      stop("Column '", id, "' not found in data.", call. = FALSE)
+    }
+    id_vec <- data[[id]]
+  } else {
+    id_vec <- id
+  }
+  if (!is.null(id_vec) && length(id_vec) != nrow(data)) {
+    stop("'id' must supply one identifier per row of 'data'.",
+         call. = FALSE)
+  }
+
   group_levels <- levels(group_vec)
   time_levels <- sort(unique(time_vec))
 
@@ -176,13 +259,36 @@ malmquist_meta <- function(formula = NULL,
     stop("At least 2 time periods are required.", call. = FALSE)
   }
 
+  if (!is.null(id_vec)) {
+    for (g in group_levels) {
+      for (tt in time_levels) {
+        ids_gt <- id_vec[group_vec == g & time_vec == tt]
+        if (anyDuplicated(ids_gt)) {
+          dup <- unique(ids_gt[duplicated(ids_gt)])
+          stop("Duplicated (id, period) combinations in group '", g,
+               "' at period ", tt, ": ",
+               paste(dup, collapse = ", "), ".", call. = FALSE)
+        }
+      }
+    }
+  } else {
+    message("No 'id' supplied: firms are matched by row position ",
+            "within each group, which is valid only for balanced ",
+            "panels sorted identically in every period. Supply 'id' ",
+            "to match firms explicitly.")
+  }
+
   # Parse formula
   f <- Formula::Formula(formula)
 
   # --- SFA Malmquist path ---
   if (method == "sfa") {
+    message("Note: method = 'sfa' approximates metafrontier distances ",
+            "by the pointwise maximum over estimated group frontiers; ",
+            "see ?malmquist_meta for details.")
     result <- .malmquist_sfa(f, data, group_vec, group_levels,
-                             time_vec, time_levels, dist, control)
+                             time_vec, time_levels, dist, control,
+                             id_vec = id_vec, estimator = estimator)
     result$call <- cl
     result$orientation <- orientation
     result$rts <- rts
@@ -214,6 +320,14 @@ malmquist_meta <- function(formula = NULL,
   results <- vector("list", n_periods * n_groups * max_obs_per_group)
   result_idx <- 0L
 
+  # Per-period-pair accounting for consolidated warnings
+  pair_from <- time_levels[seq_len(n_periods)]
+  pair_to   <- time_levels[seq_len(n_periods) + 1L]
+  infeas_by_pair  <- integer(n_periods)
+  nprog_by_pair   <- integer(n_periods)
+  dropped_by_pair <- integer(n_periods)
+  n_skipped <- 0L
+
   for (tp in seq_len(length(time_levels) - 1L)) {
     t_s <- time_levels[tp]
     t_t <- time_levels[tp + 1L]
@@ -228,6 +342,9 @@ malmquist_meta <- function(formula = NULL,
 
     grp_s <- group_vec[idx_s]
     grp_t <- group_vec[idx_t]
+
+    ids_s <- if (!is.null(id_vec)) id_vec[idx_s] else NULL
+    ids_t <- if (!is.null(id_vec)) id_vec[idx_t] else NULL
 
     n_s <- length(idx_s)
     n_t <- length(idx_t)
@@ -254,52 +371,80 @@ malmquist_meta <- function(formula = NULL,
       Y_gt <- Y_t[idx_gt, , drop = FALSE]
 
       # D_j^s(x_s, y_s) — same-period group efficiency
-      d_grp_ss[idx_gs] <- .dea_batch_fast(
-        X_gs, Y_gs, orientation, rts)
+      d_grp_ss[idx_gs] <- .muffle_lp_warnings(.dea_batch_fast(
+        X_gs, Y_gs, orientation, rts))
 
       # D_j^t(x_t, y_t) — same-period group efficiency
-      d_grp_tt[idx_gt] <- .dea_batch_fast(
-        X_gt, Y_gt, orientation, rts)
+      d_grp_tt[idx_gt] <- .muffle_lp_warnings(.dea_batch_fast(
+        X_gt, Y_gt, orientation, rts))
 
       # D_j^s(x_t, y_t) — cross-period: period-t obs against period-s group tech
-      d_grp_st[idx_gt] <- suppressWarnings(.dea_batch_fast(
+      d_grp_st[idx_gt] <- .muffle_lp_warnings(.dea_batch_fast(
         X_gt, Y_gt, orientation, rts,
         X_ref = X_gs, Y_ref = Y_gs))
 
       # D_j^t(x_s, y_s) — cross-period: period-s obs against period-t group tech
-      d_grp_ts[idx_gs] <- suppressWarnings(.dea_batch_fast(
+      d_grp_ts[idx_gs] <- .muffle_lp_warnings(.dea_batch_fast(
         X_gs, Y_gs, orientation, rts,
         X_ref = X_gt, Y_ref = Y_gt))
+
+      nprog_by_pair[tp] <- nprog_by_pair[tp] +
+        length(idx_gt) + length(idx_gs)
+      infeas_by_pair[tp] <- infeas_by_pair[tp] +
+        sum(is.na(d_grp_st[idx_gt])) + sum(is.na(d_grp_ts[idx_gs]))
     }
 
-    # Metafrontier (pooled) DEA scores
-    # Suppress LP infeasibility warnings from cross-period evaluations
-    # (expected when reference technology cannot envelop all eval DMUs)
-    d_meta_ss <- suppressWarnings(
+    # Metafrontier (pooled) DEA scores. Infeasible cross-period LPs
+    # yield NA; they are counted here and reported once per call.
+    d_meta_ss <- .muffle_lp_warnings(
       .dea_batch(X_s, Y_s, X_s, Y_s, orientation, rts))
-    d_meta_tt <- suppressWarnings(
+    d_meta_tt <- .muffle_lp_warnings(
       .dea_batch(X_t, Y_t, X_t, Y_t, orientation, rts))
-    d_meta_st <- suppressWarnings(
+    d_meta_st <- .muffle_lp_warnings(
       .dea_batch(X_t, Y_t, X_s, Y_s, orientation, rts))
-    d_meta_ts <- suppressWarnings(
+    d_meta_ts <- .muffle_lp_warnings(
       .dea_batch(X_s, Y_s, X_t, Y_t, orientation, rts))
 
+    nprog_by_pair[tp] <- nprog_by_pair[tp] + n_t + n_s
+    infeas_by_pair[tp] <- infeas_by_pair[tp] +
+      sum(is.na(d_meta_st)) + sum(is.na(d_meta_ts))
+
     # --- Identify matched firms across periods ---
-    # We need firms present in both periods. Match by group.
     for (g in group_levels) {
       idx_gs <- which(grp_s == g)
       idx_gt <- which(grp_t == g)
-      n_pairs <- min(length(idx_gs), length(idx_gt))
 
-      if (n_pairs == 0) next
+      if (!is.null(id_vec)) {
+        ids_gs <- ids_s[idx_gs]
+        ids_gt <- ids_t[idx_gt]
+        common <- intersect(ids_gs, ids_gt)
+        dropped_by_pair[tp] <- dropped_by_pair[tp] +
+          (length(ids_gs) - length(common)) +
+          (length(ids_gt) - length(common))
+        pos_s <- idx_gs[match(common, ids_gs)]
+        pos_t <- idx_gt[match(common, ids_gt)]
+        out_ids <- common
+      } else {
+        n_matched <- min(length(idx_gs), length(idx_gt))
+        dropped_by_pair[tp] <- dropped_by_pair[tp] +
+          abs(length(idx_gs) - length(idx_gt))
+        pos_s <- idx_gs[seq_len(n_matched)]
+        pos_t <- idx_gt[seq_len(n_matched)]
+        out_ids <- seq_len(n_matched)
+      }
 
-      for (i in seq_len(n_pairs)) {
-        is <- idx_gs[i]
-        it <- idx_gt[i]
+      if (length(pos_s) == 0L) next
+
+      for (i in seq_along(pos_s)) {
+        is <- pos_s[i]
+        it <- pos_t[i]
 
         # Guard against zero/NA
         if (is.na(d_grp_ss[is]) || is.na(d_grp_tt[it]) ||
-            d_grp_ss[is] <= 0 || d_grp_tt[it] <= 0) next
+            d_grp_ss[is] <= 0 || d_grp_tt[it] <= 0) {
+          n_skipped <- n_skipped + 1L
+          next
+        }
 
         # -- Within-group Malmquist --
         ec_grp <- d_grp_tt[it] / d_grp_ss[is]
@@ -350,7 +495,7 @@ malmquist_meta <- function(formula = NULL,
 
         result_idx <- result_idx + 1L
         results[[result_idx]] <- data.frame(
-          id = i,
+          id = out_ids[i],
           group = g,
           period_from = t_s,
           period_to = t_t,
@@ -381,6 +526,25 @@ malmquist_meta <- function(formula = NULL,
          call. = FALSE)
   }
 
+  .warn_dropped(dropped_by_pair, pair_from, pair_to, is.null(id_vec))
+
+  total_infeasible <- sum(infeas_by_pair)
+  if (total_infeasible > 0L || n_skipped > 0L) {
+    msg <- character(0)
+    if (total_infeasible > 0L) {
+      msg <- paste0(total_infeasible, " of ", sum(nprog_by_pair),
+                    " cross-period DEA programs were infeasible (rts = \"",
+                    rts, "\"); the affected TC and MPI values are NA and ",
+                    "are excluded from reported means.")
+    }
+    if (n_skipped > 0L) {
+      msg <- c(msg, paste0(n_skipped, " matched observation(s) were ",
+                           "skipped because of missing or non-positive ",
+                           "same-period distance scores."))
+    }
+    warning(paste(msg, collapse = " "), call. = FALSE)
+  }
+
   malmquist_df <- do.call(rbind, results[seq_len(result_idx)])
   rownames(malmquist_df) <- NULL
 
@@ -398,10 +562,19 @@ malmquist_meta <- function(formula = NULL,
                             "period_to", "TGR_from", "TGR_to",
                             "TGC")],
     call = cl,
+    method = method,
     orientation = orientation,
     rts = rts,
     groups = group_levels,
-    periods = time_levels
+    periods = time_levels,
+    n_infeasible = total_infeasible,
+    infeasible_by_period = data.frame(
+      period_from = pair_from,
+      period_to = pair_to,
+      n_infeasible = infeas_by_pair,
+      n_programs = nprog_by_pair,
+      stringsAsFactors = FALSE
+    )
   )
   class(out) <- "malmquist_meta"
   out
@@ -423,10 +596,55 @@ malmquist_meta <- function(formula = NULL,
 }
 
 
+#' Muffle per-DMU LP infeasibility warnings
+#'
+#' Infeasible programs return NA scores; they are counted by the
+#' caller and reported in one consolidated warning per call instead
+#' of one warning per DMU. Other warnings pass through untouched.
+#'
+#' @keywords internal
+#' @noRd
+.muffle_lp_warnings <- function(expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    if (grepl("LP infeasible|No dominating FDH reference point",
+              conditionMessage(w))) {
+      invokeRestart("muffleWarning")
+    }
+  })
+}
+
+
+#' Consolidated warning for observations dropped during matching
+#'
+#' @keywords internal
+#' @noRd
+.warn_dropped <- function(dropped_by_pair, pair_from, pair_to,
+                          positional) {
+  total_dropped <- sum(dropped_by_pair)
+  if (total_dropped == 0L) return(invisible(NULL))
+  nz <- dropped_by_pair > 0L
+  detail <- paste0(dropped_by_pair[nz], " in ", pair_from[nz],
+                   " -> ", pair_to[nz], collapse = "; ")
+  if (positional) {
+    warning("Group sizes differ across periods: positional matching ",
+            "dropped ", total_dropped, " observation(s) (", detail,
+            "). Supply 'id' to match firms explicitly.", call. = FALSE)
+  } else {
+    warning(total_dropped, " observation(s) could not be matched ",
+            "across periods within their group and were dropped (",
+            detail, ").", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+
 #' @export
 print.malmquist_meta <- function(x, ...) {
   cat("\nMetafrontier Malmquist TFP Index\n")
   cat("================================\n")
+  if (!is.null(x$method)) {
+    cat("Method:      ", x$method, "\n")
+  }
   cat("Orientation: ", x$orientation, "\n")
   cat("RTS:         ", x$rts, "\n")
   cat("Groups:      ", paste(x$groups, collapse = ", "), "\n")
@@ -440,6 +658,16 @@ print.malmquist_meta <- function(x, ...) {
   cat("  TEC  =", format(means["TEC"], digits = 4), "\n")
   cat("  TGC  =", format(means["TGC"], digits = 4), "\n")
   cat("  TC*  =", format(means["TC"], digits = 4), "\n")
+
+  if (!is.null(x$n_infeasible) && x$n_infeasible > 0) {
+    cat("\nInfeasible cross-period DEA programs:", x$n_infeasible,
+        "(affected values are NA and excluded from means)\n")
+  }
+  if (!is.null(x$method) && x$method == "sfa") {
+    cat("\nNote: SFA metafrontier distances are pointwise-maximum",
+        "approximations\nover estimated group frontiers (see",
+        "?malmquist_meta).\n")
+  }
 
   invisible(x)
 }
@@ -482,6 +710,7 @@ summary.malmquist_meta <- function(object, ...) {
 
   out <- list(
     call        = object$call,
+    method      = object$method,
     orientation = object$orientation,
     rts         = object$rts,
     groups      = object$groups,
@@ -491,7 +720,9 @@ summary.malmquist_meta <- function(object, ...) {
                            na.rm = TRUE),
     by_group    = by_group,
     by_period   = by_period,
-    tgr_summary = tgr_summary
+    tgr_summary = tgr_summary,
+    n_infeasible = object$n_infeasible,
+    infeasible_by_period = object$infeasible_by_period
   )
   class(out) <- "summary.malmquist_meta"
   out
@@ -504,11 +735,30 @@ print.summary.malmquist_meta <- function(x, ...) {
   cat("=========================================\n\n")
   cat("Call:\n")
   print(x$call)
-  cat("\nOrientation:", x$orientation, "\n")
+  if (!is.null(x$method)) {
+    cat("\nMethod:     ", x$method, "\n")
+    cat("Orientation:", x$orientation, "\n")
+  } else {
+    cat("\nOrientation:", x$orientation, "\n")
+  }
   cat("RTS:        ", x$rts, "\n")
   cat("Groups:     ", paste(x$groups, collapse = ", "), "\n")
   cat("Periods:    ", paste(x$periods, collapse = " -> "), "\n")
-  cat("Observations:", x$n_obs, "\n\n")
+  cat("Observations:", x$n_obs, "\n")
+
+  if (!is.null(x$n_infeasible) && x$n_infeasible > 0) {
+    cat("Infeasible cross-period DEA programs:", x$n_infeasible,
+        "(values NA, excluded from means)\n")
+    if (!is.null(x$infeasible_by_period)) {
+      tab <- x$infeasible_by_period
+      tab <- tab[tab$n_infeasible > 0, , drop = FALSE]
+      for (k in seq_len(nrow(tab))) {
+        cat("  ", tab$period_from[k], "->", tab$period_to[k], ":",
+            tab$n_infeasible[k], "of", tab$n_programs[k], "programs\n")
+      }
+    }
+  }
+  cat("\n")
 
   # Overall means
   cat("Overall means:\n")
@@ -557,12 +807,15 @@ print.summary.malmquist_meta <- function(x, ...) {
 #' SFA-based Malmquist decomposition
 #'
 #' Fits period-specific group SFA models and computes the three-way
-#' decomposition using SFA distance functions.
+#' decomposition using SFA distance functions. The metafrontier is
+#' approximated by the pointwise maximum over the estimated group
+#' frontiers (see the Details section of \code{malmquist_meta}).
 #'
 #' @keywords internal
 #' @noRd
 .malmquist_sfa <- function(formula, data, group_vec, group_levels,
-                           time_vec, time_levels, dist, control) {
+                           time_vec, time_levels, dist, control,
+                           id_vec = NULL, estimator = "bc88") {
 
   # Fit period x group SFA models
   models <- list()
@@ -577,7 +830,8 @@ print.summary.malmquist_meta <- function(x, ...) {
       }
       data_gt <- data[idx, , drop = FALSE]
       models[[as.character(tt)]][[g]] <- tryCatch(
-        .fit_sfa_group(formula, data_gt, dist, control),
+        .fit_sfa_group(formula, data_gt, dist, control,
+                       estimator = estimator),
         error = function(e) NULL
       )
     }
@@ -596,6 +850,12 @@ print.summary.malmquist_meta <- function(x, ...) {
   results <- vector("list", sfa_n_periods * sfa_n_groups * sfa_max_obs)
   result_idx <- 0L
 
+  # Per-period-pair accounting for consolidated warnings
+  pair_from <- time_levels[seq_len(sfa_n_periods)]
+  pair_to   <- time_levels[seq_len(sfa_n_periods) + 1L]
+  dropped_by_pair <- integer(sfa_n_periods)
+  n_skipped <- 0L
+
   for (tp in seq_len(length(time_levels) - 1L)) {
     t_s <- time_levels[tp]
     t_t <- time_levels[tp + 1L]
@@ -613,12 +873,31 @@ print.summary.malmquist_meta <- function(x, ...) {
       # Obs indices for each period
       idx_s <- which(group_vec == g & time_vec == t_s)
       idx_t <- which(group_vec == g & time_vec == t_t)
-      n_pairs <- min(length(idx_s), length(idx_t))
-      if (n_pairs == 0) next
 
-      for (i in seq_len(n_pairs)) {
-        is <- idx_s[i]
-        it <- idx_t[i]
+      if (!is.null(id_vec)) {
+        ids_gs <- id_vec[idx_s]
+        ids_gt <- id_vec[idx_t]
+        common <- intersect(ids_gs, ids_gt)
+        dropped_by_pair[tp] <- dropped_by_pair[tp] +
+          (length(ids_gs) - length(common)) +
+          (length(ids_gt) - length(common))
+        pos_s <- idx_s[match(common, ids_gs)]
+        pos_t <- idx_t[match(common, ids_gt)]
+        out_ids <- common
+      } else {
+        n_matched <- min(length(idx_s), length(idx_t))
+        dropped_by_pair[tp] <- dropped_by_pair[tp] +
+          abs(length(idx_s) - length(idx_t))
+        pos_s <- idx_s[seq_len(n_matched)]
+        pos_t <- idx_t[seq_len(n_matched)]
+        out_ids <- seq_len(n_matched)
+      }
+
+      if (length(pos_s) == 0L) next
+
+      for (i in seq_along(pos_s)) {
+        is <- pos_s[i]
+        it <- pos_t[i]
 
         x_s <- X_all[is, ]
         x_t <- X_all[it, ]
@@ -639,7 +918,10 @@ print.summary.malmquist_meta <- function(x, ...) {
         te_s <- mod_s$efficiency[match(is, idx_s)]
         te_t <- mod_t$efficiency[match(it, idx_t)]
 
-        if (is.na(te_s) || is.na(te_t) || te_s <= 0 || te_t <= 0) next
+        if (is.na(te_s) || is.na(te_t) || te_s <= 0 || te_t <= 0) {
+          n_skipped <- n_skipped + 1L
+          next
+        }
 
         # TEC = TE_t / TE_s
         tec <- te_t / te_s
@@ -692,7 +974,7 @@ print.summary.malmquist_meta <- function(x, ...) {
 
         result_idx <- result_idx + 1L
         results[[result_idx]] <- data.frame(
-          id = i,
+          id = out_ids[i],
           group = g,
           period_from = t_s,
           period_to = t_t,
@@ -719,6 +1001,14 @@ print.summary.malmquist_meta <- function(x, ...) {
          call. = FALSE)
   }
 
+  .warn_dropped(dropped_by_pair, pair_from, pair_to, is.null(id_vec))
+
+  if (n_skipped > 0L) {
+    warning(n_skipped, " matched observation(s) were skipped because ",
+            "of missing or non-positive efficiency scores.",
+            call. = FALSE)
+  }
+
   malmquist_df <- do.call(rbind, results[seq_len(result_idx)])
   rownames(malmquist_df) <- NULL
 
@@ -734,6 +1024,7 @@ print.summary.malmquist_meta <- function(x, ...) {
                                        "EC_meta", "TC_meta")],
     tgr = malmquist_df[, c("id", "group", "period_from",
                             "period_to", "TGR_from", "TGR_to",
-                            "TGC")]
+                            "TGC")],
+    n_infeasible = 0L
   )
 }

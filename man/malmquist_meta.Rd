@@ -9,10 +9,12 @@ malmquist_meta(
   data = NULL,
   group = NULL,
   time = NULL,
+  id = NULL,
   method = c("dea", "sfa"),
   dist = c("hnormal", "tnormal", "exponential"),
+  estimator = c("bc88", "jlms"),
   orientation = c("output", "input"),
-  rts = c("crs", "vrs", "drs", "irs"),
+  rts = c("crs", "vrs", "drs", "irs", "fdh"),
   control = list(),
   ...
 )
@@ -33,20 +35,35 @@ indicators.}
 that identifies time periods, or a vector of time indicators.
 Periods must be consecutive integers or sortable.}
 
+\item{id}{optional. A character string naming the column in
+\code{data} that identifies firms across periods, or a vector
+of firm identifiers. When supplied, firms are matched across
+consecutive periods by identifier within each group. When
+\code{NULL} (default), firms are matched by row position within
+each group, which is valid only for balanced panels sorted
+identically in every period (see Details).}
+
 \item{method}{character. \code{"dea"} (default) for DEA-based
 distance functions or \code{"sfa"} for SFA-based parametric
-distance functions.}
+distance functions (an approximation; see Details).}
 
 \item{dist}{character. Distribution of the inefficiency term
 when \code{method = "sfa"}: \code{"hnormal"} (default),
 \code{"tnormal"}, or \code{"exponential"}.}
 
+\item{estimator}{character. Technical efficiency estimator used
+when \code{method = "sfa"}: \code{"bc88"} (default) for the
+Battese and Coelli (1988) estimator
+\eqn{E[\exp(-u)|\varepsilon]}, or \code{"jlms"} for the Jondrow
+et al. (1982) estimator \eqn{\exp(-E[u|\varepsilon])}. Passed to
+the group SFA fitter.}
+
 \item{orientation}{character. \code{"output"} (default) or
 \code{"input"}.}
 
 \item{rts}{character. Returns to scale assumption:
-\code{"crs"} (default), \code{"vrs"}, \code{"drs"}, or
-\code{"irs"}.}
+\code{"crs"} (default), \code{"vrs"}, \code{"drs"},
+\code{"irs"}, or \code{"fdh"}.}
 
 \item{control}{a list of control parameters for the SFA optimiser.}
 
@@ -61,7 +78,9 @@ An object of class \code{"malmquist_meta"}, a list
       \code{MPI} (metafrontier Malmquist TFP index),
       \code{TEC} (technical efficiency change),
       \code{TGC} (technology gap change),
-      \code{TC} (metafrontier technical change)}
+      \code{TC} (metafrontier technical change). The \code{id}
+      column holds the supplied firm identifiers when \code{id}
+      is given, and the within-group match position otherwise.}
     \item{group_malmquist}{data frame with the within-group
       Malmquist index decomposition: \code{MPI_group},
       \code{EC_group}, \code{TC_group}}
@@ -75,10 +94,17 @@ An object of class \code{"malmquist_meta"}, a list
       end period), and \code{TGC} (technology gap change,
       \code{TGR_to / TGR_from})}
     \item{call}{the matched function call}
+    \item{method}{the estimation method used (\code{"dea"} or
+      \code{"sfa"})}
     \item{orientation}{the orientation used}
     \item{rts}{the returns to scale assumption}
     \item{groups}{group labels}
     \item{periods}{time periods}
+    \item{n_infeasible}{total number of infeasible cross-period
+      DEA programs (always \code{0} for \code{method = "sfa"})}
+    \item{infeasible_by_period}{data frame with the number of
+      infeasible cross-period DEA programs per period pair
+      (\code{method = "dea"} only)}
   }
 }
 \description{
@@ -105,18 +131,54 @@ where:
     the shift of the global production possibility frontier
 }
 
-Computation uses DEA-based distance functions. For each
-consecutive pair of periods \eqn{(s, t)}, eight sets of LP
-problems are solved: within-group and pooled efficiencies at
-each period, plus cross-period evaluations for the geometric
-mean formulation of technical change.
+\strong{Firm matching:} when \code{id} is supplied, firms are
+matched across consecutive periods by identifier within each
+technology group. Duplicated (id, period) combinations within a
+group are an error. Observations without a within-group match in
+the adjacent period, either because the panel is unbalanced or
+because a firm switches group between periods, are dropped, and a
+single consolidated warning reports the number dropped per period
+pair. When \code{id} is \code{NULL}, firms are matched by row
+position within each group; this is valid only for balanced
+panels sorted identically in every period, so a message is
+emitted as a reminder, and a warning is issued when group sizes
+differ across a period pair (the unmatched observations are
+dropped). Supplying \code{id} is recommended.
 
-\strong{Balanced panel assumption:} Firms are matched across
-periods by position within each group. The data should contain
-a balanced panel (the same firms observed in every period) with
-consistent ordering. If group sizes differ across periods,
-only the first \code{min(n_s, n_t)} firms per group are paired
-and unmatched observations are silently dropped.
+\strong{DEA-based computation (\code{method = "dea"}):} for each
+consecutive pair of periods \eqn{(s, t)}, eight sets of LP
+problems are solved: within-group and pooled efficiencies at each
+period, plus cross-period evaluations for the geometric mean
+formulation of technical change. Distances to the metafrontier
+are exact distances to the pooled-data frontier, as in O'Donnell,
+Rao and Battese (2008).
+
+\strong{SFA-based computation is an approximation
+(\code{method = "sfa"}):} period-specific group SFA frontiers are
+estimated, and each observation's metafrontier distance is
+approximated by the pointwise maximum of the estimated group
+frontier functions evaluated at its inputs; no enveloping
+metafrontier is re-estimated. This coincides with the O'Donnell
+et al. (2008) metafrontier wherever a single group frontier
+dominates, but can understate the metafrontier where group
+frontiers cross, which affects TGC and TC*. Prefer
+\code{method = "dea"} when an exact decomposition is required.
+
+\strong{Infeasible cross-period programs:} under
+\code{rts = "vrs"}, \code{"drs"}, \code{"irs"}, or \code{"fdh"},
+cross-period LPs can be genuinely infeasible because the
+reference technology cannot reach the evaluated observation. Such
+cases yield \code{NA} (never \code{Inf}), are excluded from the
+reported means, and are counted in a single consolidated warning;
+the counts are stored in the \code{n_infeasible} and
+\code{infeasible_by_period} components. \code{rts = "crs"} avoids
+the issue, as does the hyperbolic orientation available in
+\code{\link{metafrontier}}.
+
+Note that the standard Malmquist index is not a \sQuote{proper}
+(multiplicatively complete and transitive) TFP index in the sense
+of O'Donnell (2012), so chained comparisons of index levels
+across more than two periods should be avoided.
 }
 \examples{
 # Simulate panel data for 2 groups, 3 time periods
@@ -134,12 +196,13 @@ panels <- lapply(1:3, function(t) {
 })
 panel_data <- do.call(rbind, panels)
 
-# Compute metafrontier Malmquist index
+# Compute metafrontier Malmquist index, matching firms by id
 malm <- malmquist_meta(
   log_y ~ log_x1 + log_x2,
   data = panel_data,
   group = "group",
-  time = "time"
+  time = "time",
+  id = "id"
 )
 summary(malm)
 
@@ -149,4 +212,9 @@ O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 Metafrontier frameworks for the study of firm-level efficiencies
 and technology ratios. \emph{Empirical Economics}, 34(2),
 231--255. \doi{10.1007/s00181-007-0119-4}
+
+O'Donnell, C.J. (2012). An aggregate quantity framework for
+measuring and decomposing productivity change.
+\emph{Journal of Productivity Analysis}, 38(3), 255--272.
+\doi{10.1007/s11123-012-0275-1}
 }

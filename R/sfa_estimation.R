@@ -12,15 +12,22 @@
 #' @param dist distribution of the inefficiency term.
 #' @param control list of control parameters.
 #' @param ... additional arguments.
+#' @param estimator character. Technical efficiency estimator:
+#'   \code{"bc88"} (Battese and Coelli, 1988; \code{E[exp(-u)|eps]})
+#'   or \code{"jlms"} (Jondrow et al., 1982; \code{exp(-E[u|eps])}).
 #'
 #' @return A list with components: coefficients, sigma_v, sigma_u,
-#'   logLik, efficiency, fitted, residuals, hessian, convergence.
+#'   logLik, efficiency, efficiency_jlms, efficiency_bc88, estimator,
+#'   fitted, residuals, hessian, convergence.
 #'   When Z variables are present, also includes delta, Z, and
 #'   optionally sigma_u_vec or mu_vec.
 #'
 #' @keywords internal
 #' @noRd
-.fit_sfa_group <- function(formula, data, dist, control, ...) {
+.fit_sfa_group <- function(formula, data, dist, control, ...,
+                           estimator = c("bc88", "jlms")) {
+
+  estimator <- match.arg(estimator)
 
   # Build model frame from the full Formula
   if (inherits(formula, "Formula")) {
@@ -174,6 +181,7 @@
       sigma_u_vec <- exp(as.numeric(Z %*% delta))
       sigma_u <- mean(sigma_u_vec)
       mu_star <- -as.numeric(eps) - sigma_v^2 / sigma_u_vec
+      sigma_star <- sigma_v
       u_hat <- mu_star + sigma_v * .mills(mu_star / sigma_v)
     } else if (dist == "tnormal") {
       mu_vec <- as.numeric(Z %*% delta)
@@ -197,6 +205,7 @@
       u_hat <- mu_star + sigma_star * .mills(mu_star / sigma_star)
     } else if (dist == "exponential") {
       mu_star <- -as.numeric(eps) - sigma_v^2 / sigma_u
+      sigma_star <- sigma_v
       u_hat <- mu_star + sigma_v * .mills(mu_star / sigma_v)
     } else if (dist == "tnormal") {
       mu_val <- opt$par["mu"]
@@ -212,7 +221,23 @@
   u_hat <- pmax(as.numeric(u_hat), 0)
 
   # JLMS (Jondrow et al., 1982) point efficiency: exp(-E[u|eps])
-  te <- as.numeric(exp(-u_hat))
+  te_jlms <- as.numeric(exp(-u_hat))
+
+  # BC88 (Battese and Coelli, 1988) point efficiency: E[exp(-u)|eps]
+  #   = exp(-mu* + sigma*^2/2) * Phi(mu*/sigma* - sigma*) / Phi(mu*/sigma*)
+  # For the exponential distribution sigma* is sigma_v (set in the
+  # branches above). Where Phi(mu*/sigma*) underflows to zero the ratio
+  # is indeterminate; those observations fall back to the JLMS value.
+  bc_ratio <- as.numeric(mu_star) / sigma_star
+  bc_denom <- pnorm(bc_ratio)
+  te_bc88 <- as.numeric(
+    exp(-as.numeric(mu_star) + 0.5 * sigma_star^2) *
+      pnorm(bc_ratio - sigma_star) / bc_denom
+  )
+  bc_bad <- !is.finite(te_bc88) | bc_denom == 0
+  te_bc88[bc_bad] <- te_jlms[bc_bad]
+
+  te <- if (estimator == "bc88") te_bc88 else te_jlms
 
   # Frontier values
   fitted_vals <- as.numeric(X %*% beta_hat)
@@ -226,6 +251,9 @@
     lambda = lambda,
     logLik = opt$value,
     efficiency = te,
+    efficiency_jlms = te_jlms,
+    efficiency_bc88 = te_bc88,
+    estimator = estimator,
     inefficiency = as.numeric(u_hat),
     fitted = fitted_vals,
     residuals = as.numeric(eps),
@@ -251,6 +279,16 @@
 
 # ==== Homoscedastic log-likelihoods (no Z) ====
 
+# Parameter-vector layout convention (all likelihoods below):
+# params = c(beta[1:k], log_sigma_v, <distribution-specific tail>),
+# where the tail is log_sigma_u (half-normal, exponential),
+# mu then log_sigma_u (truncated-normal), or delta[1:p] followed by
+# log_sigma_u where Z variables enter.
+
+# Normal/half-normal composed error eps = v - u, u ~ |N(0, sigma_u^2)|:
+# log f(eps) = log 2 - log sigma + log phi(eps/sigma)
+#              + log Phi(-eps*lambda/sigma), sigma^2 = sigma_v^2 + sigma_u^2,
+# lambda = sigma_u/sigma_v. Aigner, Lovell and Schmidt (1977, Eq. 8).
 #' @noRd
 .loglik_hnormal <- function(params, y, X) {
   k <- ncol(X)
@@ -275,6 +313,11 @@
   result
 }
 
+# Normal/truncated-normal, u ~ N+(mu, sigma_u^2):
+# log f(eps) = log phi((eps + mu)/sigma) - log sigma
+#              + log Phi(mu*/sigma*) - log Phi(mu/sigma_u),
+# with mu* = (mu*sigma_v^2 - eps*sigma_u^2)/sigma^2 and
+# sigma* = sigma_v*sigma_u/sigma. Stevenson (1980, Eq. 15).
 #' @noRd
 .loglik_tnormal <- function(params, y, X) {
   k <- ncol(X)
@@ -302,6 +345,10 @@
   result
 }
 
+# Normal/exponential, u ~ Exp(rate = 1/sigma_u):
+# log f(eps) = -log sigma_u + eps/sigma_u + sigma_v^2/(2*sigma_u^2)
+#              + log Phi(-(eps + sigma_v^2/sigma_u)/sigma_v).
+# Meeusen and van den Broeck (1977).
 #' @noRd
 .loglik_exponential <- function(params, y, X) {
   k <- ncol(X)
@@ -324,6 +371,9 @@
 
 
 # ==== Heteroscedastic log-likelihoods (with Z) ====
+# Same densities as above with the distribution parameter made
+# observation-specific: sigma_u_i = exp(Z_i' delta) for half-normal and
+# exponential, mu_i = Z_i' delta for truncated-normal.
 
 #' Half-normal with observation-specific sigma_u_i = exp(Z_i' delta)
 #' @noRd

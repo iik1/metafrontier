@@ -2,7 +2,8 @@
 #'
 #' Fits a panel SFA model to a single group using MLE.
 #' Implements BC92 (Battese and Coelli, 1992) with time-varying
-#' inefficiency: u_it = u_i * exp(-eta*(t-T_i)) where u_i ~ |N(0, sigma_u^2)|.
+#' inefficiency: u_it = u_i * exp(-eta*(t - T)) where T is the global
+#' final period and u_i ~ |N(0, sigma_u^2)|.
 #' Also implements BC95 (Battese and Coelli, 1995) with observation-specific
 #' mean: u_it ~ N+(z_it'delta, sigma_u^2).
 #'
@@ -13,6 +14,9 @@
 #' @param panel_info list with id and time column names.
 #' @param control list of control parameters.
 #' @param ... additional arguments.
+#' @param estimator character. Technical efficiency estimator:
+#'   \code{"bc88"} (Battese and Coelli, 1988; \code{E[exp(-u)|eps]})
+#'   or \code{"jlms"} (Jondrow et al., 1982; \code{exp(-E[u|eps])}).
 #'
 #' @return A list compatible with .fit_sfa_group output plus panel fields.
 #' @keywords internal
@@ -25,7 +29,10 @@
 }
 
 .fit_sfa_panel_group <- function(formula, data, dist, panel_dist,
-                                 panel_info, control, ...) {
+                                 panel_info, control, ...,
+                                 estimator = c("bc88", "jlms")) {
+
+  estimator <- match.arg(estimator)
 
   id_col <- panel_info$id
   time_col <- panel_info$time
@@ -35,10 +42,8 @@
          "' not found in data.", call. = FALSE)
   }
 
-  # Sort by (firm, time) for clean panel structure
-  data <- data[order(data[[id_col]], data[[time_col]]), ]
-
-  # Build model matrices
+  # Build model matrices (input row order is preserved throughout so
+  # that returned vectors align with the caller's data)
   if (inherits(formula, "Formula")) {
     f <- formula
     has_z <- length(f)[2] >= 2L
@@ -67,9 +72,15 @@
   n <- length(y)
   k <- ncol(X)
 
-  # Panel structure
+  # Panel structure; drop any rows removed from the model frame by
+  # na.omit so that firms/times stay aligned with y and X
   firms <- data[[id_col]]
   times <- data[[time_col]]
+  na_act <- attr(mf, "na.action")
+  if (!is.null(na_act)) {
+    firms <- firms[-na_act]
+    times <- times[-na_act]
+  }
   firm_ids <- unique(firms)
   n_firms <- length(firm_ids)
 
@@ -78,13 +89,10 @@
   T_i <- sapply(firm_idx, length)  # periods per firm
   T_max <- max(times)
 
-  # Time index relative to T_i for BC92
-  t_rel <- numeric(n)
-  for (ff in seq_along(firm_ids)) {
-    idx <- firm_idx[[ff]]
-    T_f <- max(times[idx])
-    t_rel[idx] <- times[idx] - T_f  # t - T_i (negative or zero)
-  }
+  # Time index relative to the global final period T for BC92:
+  # u_it = u_i * exp(-eta * (t - T)), matching the unbalanced-panel
+  # formulation of Battese and Coelli (1992)
+  t_rel <- times - T_max
 
   # OLS starting values
   ols <- lm.fit(X, y)
@@ -130,12 +138,22 @@
   ctrl <- list(fnscale = -1, maxit = 5000, reltol = 1e-10)
   ctrl[names(control)] <- control
 
-  opt <- optim(
-    par = start_params,
-    fn = loglik_fn,
-    method = "BFGS",
-    control = ctrl,
-    hessian = TRUE
+  opt <- tryCatch(
+    optim(par = start_params, fn = loglik_fn,
+          method = "BFGS", control = ctrl, hessian = TRUE),
+    error = function(e) {
+      tryCatch(
+        optim(par = start_params, fn = loglik_fn,
+              method = "Nelder-Mead",
+              control = list(fnscale = -1, maxit = 10000),
+              hessian = TRUE),
+        error = function(e2) {
+          stop("MLE optimisation failed. The data may have too few ",
+               "observations or extreme values. Original error: ",
+               conditionMessage(e), call. = FALSE)
+        }
+      )
+    }
   )
 
   if (opt$convergence != 0) {
@@ -154,11 +172,14 @@
   if (panel_dist == "bc92") {
     eta <- opt$par["eta"]
 
-    # JLMS-style conditional mean for BC92
-    # E[u_i | eps_i1, ..., eps_iT]
+    # Conditional efficiency for BC92, both JLMS-style and the
+    # Battese-Coelli (1992) closed form
     eps <- y - fitted_vals
-    te <- .bc92_efficiency(eps, sigma_v, sigma_u, eta,
-                           firms, firm_idx, T_i, t_rel)
+    te_list <- .bc92_efficiency(eps, sigma_v, sigma_u, eta,
+                                firms, firm_idx, T_i, t_rel)
+    te_jlms <- te_list$jlms
+    te_bc88 <- te_list$bc88
+    te <- if (estimator == "bc88") te_bc88 else te_jlms
 
     result <- list(
       coefficients = beta,
@@ -167,6 +188,9 @@
       eta = as.numeric(eta),
       logLik = opt$value,
       efficiency = te,
+      efficiency_jlms = te_jlms,
+      efficiency_bc88 = te_bc88,
+      estimator = estimator,
       fitted = fitted_vals,
       residuals = eps,
       hessian = opt$hessian,
@@ -196,7 +220,21 @@
     sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
 
     u_hat <- mu_star + sigma_star * .safe_mills(mu_star / sigma_star)
-    te <- exp(-u_hat)
+    te_jlms <- as.numeric(exp(-u_hat))
+
+    # BC88 (Battese and Coelli, 1988): E[exp(-u)|eps]. Where
+    # Phi(mu*/sigma*) underflows to zero the ratio is indeterminate;
+    # those observations fall back to the JLMS value.
+    bc_ratio <- mu_star / sigma_star
+    bc_denom <- pnorm(bc_ratio)
+    te_bc88 <- as.numeric(
+      exp(-mu_star + 0.5 * sigma_star^2) *
+        pnorm(bc_ratio - sigma_star) / bc_denom
+    )
+    bc_bad <- !is.finite(te_bc88) | bc_denom == 0
+    te_bc88[bc_bad] <- te_jlms[bc_bad]
+
+    te <- if (estimator == "bc88") te_bc88 else te_jlms
 
     result <- list(
       coefficients = beta,
@@ -204,7 +242,10 @@
       sigma_u = as.numeric(sigma_u),
       delta = delta,
       logLik = opt$value,
-      efficiency = as.numeric(te),
+      efficiency = te,
+      efficiency_jlms = te_jlms,
+      efficiency_bc88 = te_bc88,
+      estimator = estimator,
       fitted = fitted_vals,
       residuals = eps,
       hessian = opt$hessian,
@@ -230,11 +271,18 @@
 
 #' BC92 log-likelihood
 #'
-#' u_it = u_i * exp(-eta*(t-T_i)), u_i ~ |N(0, sigma_u^2)|
-#' Integrated over u_i (closed-form for half-normal).
+#' u_it = u_i * exp(-eta*(t - T)) with T the global final period,
+#' u_i ~ |N(0, sigma_u^2)|. Integrated over u_i (closed-form for
+#' half-normal).
 #'
 #' @keywords internal
 #' @noRd
+# Per-firm marginal log-density after integrating out u_i
+# (Battese and Coelli, 1992, Eq. 8):
+# ll_i = -T_i/2 log(2*pi) - T_i log sigma_v - sum_t eps_it^2/(2 sigma_v^2)
+#        + log 2 - 0.5 log(1 + sigma_u^2 sum_t d_t^2 / sigma_v^2)
+#        + 0.5 (mu_i*/sigma_i*)^2 + log Phi(mu_i*/sigma_i*).
+# Parameter layout: params = c(beta[1:k], log_sigma_v, log_sigma_u, eta).
 .loglik_bc92 <- function(params, y, X, k, firms, firm_idx, T_i, t_rel) {
 
   beta <- params[seq_len(k)]
@@ -289,10 +337,17 @@
 
 # ---------- BC92 efficiency estimation ----------
 
+# Returns both the JLMS-style estimator exp(-E[u_i|eps] * d_t) and the
+# Battese-Coelli (1992, Eq. 10) closed form
+# TE_it = {Phi(mu_i*/sigma_i* - d_t*sigma_i*) / Phi(mu_i*/sigma_i*)}
+#         * exp(-d_t*mu_i* + 0.5*d_t^2*sigma_i*^2),
+# where d_t = exp(-eta*(t - T)) and (mu_i*, sigma_i*) are the per-firm
+# conditional posterior parameters of u_i.
 .bc92_efficiency <- function(eps, sigma_v, sigma_u, eta,
                              firms, firm_idx, T_i, t_rel) {
   n <- length(eps)
-  te <- numeric(n)
+  te_jlms <- numeric(n)
+  te_bc88 <- numeric(n)
 
   for (ff in seq_along(firm_idx)) {
     idx <- firm_idx[[ff]]
@@ -313,10 +368,19 @@
 
     # u_it = u_i * exp(-eta*(t-T))
     u_it <- E_ui * d_t
-    te[idx] <- exp(-u_it)
+    te_jlms[idx] <- exp(-u_it)
+
+    # BC92 closed form; where Phi(mu*/sigma*) underflows to zero the
+    # ratio is indeterminate, so fall back to the JLMS value
+    denom <- pnorm(ratio)
+    te_f <- pnorm(ratio - d_t * sigma_star) / denom *
+      exp(-d_t * mu_star + 0.5 * d_t^2 * sigma_star2)
+    bad <- !is.finite(te_f) | denom == 0
+    te_f[bad] <- te_jlms[idx][bad]
+    te_bc88[idx] <- te_f
   }
 
-  te
+  list(jlms = te_jlms, bc88 = te_bc88)
 }
 
 
@@ -330,6 +394,11 @@
 #'
 #' @keywords internal
 #' @noRd
+# Observation-level log-density (Battese and Coelli, 1995):
+# ll_it = log phi((eps_it + mu_it)/sigma) - log sigma
+#         + log Phi(mu_it*/sigma*) - log Phi(mu_it/sigma_u),
+# with mu_it = z_it'delta. Parameter layout:
+# params = c(beta[1:k], log_sigma_v, delta[1:p], log_sigma_u).
 .loglik_bc95 <- function(params, y, X, Z, k) {
   n <- length(y)
   p <- ncol(Z)

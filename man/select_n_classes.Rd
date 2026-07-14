@@ -14,19 +14,22 @@ select_n_classes(formula, data, n_classes_range = 2:5, ...)
 \item{n_classes_range}{integer vector of class counts to try.}
 
 \item{...}{additional arguments passed to
-\code{\link{latent_class_metafrontier}}.}
+\code{\link{latent_class_metafrontier}}, notably \code{n_starts}.}
 }
 \value{
 A data frame with columns \code{n_classes}, \code{BIC},
   and \code{marginal_ll}.
 }
 \description{
-Select Number of Latent Classes via BIC
-}
-\details{
-Fits latent class metafrontier models for each value in
-\code{n_classes_range} and returns BIC values. The optimal
-number of classes minimises BIC.
+Fits a latent class metafrontier model for each value in
+\code{n_classes_range} and tabulates the Bayesian information
+criterion (BIC) and marginal log-likelihood of each fit. The
+optimal number of classes minimises BIC. Fits that fail are
+silently dropped from the table. Because the EM algorithm can
+converge to local optima, the ranking is sensitive to the number
+of random starts: pass \code{n_starts} (forwarded to
+\code{\link{latent_class_metafrontier}}) and increase it for a
+more reliable comparison across class counts.
 }
 \examples{
 \donttest{

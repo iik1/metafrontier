@@ -363,8 +363,13 @@ inefficiency.</p>
 <p>The group-specific technical efficiency is:</p>
 <p><span class="math display">\[TE_{ij} = \exp(-u_{ij}) \in (0,
 1]\]</span></p>
-<p>estimated via the Jondrow et al. (1982) conditional mean
-estimator.</p>
+<p>estimated by default via the Battese and Coelli (1988) conditional
+expectation estimator <span class="math inline">\(E[\exp(-u_{ij}) \mid
+\varepsilon_{ij}]\)</span> (<code>estimator = &quot;bc88&quot;</code>). The
+Jondrow et al. (1982) estimator <span class="math inline">\(\exp(-E[u_{ij} \mid \varepsilon_{ij}])\)</span> is
+also computed and stored, and
+<code>efficiencies(fit, estimator = &quot;jlms&quot;)</code> switches between the
+two without refitting.</p>
 </div>
 <div id="the-metafrontier" class="section level3">
 <h3>1.2 The metafrontier</h3>
@@ -372,9 +377,14 @@ estimator.</p>
 that:</p>
 <p><span class="math display">\[x&#39;\beta^* \ge x&#39;\beta_j \quad
 \text{for all } x \text{ and all } j\]</span></p>
-<p>That is, the metafrontier weakly dominates all group frontiers. It
-represents the production technology available to firms with
-unrestricted access to all technologies.</p>
+<p>That is, the metafrontier weakly dominates all group frontiers. It is
+the boundary of the industry <strong>metatechnology</strong> <span class="math inline">\(T^*\)</span>: the set of all input-output
+combinations that are technically feasible in the industry (Battese, Rao
+and O’Donnell, 2004; O’Donnell, Rao and Battese, 2008). Each group
+frontier bounds a restricted subset <span class="math inline">\(T_j
+\subseteq T^*\)</span> of this metatechnology, where the restrictions
+reflect regulation, the physical environment, resource endowments, or
+the cost of switching production systems.</p>
 </div>
 <div id="the-efficiency-decomposition" class="section level3">
 <h3>1.3 The efficiency decomposition</h3>
@@ -397,16 +407,36 @@ frontier coincides with the metafrontier at that input mix; values below
 <div id="estimation" class="section level3">
 <h3>2.1 Estimation</h3>
 <p>After obtaining group estimates <span class="math inline">\(\hat\beta_j\)</span> in Stage 1, the metafrontier
-parameters <span class="math inline">\(\hat\beta^*\)</span> are
-estimated by solving:</p>
+parameters <span class="math inline">\(\hat\beta^*\)</span> are chosen
+so that the metafrontier lies as close as possible to the group
+frontiers while enveloping all of them. Battese, Rao and O’Donnell
+(2004) propose two optimisation criteria, both implemented in the
+package via the <code>objective</code> argument.</p>
+<p><strong>Minimum sum of absolute deviations</strong>
+(<code>objective = &quot;lp&quot;</code>, the default):</p>
+<p><span class="math display">\[\min_{\beta^*} \sum_{j=1}^{J}
+\sum_{i=1}^{n_j} \left|x_{ij}&#39;\beta^* -
+x_{ij}&#39;\hat\beta_j\right|\]</span> <span class="math display">\[\text{subject to: } x_{ij}&#39;\beta^* \ge
+x_{ij}&#39;\hat\beta_j \quad \forall\, i, j\]</span></p>
+<p>Because the envelopment constraints force every deviation to be
+non-negative, the absolute values can be dropped and the problem reduces
+to a linear programme (O’Donnell, Rao and Battese, 2008, Eqs. 23-25).
+This LP is the primary presentation in O’Donnell, Rao and Battese (2008)
+and is the package default; it is solved with
+<code>lpSolveAPI</code>.</p>
+<p><strong>Minimum sum of squared deviations</strong>
+(<code>objective = &quot;qp&quot;</code>):</p>
 <p><span class="math display">\[\min_{\beta^*} \sum_{j=1}^{J}
 \sum_{i=1}^{n_j} \left(x_{ij}&#39;\beta^* -
-x_{ij}&#39;\hat\beta_j\right)^2\]</span> <span class="math display">\[\text{subject to: } x_{ij}&#39;\beta^* \ge
-x_{ij}&#39;\hat\beta_j \quad \forall\, i, j\]</span></p>
-<p>This is a convex quadratic program. The <code>metafrontier</code>
-package solves it using <code>constrOptim()</code> from base R, which
-implements an adaptive barrier algorithm for linearly constrained
-optimisation.</p>
+x_{ij}&#39;\hat\beta_j\right)^2\]</span></p>
+<p>subject to the same envelopment constraints. This is a convex
+quadratic programme, solved exactly with <code>quadprog</code> when that
+package is available, with an adaptive-barrier fallback via
+<code>constrOptim()</code> from base R otherwise.</p>
+<p>The two criteria weight deviations differently (the squared criterion
+penalises large gaps between the metafrontier and a group frontier more
+heavily), but in practice they typically produce very similar
+coefficients.</p>
 </div>
 <div id="properties" class="section level3">
 <h3>2.2 Properties</h3>
@@ -457,6 +487,25 @@ intercepts:</p>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>meta_b0 <span class="sc">&gt;=</span> group_b0</span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; G1.(Intercept) G2.(Intercept) </span></span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;           TRUE           TRUE</span></span></code></pre></div>
+<p>To use the minimum sum of squared deviations criterion instead, set
+<code>objective = &quot;qp&quot;</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>fit_qp <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">objective =</span> <span class="st">&quot;qp&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co"># LP and QP criteria typically give very similar coefficients</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="fu">cbind</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="at">LP =</span> <span class="fu">coef</span>(fit_det, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>),</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">QP =</span> <span class="fu">coef</span>(fit_qp, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt;                    LP        QP</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; (Intercept) 1.0416500 1.0416500</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; log_x1      0.4950084 0.4950084</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; log_x2      0.1926936 0.1926936</span></span></code></pre></div>
 </div>
 </div>
 <div id="stochastic-metafrontier-huang-huang-and-liu-2014" class="section level2">
@@ -518,72 +567,79 @@ uncertainty.</li>
 </div>
 <div id="example-1" class="section level3">
 <h3>3.4 Example</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>fit_sto <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">summary</span>(fit_sto)</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model Summary</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; ==========================</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data, </span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, meta_type = &quot;stochastic&quot;)</span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; Method:        sfa </span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:  stochastic </span></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; --- Group: G1 (n = 300) ---</span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; (Intercept) 1.041650   0.054009   19.29   &lt;2e-16 ***</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; log_x1      0.495008   0.009173   53.97   &lt;2e-16 ***</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; log_x2      0.192694   0.008907   21.64   &lt;2e-16 ***</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 22.685 </span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; --- Group: G2 (n = 300) ---</span></span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.58144    0.05155   11.28   &lt;2e-16 ***</span></span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; log_x1       0.52876    0.01019   51.88   &lt;2e-16 ***</span></span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; log_x2       0.20155    0.01037   19.44   &lt;2e-16 ***</span></span>
-<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
-<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
-<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: -36.696 </span></span>
-<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; --- Metafrontier ---</span></span>
-<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
-<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.813734   0.208469   3.903 9.49e-05 ***</span></span>
-<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; log_x1      0.513997   0.005155  99.716  &lt; 2e-16 ***</span></span>
-<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; log_x2      0.197514   0.004989  39.588  &lt; 2e-16 ***</span></span>
-<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
-<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
-<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 181.35 </span></span>
-<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; --- Efficiency Decomposition ---</span></span>
-<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt;  Group Mean_TE Mean_TGR Mean_TE_star</span></span>
-<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt;     G1  0.8433   1.1839       0.9984</span></span>
-<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt;     G2  0.7328   0.8306       0.6087</span></span>
-<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratio Summary ---</span></span>
-<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt;  Group   N   Mean     SD    Min     Q1 Median     Q3    Max</span></span>
-<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt;     G1 300 1.1839 0.0320 1.1222 1.1576 1.1861 1.2087 1.2464</span></span>
-<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt;     G2 300 0.8306 0.0181 0.7949 0.8148 0.8300 0.8445 0.8693</span></span></code></pre></div>
-<p>The stochastic metafrontier provides standard errors:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Variance-covariance matrix</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">vcov</span>(fit_sto)</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;               (Intercept)        log_x1        log_x2</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; (Intercept)  4.345943e-02 -8.269764e-05 -6.986322e-05</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; log_x1      -8.269764e-05  2.657002e-05  1.867196e-06</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; log_x2      -6.986322e-05  1.867196e-06  2.489219e-05</span></span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_sto <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>)</span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co"># Log-likelihood of the metafrontier model</span></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">logLik</span>(fit_sto)</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; 181.3504 (df=3)</span></span></code></pre></div>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">summary</span>(fit_sto)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; Metafrontier Model Summary</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; ==========================</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data, </span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, meta_type = &quot;stochastic&quot;)</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt; Method:        sfa </span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt; Metafrontier:  stochastic </span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt; --- Group: G1 (n = 300) ---</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt;              Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; (Intercept)  1.041650   0.054009  19.287  &lt; 2e-16 ***</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt; log_x1       0.495008   0.009173  53.966  &lt; 2e-16 ***</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; log_x2       0.192694   0.008907  21.635  &lt; 2e-16 ***</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt; log_sigma_v -1.698990   0.114126 -14.887  &lt; 2e-16 ***</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt; log_sigma_u -1.524665   0.228427  -6.675 2.48e-11 ***</span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 22.685 </span></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt; --- Group: G2 (n = 300) ---</span></span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.58144    0.05155   11.28   &lt;2e-16 ***</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt; log_x1       0.52876    0.01019   51.88   &lt;2e-16 ***</span></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt; log_x2       0.20155    0.01037   19.44   &lt;2e-16 ***</span></span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; log_sigma_v -2.00652    0.16307  -12.30   &lt;2e-16 ***</span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; log_sigma_u -0.87260    0.08019  -10.88   &lt;2e-16 ***</span></span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: -36.696 </span></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt; --- Metafrontier ---</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    </span></span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="co">#&gt; (Intercept) 0.813734   0.208469   3.903 9.49e-05 ***</span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="co">#&gt; log_x1      0.513997   0.005155  99.716  &lt; 2e-16 ***</span></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a><span class="co">#&gt; log_x2      0.197514   0.004989  39.588  &lt; 2e-16 ***</span></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</span></span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a><span class="co">#&gt; Log-likelihood: 181.35 </span></span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a><span class="co">#&gt; --- Efficiency Decomposition ---</span></span>
+<span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a><span class="co">#&gt;  Group Mean_TE Mean_TGR Mean_TE_star</span></span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="co">#&gt;     G1  0.8477   1.1839       1.0036</span></span>
+<span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a><span class="co">#&gt;     G2  0.7372   0.8306       0.6124</span></span>
+<span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratio Summary ---</span></span>
+<span id="cb5-57"><a href="#cb5-57" tabindex="-1"></a><span class="co">#&gt;  Group   N   Mean     SD    Min     Q1 Median     Q3    Max</span></span>
+<span id="cb5-58"><a href="#cb5-58" tabindex="-1"></a><span class="co">#&gt;     G1 300 1.1839 0.0320 1.1222 1.1576 1.1861 1.2087 1.2464</span></span>
+<span id="cb5-59"><a href="#cb5-59" tabindex="-1"></a><span class="co">#&gt;     G2 300 0.8306 0.0181 0.7949 0.8148 0.8300 0.8445 0.8693</span></span>
+<span id="cb5-60"><a href="#cb5-60" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-61"><a href="#cb5-61" tabindex="-1"></a><span class="co">#&gt; --- Convergence ---</span></span>
+<span id="cb5-62"><a href="#cb5-62" tabindex="-1"></a><span class="co">#&gt; All estimation stages converged.</span></span></code></pre></div>
+<p>The stochastic metafrontier provides standard errors:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Variance-covariance matrix</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">vcov</span>(fit_sto)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;               (Intercept)        log_x1        log_x2</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; (Intercept)  4.345943e-02 -8.269764e-05 -6.986322e-05</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; log_x1      -8.269764e-05  2.657002e-05  1.867196e-06</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; log_x2      -6.986322e-05  1.867196e-06  2.489219e-05</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co"># Log-likelihood of the metafrontier model</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="fu">logLik</span>(fit_sto)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; 181.3504 (df=3)</span></span></code></pre></div>
 </div>
 <div id="a-note-on-tgr-values" class="section level3">
 <h3>3.5 A note on TGR values</h3>
@@ -592,10 +648,10 @@ be <span class="math inline">\(\le 1\)</span> in finite samples, since
 the metafrontier need not strictly envelop all group frontiers. Values
 slightly above 1 can occur and are consistent with the stochastic
 framework.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>tgr_vals <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_sto, <span class="at">type =</span> <span class="st">&quot;tgr&quot;</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">summary</span>(tgr_vals)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;  0.7949  0.8300  0.9958  1.0072  1.1861  1.2464</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>tgr_vals <span class="ot">&lt;-</span> <span class="fu">efficiencies</span>(fit_sto, <span class="at">type =</span> <span class="st">&quot;tgr&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">summary</span>(tgr_vals)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;  0.7949  0.8300  0.9958  1.0072  1.1861  1.2464</span></span></code></pre></div>
 </div>
 </div>
 <div id="dea-based-metafrontier" class="section level2">
@@ -624,32 +680,32 @@ model</li>
 <li><code>&quot;drs&quot;</code> / <code>&quot;irs&quot;</code> (decreasing / increasing
 returns)</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># CRS metafrontier</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>fit_crs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co"># VRS metafrontier</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>fit_vrs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>)</span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co"># Compare mean TGR</span></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="fu">cbind</span>(</span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean),</span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">tapply</span>(fit_vrs<span class="sc">$</span>tgr, fit_vrs<span class="sc">$</span>group_vec, mean)</span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>)</span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;          CRS       VRS</span></span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; G1 1.0000000 1.0000000</span></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; G2 0.6014273 0.8180669</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># CRS metafrontier</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>fit_crs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>)</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co"># VRS metafrontier</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>fit_vrs <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;dea&quot;</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>)</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co"># Compare mean TGR</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="fu">cbind</span>(</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean),</span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">tapply</span>(fit_vrs<span class="sc">$</span>tgr, fit_vrs<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>)</span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt;          CRS       VRS</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; G1 1.0000000 1.0000000</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; G2 0.6014273 0.8180669</span></span></code></pre></div>
 </div>
 </div>
 <div id="comparing-methods" class="section level2">
@@ -704,22 +760,22 @@ involves trade-offs:</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Compare TGR estimates across methods</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>tgr_det <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_det<span class="sc">$</span>tgr, fit_det<span class="sc">$</span>group_vec, mean)</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>tgr_sto <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_sto<span class="sc">$</span>tgr, fit_sto<span class="sc">$</span>group_vec, mean)</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>tgr_dea <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean)</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>true_tgr <span class="ot">&lt;-</span> <span class="fu">tapply</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_tgr, sim<span class="sc">$</span>data<span class="sc">$</span>group, mean)</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">True =</span> true_tgr,</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="at">Deterministic =</span> tgr_det,</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">Stochastic =</span> tgr_sto,</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="at">DEA_CRS =</span> tgr_dea</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>)</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="fu">round</span>(comparison, <span class="dv">4</span>)</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt;      True Deterministic Stochastic DEA_CRS</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; G1 1.0000         1.000     1.1839  1.0000</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt; G2 0.6703         0.702     0.8306  0.6014</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Compare TGR estimates across methods</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>tgr_det <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_det<span class="sc">$</span>tgr, fit_det<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>tgr_sto <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_sto<span class="sc">$</span>tgr, fit_sto<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>tgr_dea <span class="ot">&lt;-</span> <span class="fu">tapply</span>(fit_crs<span class="sc">$</span>tgr, fit_crs<span class="sc">$</span>group_vec, mean)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>true_tgr <span class="ot">&lt;-</span> <span class="fu">tapply</span>(sim<span class="sc">$</span>data<span class="sc">$</span>true_tgr, sim<span class="sc">$</span>data<span class="sc">$</span>group, mean)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">True =</span> true_tgr,</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">Deterministic =</span> tgr_det,</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="at">Stochastic =</span> tgr_sto,</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>  <span class="at">DEA_CRS =</span> tgr_dea</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>)</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="fu">round</span>(comparison, <span class="dv">4</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;      True Deterministic Stochastic DEA_CRS</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; G1 1.0000         1.000     1.1839  1.0000</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; G2 0.6703         0.702     0.8306  0.6014</span></span></code></pre></div>
 </div>
 <div id="choosing-a-method-practical-guidance" class="section level2">
 <h2>6. Choosing a method: practical guidance</h2>
@@ -774,44 +830,44 @@ test</strong> uses a likelihood ratio statistic:</p>
 log-likelihood of a single frontier estimated on the pooled sample and
 <span class="math inline">\(LL_j\)</span> are the group-specific
 log-likelihoods.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">poolability_test</span>(fit_det)</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Poolability of Group Frontiers</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; data:  metafrontier(formula = log_y ~ log_x1 + log_x2, data = sim$data,     group = &quot;group&quot;, meta_type = &quot;deterministic&quot;)</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; LR = 442.35, df = 5, p-value &lt; 2.2e-16</span></span></code></pre></div>
-<p>A significant test (p &lt; 0.05) confirms that the groups operate
-under different technologies and the metafrontier decomposition is
-warranted.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">poolability_test</span>(fit_det)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt;  Likelihood Ratio Test for Poolability of Group Frontiers</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; data:  fit_det</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; LR = 442.35, df = 5, p-value &lt; 2.2e-16</span></span></code></pre></div>
+<p>A significant test (p &lt; 0.05) confirms that the group frontiers
+differ, that is, the groups face different restrictions of the common
+metatechnology, and the metafrontier decomposition is warranted.</p>
 </div>
 <div id="simulation-for-monte-carlo-studies" class="section level2">
 <h2>8. Simulation for Monte Carlo studies</h2>
 <p>The <code>simulate_metafrontier()</code> function generates data from
 a known DGP, enabling parameter recovery studies:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Monte Carlo: check parameter recovery over 100 replications</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>n_rep <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>beta_hat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, n_rep, <span class="dv">3</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="fu">seq_len</span>(n_rep)) {</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  sim_r <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>    <span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">200</span>,</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>    <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>    <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.3</span>),</span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>    <span class="at">sigma_v =</span> <span class="fl">0.15</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  )</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  fit_r <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>    log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    <span class="at">data =</span> sim_r<span class="sc">$</span>data,</span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>    <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  )</span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  beta_hat[r, ] <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_r, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>}</span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co"># Bias</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="fu">colMeans</span>(beta_hat) <span class="sc">-</span> true_beta</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Monte Carlo: check parameter recovery over 100 replications</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>n_rep <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>beta_hat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, n_rep, <span class="dv">3</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="cf">for</span> (r <span class="cf">in</span> <span class="fu">seq_len</span>(n_rep)) {</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  sim_r <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>    <span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">200</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>    <span class="at">tech_gap =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.3</span>),</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>    <span class="at">sigma_u =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.3</span>),</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>    <span class="at">sigma_v =</span> <span class="fl">0.15</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>  )</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>  fit_r <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>    log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2,</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>    <span class="at">data =</span> sim_r<span class="sc">$</span>data,</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>    <span class="at">meta_type =</span> <span class="st">&quot;deterministic&quot;</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>  )</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>  beta_hat[r, ] <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_r, <span class="at">which =</span> <span class="st">&quot;meta&quot;</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>}</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="co"># Bias</span></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="fu">colMeans</span>(beta_hat) <span class="sc">-</span> true_beta</span></code></pre></div>
 <p>The <code>simulate_metafrontier()</code> function supports:</p>
 <ul>
 <li>Arbitrary number of groups (<code>n_groups</code>)</li>
@@ -825,6 +881,10 @@ a known DGP, enabling parameter recovery studies:</p>
 <div id="references" class="section level2">
 <h2>References</h2>
 <ul>
+<li><p>Battese, G.E. and Coelli, T.J. (1988). Prediction of firm-level
+technical efficiencies with a generalized frontier production function
+and panel data. <em>Journal of Econometrics</em>, 38(3),
+387–399.</p></li>
 <li><p>Battese, G.E., Rao, D.S.P. and O’Donnell, C.J. (2004). A
 metafrontier production function for estimation of technical
 efficiencies and technology gaps for firms operating under different

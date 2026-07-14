@@ -43,7 +43,12 @@ The group-specific technical efficiency is:
 
 $$TE_{ij} = \exp(-u_{ij}) \in (0, 1]$$
 
-estimated via the Jondrow et al. (1982) conditional mean estimator.
+estimated by default via the Battese and Coelli (1988) conditional
+expectation estimator $E[\exp(-u_{ij}) \mid \varepsilon_{ij}]$
+(`estimator = "bc88"`). The Jondrow et al. (1982) estimator
+$\exp(-E[u_{ij} \mid \varepsilon_{ij}])$ is also computed and stored, and
+`efficiencies(fit, estimator = "jlms")` switches between the two without
+refitting.
 
 
 ### 1.2 The metafrontier
@@ -53,9 +58,14 @@ that:
 
 $$x'\beta^* \ge x'\beta_j \quad \text{for all } x \text{ and all } j$$
 
-That is, the metafrontier weakly dominates all group frontiers. It
-represents the production technology available to firms with unrestricted
-access to all technologies.
+That is, the metafrontier weakly dominates all group frontiers. It is
+the boundary of the industry **metatechnology** $T^*$: the set of all
+input-output combinations that are technically feasible in the industry
+(Battese, Rao and O'Donnell, 2004; O'Donnell, Rao and Battese, 2008).
+Each group frontier bounds a restricted subset $T_j \subseteq T^*$ of
+this metatechnology, where the restrictions reflect regulation, the
+physical environment, resource endowments, or the cost of switching
+production systems.
 
 
 ### 1.3 The efficiency decomposition
@@ -76,15 +86,36 @@ that input mix; values below 1 indicate a technology gap.
 
 ### 2.1 Estimation
 
-After obtaining group estimates $\hat\beta_j$ in Stage 1, the metafrontier
-parameters $\hat\beta^*$ are estimated by solving:
+After obtaining group estimates $\hat\beta_j$ in Stage 1, the
+metafrontier parameters $\hat\beta^*$ are chosen so that the metafrontier
+lies as close as possible to the group frontiers while enveloping all of
+them. Battese, Rao and O'Donnell (2004) propose two optimisation
+criteria, both implemented in the package via the `objective` argument.
 
-$$\min_{\beta^*} \sum_{j=1}^{J} \sum_{i=1}^{n_j} \left(x_{ij}'\beta^* - x_{ij}'\hat\beta_j\right)^2$$
+**Minimum sum of absolute deviations** (`objective = "lp"`, the default):
+
+$$\min_{\beta^*} \sum_{j=1}^{J} \sum_{i=1}^{n_j} \left|x_{ij}'\beta^* - x_{ij}'\hat\beta_j\right|$$
 $$\text{subject to: } x_{ij}'\beta^* \ge x_{ij}'\hat\beta_j \quad \forall\, i, j$$
 
-This is a convex quadratic program. The `metafrontier` package solves it
-using `constrOptim()` from base R, which implements an adaptive barrier
-algorithm for linearly constrained optimisation.
+Because the envelopment constraints force every deviation to be
+non-negative, the absolute values can be dropped and the problem reduces
+to a linear programme (O'Donnell, Rao and Battese, 2008, Eqs. 23-25).
+This LP is the primary presentation in O'Donnell, Rao and Battese (2008)
+and is the package default; it is solved with `lpSolveAPI`.
+
+**Minimum sum of squared deviations** (`objective = "qp"`):
+
+$$\min_{\beta^*} \sum_{j=1}^{J} \sum_{i=1}^{n_j} \left(x_{ij}'\beta^* - x_{ij}'\hat\beta_j\right)^2$$
+
+subject to the same envelopment constraints. This is a convex quadratic
+programme, solved exactly with `quadprog` when that package is
+available, with an adaptive-barrier fallback via `constrOptim()` from
+base R otherwise.
+
+The two criteria weight deviations differently (the squared criterion
+penalises large gaps between the metafrontier and a group frontier more
+heavily), but in practice they typically produce very similar
+coefficients.
 
 ### 2.2 Properties
 
@@ -127,6 +158,25 @@ intercepts:
 meta_b0 <- coef(fit_det, which = "meta")[1]
 group_b0 <- sapply(coef(fit_det, which = "group"), `[`, 1)
 meta_b0 >= group_b0
+```
+
+To use the minimum sum of squared deviations criterion instead, set
+`objective = "qp"`:
+
+```{r det-qp}
+fit_qp <- metafrontier(
+  log_y ~ log_x1 + log_x2,
+  data = sim$data,
+  group = "group",
+  meta_type = "deterministic",
+  objective = "qp"
+)
+
+# LP and QP criteria typically give very similar coefficients
+cbind(
+  LP = coef(fit_det, which = "meta"),
+  QP = coef(fit_qp, which = "meta")
+)
 ```
 
 
@@ -349,8 +399,9 @@ on the pooled sample and $LL_j$ are the group-specific log-likelihoods.
 poolability_test(fit_det)
 ```
 
-A significant test (p < 0.05) confirms that the groups operate under
-different technologies and the metafrontier decomposition is warranted.
+A significant test (p < 0.05) confirms that the group frontiers differ,
+that is, the groups face different restrictions of the common
+metatechnology, and the metafrontier decomposition is warranted.
 
 
 ## 8. Simulation for Monte Carlo studies
@@ -396,6 +447,10 @@ The `simulate_metafrontier()` function supports:
 
 
 ## References
+
+- Battese, G.E. and Coelli, T.J. (1988). Prediction of firm-level
+  technical efficiencies with a generalized frontier production function
+  and panel data. *Journal of Econometrics*, 38(3), 387--399.
 
 - Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier
   production function for estimation of technical efficiencies and

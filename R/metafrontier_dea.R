@@ -1,10 +1,15 @@
 #' Internal: DEA estimation for a single group
 #'
 #' Solves the DEA linear programme for a single technology group.
+#' Supports \code{rts = "fdh"} (free disposal hull, solved by exact
+#' enumeration). When \code{slack = TRUE}, second-stage slacks against
+#' the group's own reference set are stored as \code{slack_x} (n x m)
+#' and \code{slack_y} (n x s) matrices.
 #'
 #' @keywords internal
 #' @noRd
-.fit_dea_group <- function(formula, data, orientation, rts, ...) {
+.fit_dea_group <- function(formula, data, orientation, rts,
+                           slack = FALSE, ...) {
 
   mf <- model.frame(formula, data = data)
   y_raw <- model.response(mf)
@@ -31,7 +36,7 @@
   # Solve DEA LP for each DMU (batch for performance)
   efficiency <- .dea_batch_fast(X_raw, Y, orientation, rts)
 
-  list(
+  out <- list(
     efficiency = efficiency,
     nobs = n,
     orientation = orientation,
@@ -39,16 +44,33 @@
     X = X_raw,
     Y = Y
   )
+
+  if (isTRUE(slack)) {
+    sl <- .dea_slacks(X_raw, Y, efficiency, orientation, rts, X_raw, Y)
+    out$slack_x <- sl$slack_x
+    out$slack_y <- sl$slack_y
+  }
+
+  out
 }
 
 
 #' Solve a single DEA LP
+#'
+#' Under \code{rts = "fdh"} the problem is solved by exact enumeration
+#' of dominating reference points rather than by linear programming.
+#'
 #' @keywords internal
 #' @noRd
 .dea_solve_lp <- function(x_i, y_i, X, Y, orientation, rts) {
   n <- nrow(X)
   m <- ncol(X)
   s <- ncol(Y)
+
+  if (rts == "fdh") {
+    return(.fdh_radial(matrix(x_i, nrow = 1), matrix(y_i, nrow = 1),
+                       orientation, X, Y)$efficiency)
+  }
 
   if (orientation == "input") {
     # Input-oriented: min theta
@@ -121,7 +143,12 @@
       lpSolveAPI::add.constraint(lp, c(rep(1, n), 0), ">=", 1)
     }
 
-    lpSolveAPI::set.bounds(lp, lower = c(rep(0, n), 1))
+    # phi is bounded below by 0, not 1: cross-period evaluation of
+    # super-efficient DMUs can have phi* < 1, and a lower bound of 1
+    # would make those LPs infeasible. Same-period scores are
+    # unaffected since phi* >= 1 whenever the DMU is in its own
+    # reference set.
+    lpSolveAPI::set.bounds(lp, lower = c(rep(0, n), 0))
 
     lpSolveAPI::lp.control(lp, sense = "max", verbose = "neutral")
     status <- lpSolveAPI::solve.lpExtPtr(lp)
@@ -149,6 +176,10 @@
   # If X_ref/Y_ref not supplied, evaluate X/Y against itself
   if (is.null(X_ref)) X_ref <- X
   if (is.null(Y_ref)) Y_ref <- Y
+
+  if (rts == "fdh") {
+    return(.fdh_radial(X, Y, orientation, X_ref, Y_ref)$efficiency)
+  }
 
   n_eval <- nrow(X)
   n_ref  <- nrow(X_ref)
@@ -234,7 +265,8 @@
     } else if (rts == "irs") {
       lpSolveAPI::add.constraint(lp, c(rep(1, n_ref), 0), ">=", 1)
     }
-    lpSolveAPI::set.bounds(lp, lower = c(rep(0, n_ref), 1))
+    # Lower bound 0 on phi (not 1): see .dea_solve_lp
+    lpSolveAPI::set.bounds(lp, lower = c(rep(0, n_ref), 0))
 
     eff <- numeric(n_eval)
     for (i in seq_len(n_eval)) {
@@ -262,15 +294,76 @@
 }
 
 
+#' Radial FDH efficiency by exact enumeration
+#'
+#' Computes Farrell radial efficiency under free disposability without
+#' convexity. Input orientation: the minimum over reference points that
+#' weakly dominate on all outputs of the maximum input ratio. Output
+#' orientation: the maximum over reference points that use no more of
+#' any input of the minimum output ratio, reported as 1/phi (Farrell
+#' convention, matching the LP path). If no reference point dominates
+#' (possible in cross-period evaluation), the score is \code{NA} with a
+#' warning, mirroring the infeasible-LP behaviour.
+#'
+#' @return A list with \code{efficiency} (numeric vector) and
+#'   \code{peer} (integer row indices into the reference set of the
+#'   single best dominating peer, \code{NA} where none exists).
+#' @keywords internal
+#' @noRd
+.fdh_radial <- function(X, Y, orientation, X_ref, Y_ref) {
+  n_eval <- nrow(X)
+  s <- ncol(Y_ref)
+  m <- ncol(X_ref)
+
+  eff <- rep(NA_real_, n_eval)
+  peer <- rep(NA_integer_, n_eval)
+
+  for (i in seq_len(n_eval)) {
+    if (orientation == "input") {
+      # Reference points that weakly dominate on all outputs
+      dom <- which(colSums(t(Y_ref) >= Y[i, ]) == s)
+      if (length(dom) == 0L) {
+        warning("No dominating FDH reference point for a DMU.",
+                call. = FALSE)
+        next
+      }
+      scores <- apply(X_ref[dom, , drop = FALSE], 1,
+                      function(r) max(r / X[i, ]))
+      k <- which.min(scores)
+      eff[i] <- scores[k]
+      peer[i] <- dom[k]
+    } else {
+      # Reference points that use no more of any input
+      dom <- which(colSums(t(X_ref) <= X[i, ]) == m)
+      if (length(dom) == 0L) {
+        warning("No dominating FDH reference point for a DMU.",
+                call. = FALSE)
+        next
+      }
+      phis <- apply(Y_ref[dom, , drop = FALSE], 1,
+                    function(r) min(r / Y[i, ]))
+      k <- which.max(phis)
+      eff[i] <- 1 / phis[k]
+      peer[i] <- dom[k]
+    }
+  }
+
+  list(efficiency = eff, peer = peer)
+}
+
+
 #' Internal: Estimate DEA-based metafrontier
 #'
 #' Computes group DEA and pooled (meta) DEA, then derives TGR.
+#' Supports \code{rts = "fdh"}. When \code{slack = TRUE}, second-stage
+#' slacks against the pooled reference set are stored as
+#' \code{slack_x_meta} and \code{slack_y_meta}.
 #'
 #' @keywords internal
 #' @noRd
 .estimate_dea_metafrontier <- function(formula, data, group_vec,
                                        group_levels, group_models,
-                                       orientation, rts) {
+                                       orientation, rts, slack = FALSE) {
 
   mf <- model.frame(formula, data = data)
   y_raw <- model.response(mf)
@@ -300,7 +393,7 @@
   # TGR = metafrontier efficiency / group efficiency
   tgr <- te_meta / te_group
 
-  list(
+  out <- list(
     meta_coef = NULL,  # DEA is nonparametric
     meta_vcov = NULL,
     group_coef = NULL,
@@ -313,6 +406,113 @@
     meta_logLik = NULL,
     meta_convergence = 0L
   )
+
+  if (isTRUE(slack)) {
+    sl <- .dea_slacks(X_raw, Y, te_meta, orientation, rts, X_raw, Y)
+    out$slack_x_meta <- sl$slack_x
+    out$slack_y_meta <- sl$slack_y
+  }
+
+  out
+}
+
+
+#' Second-stage slack maximisation
+#'
+#' Standard two-stage slack computation with the radial score held
+#' fixed. Input orientation: max sum(s_x) + sum(s_y) subject to
+#' X_ref' lambda + s_x = theta_i * x_i and Y_ref' lambda - s_y = y_i.
+#' Output orientation: X_ref' lambda + s_x = x_i and
+#' Y_ref' lambda - s_y = phi_i * y_i. The equalities are implemented
+#' as pairs of inequalities relaxed by a small tolerance because the
+#' radially scaled targets are floating-point products. Under
+#' \code{rts = "fdh"} slacks are measured against the single
+#' dominating peer identified by the enumeration.
+#'
+#' @param scores Farrell efficiency scores as returned by the radial
+#'   solvers (input orientation: theta; output orientation: 1/phi).
+#' @return A list with matrices \code{slack_x} (n x m) and
+#'   \code{slack_y} (n x s); rows are \code{NA} where the radial score
+#'   is \code{NA}.
+#' @keywords internal
+#' @noRd
+.dea_slacks <- function(X, Y, scores, orientation, rts, X_ref, Y_ref) {
+  n <- nrow(X)
+  m <- ncol(X)
+  s <- ncol(Y)
+  n_ref <- nrow(X_ref)
+
+  slack_x <- matrix(NA_real_, n, m)
+  slack_y <- matrix(NA_real_, n, s)
+
+  if (rts == "fdh") {
+    fdh <- .fdh_radial(X, Y, orientation, X_ref, Y_ref)
+    for (i in seq_len(n)) {
+      j <- fdh$peer[i]
+      if (is.na(j)) next
+      if (orientation == "input") {
+        slack_x[i, ] <- pmax(scores[i] * X[i, ] - X_ref[j, ], 0)
+        slack_y[i, ] <- pmax(Y_ref[j, ] - Y[i, ], 0)
+      } else {
+        slack_x[i, ] <- pmax(X[i, ] - X_ref[j, ], 0)
+        slack_y[i, ] <- pmax(Y_ref[j, ] - Y[i, ] / scores[i], 0)
+      }
+    }
+    return(list(slack_x = slack_x, slack_y = slack_y))
+  }
+
+  n_vars <- n_ref + m + s  # lambdas, then s_x, then s_y
+  tol <- 1e-9
+
+  for (i in seq_len(n)) {
+    if (is.na(scores[i])) next
+
+    if (orientation == "input") {
+      x_target <- scores[i] * X[i, ]
+      y_target <- Y[i, ]
+    } else {
+      x_target <- X[i, ]
+      y_target <- Y[i, ] / scores[i]
+    }
+
+    lp <- lpSolveAPI::make.lp(0, n_vars)
+    lpSolveAPI::set.objfn(lp, c(rep(0, n_ref), rep(1, m + s)))
+    lpSolveAPI::lp.control(lp, sense = "max", verbose = "neutral")
+
+    # X_ref' lambda + s_x = x_target (relaxed equality)
+    for (mm in seq_len(m)) {
+      coef <- c(X_ref[, mm], as.numeric(seq_len(m) == mm), rep(0, s))
+      eps <- tol * (1 + abs(x_target[mm]))
+      lpSolveAPI::add.constraint(lp, coef, "<=", x_target[mm] + eps)
+      lpSolveAPI::add.constraint(lp, coef, ">=", x_target[mm] - eps)
+    }
+    # Y_ref' lambda - s_y = y_target (relaxed equality)
+    for (ss in seq_len(s)) {
+      coef <- c(Y_ref[, ss], rep(0, m), -as.numeric(seq_len(s) == ss))
+      eps <- tol * (1 + abs(y_target[ss]))
+      lpSolveAPI::add.constraint(lp, coef, "<=", y_target[ss] + eps)
+      lpSolveAPI::add.constraint(lp, coef, ">=", y_target[ss] - eps)
+    }
+
+    if (rts == "vrs") {
+      lpSolveAPI::add.constraint(lp, c(rep(1, n_ref), rep(0, m + s)), "=", 1)
+    } else if (rts == "drs") {
+      lpSolveAPI::add.constraint(lp, c(rep(1, n_ref), rep(0, m + s)), "<=", 1)
+    } else if (rts == "irs") {
+      lpSolveAPI::add.constraint(lp, c(rep(1, n_ref), rep(0, m + s)), ">=", 1)
+    }
+
+    status <- lpSolveAPI::solve.lpExtPtr(lp)
+    if (status == 0) {
+      sol <- lpSolveAPI::get.variables(lp)
+      slack_x[i, ] <- pmax(sol[n_ref + seq_len(m)], 0)
+      slack_y[i, ] <- pmax(sol[n_ref + m + seq_len(s)], 0)
+    } else {
+      warning("Slack LP infeasible for a DMU.", call. = FALSE)
+    }
+  }
+
+  list(slack_x = slack_x, slack_y = slack_y)
 }
 
 
@@ -329,7 +529,8 @@
 #' @param Y output matrix (reference set).
 #' @param g_x input direction vector.
 #' @param g_y output direction vector.
-#' @param rts returns to scale assumption.
+#' @param rts returns to scale assumption; \code{"fdh"} is solved as a
+#'   mixed-integer programme with binary intensity variables.
 #'
 #' @return The DDF value beta (inefficiency measure).
 #' @keywords internal
@@ -362,6 +563,11 @@
     lpSolveAPI::add.constraint(lp, c(rep(1, n), 0), "<=", 1)
   } else if (rts == "irs") {
     lpSolveAPI::add.constraint(lp, c(rep(1, n), 0), ">=", 1)
+  } else if (rts == "fdh") {
+    # Free disposal hull: exactly one reference point, so the lambdas
+    # are binary and sum to one (mixed-integer programme)
+    lpSolveAPI::add.constraint(lp, c(rep(1, n), 0), "=", 1)
+    lpSolveAPI::set.type(lp, columns = seq_len(n), type = "binary")
   }
 
   # Bounds
@@ -395,7 +601,72 @@
 }
 
 
+#' Build DDF direction matrices
+#'
+#' Accepts a character preset (\code{"proportional"} g = (x_i, y_i),
+#' \code{"output"} g = (0, y_i), \code{"input"} g = (x_i, 0)), a
+#' numeric vector of length m + s giving a common direction (first m
+#' elements g_x, last s elements g_y), or a numeric n x (m + s) matrix
+#' whose row i is firm i's direction.
+#'
+#' @return A list with \code{g_x} (n x m), \code{g_y} (n x s) and
+#'   \code{numeric} (\code{TRUE} for user-supplied numeric directions).
+#' @keywords internal
+#' @noRd
+.ddf_direction_mats <- function(direction, X, Y) {
+  n <- nrow(X)
+  m <- ncol(X)
+  s <- ncol(Y)
+
+  if (is.character(direction) && length(direction) == 1L) {
+    if (direction == "proportional") {
+      return(list(g_x = X, g_y = Y, numeric = FALSE))
+    } else if (direction == "output") {
+      return(list(g_x = matrix(0, n, m), g_y = Y, numeric = FALSE))
+    } else if (direction == "input") {
+      return(list(g_x = X, g_y = matrix(0, n, s), numeric = FALSE))
+    }
+    stop("Unknown direction: ", direction, call. = FALSE)
+  }
+
+  if (is.numeric(direction)) {
+    if (is.matrix(direction)) {
+      if (nrow(direction) != n || ncol(direction) != m + s) {
+        stop("A direction matrix must have dimensions n x (m + s), here ",
+             n, " x ", m + s, ".", call. = FALSE)
+      }
+      g <- direction
+    } else {
+      if (length(direction) != m + s) {
+        stop("A direction vector must have length m + s = ", m + s, ".",
+             call. = FALSE)
+      }
+      g <- matrix(direction, n, m + s, byrow = TRUE)
+    }
+    if (any(!is.finite(g)) || any(g < 0)) {
+      stop("Numeric directions must be finite and non-negative.",
+           call. = FALSE)
+    }
+    if (any(rowSums(g) == 0)) {
+      stop("Each direction must have at least one positive element.",
+           call. = FALSE)
+    }
+    return(list(g_x = g[, seq_len(m), drop = FALSE],
+                g_y = g[, m + seq_len(s), drop = FALSE],
+                numeric = TRUE))
+  }
+
+  stop("'direction' must be a character preset, a numeric vector of ",
+       "length m + s, or a numeric n x (m + s) matrix.", call. = FALSE)
+}
+
+
 #' DDF-based group efficiency
+#'
+#' \code{direction} may be a character preset, a numeric vector of
+#' length m + s, or a numeric matrix with one row per observation of
+#' \code{data} (see \code{.ddf_direction_mats}).
+#'
 #' @keywords internal
 #' @noRd
 .fit_ddf_group <- function(formula, data, rts, direction, ...) {
@@ -409,30 +680,17 @@
   }
 
   n <- nrow(X_raw)
-  m <- ncol(X_raw)
 
   if (is.matrix(y_raw)) {
     Y <- y_raw
   } else {
     Y <- matrix(y_raw, ncol = 1)
   }
-  s <- ncol(Y)
 
   # Direction vectors
-  if (direction == "proportional") {
-    g_x_mat <- X_raw
-    g_y_mat <- Y
-  } else if (direction == "output") {
-    g_x_mat <- matrix(0, n, m)
-    g_y_mat <- Y
-  } else if (direction == "input") {
-    g_x_mat <- X_raw
-    g_y_mat <- matrix(0, n, s)
-  } else {
-    stop("Unknown direction: ", direction, call. = FALSE)
-  }
+  dirs <- .ddf_direction_mats(direction, X_raw, Y)
 
-  efficiency <- .ddf_batch(X_raw, Y, g_x_mat, g_y_mat, rts)
+  efficiency <- .ddf_batch(X_raw, Y, dirs$g_x, dirs$g_y, rts)
 
   list(
     efficiency = efficiency,
@@ -446,6 +704,20 @@
 
 
 #' DDF-based metafrontier estimation
+#'
+#' \code{direction} may be a character preset, a numeric vector of
+#' length m + s, or a numeric n x (m + s) matrix (see
+#' \code{.ddf_direction_mats}). Convention: the multiplicative
+#' conversion te = 1/(1 + beta) is only meaningful for the character
+#' presets, where the direction scales with the observation. For
+#' user-supplied numeric directions \code{te_group}, \code{te_meta}
+#' and \code{tgr} are set to \code{NA} and the additive fields
+#' \code{beta_group}, \code{beta_meta} and
+#' \code{ddf_gap = beta_meta - beta_group} (the additive technology
+#' gap, non-negative up to solver tolerance) carry the results. The
+#' additive fields are populated for the presets too, for
+#' comparability.
+#'
 #' @keywords internal
 #' @noRd
 .estimate_ddf_metafrontier <- function(formula, data, group_vec,
@@ -466,20 +738,9 @@
   }
 
   n <- nrow(X_raw)
-  m <- ncol(X_raw)
-  s <- ncol(Y)
 
   # Direction vectors
-  if (direction == "proportional") {
-    g_x_mat <- X_raw
-    g_y_mat <- Y
-  } else if (direction == "output") {
-    g_x_mat <- matrix(0, n, m)
-    g_y_mat <- Y
-  } else {
-    g_x_mat <- X_raw
-    g_y_mat <- matrix(0, n, s)
-  }
+  dirs <- .ddf_direction_mats(direction, X_raw, Y)
 
   # Group-level DDF
   beta_group <- numeric(n)
@@ -489,15 +750,23 @@
   }
 
   # Pooled DDF (metafrontier)
-  beta_meta <- .ddf_batch(X_raw, Y, g_x_mat, g_y_mat, rts)
+  beta_meta <- .ddf_batch(X_raw, Y, dirs$g_x, dirs$g_y, rts)
 
-  # DDF TGR: additive decomposition
-  # beta_meta = beta_group + TGR_DDF
-  # TGR = beta_meta - beta_group (additive gap)
-  # For compatibility, also compute ratio-based TE
-  te_group <- 1 / (1 + beta_group)
-  te_meta <- 1 / (1 + beta_meta)
-  tgr <- te_meta / te_group
+  if (dirs$numeric) {
+    # te = 1/(1 + beta) is not meaningful for arbitrary directions;
+    # only the additive decomposition below applies
+    te_group <- rep(NA_real_, n)
+    te_meta <- rep(NA_real_, n)
+    tgr <- rep(NA_real_, n)
+  } else {
+    # DDF TGR: additive decomposition
+    # beta_meta = beta_group + TGR_DDF
+    # TGR = beta_meta - beta_group (additive gap)
+    # For compatibility, also compute ratio-based TE
+    te_group <- 1 / (1 + beta_group)
+    te_meta <- 1 / (1 + beta_meta)
+    tgr <- te_meta / te_group
+  }
 
   list(
     meta_coef = NULL,
@@ -513,6 +782,189 @@
     meta_convergence = 0L,
     beta_group = beta_group,
     beta_meta = beta_meta,
-    ddf_tgr = beta_meta - beta_group
+    ddf_tgr = beta_meta - beta_group,
+    ddf_gap = beta_meta - beta_group
+  )
+}
+
+
+#' Batch hyperbolic graph efficiency
+#'
+#' Computes hyperbolic efficiency gamma in (0, 1]: the smallest gamma
+#' such that (gamma * x_i, y_i / gamma) remains in the technology.
+#' Under CRS the exact closed form gamma = sqrt(theta) is used, where
+#' theta is the input-oriented radial score against the same reference
+#' set. Under FDH the minimum over reference points of the smallest
+#' feasible gamma is exact. Under vrs/drs/irs gamma is found by
+#' bisection on feasibility LPs, reusing a single LP object across
+#' DMUs and bisection steps.
+#'
+#' @keywords internal
+#' @noRd
+.hyperbolic_batch <- function(X, Y, rts, X_ref = NULL, Y_ref = NULL) {
+  if (is.null(X_ref)) X_ref <- X
+  if (is.null(Y_ref)) Y_ref <- Y
+
+  n_eval <- nrow(X)
+  m <- ncol(X)
+  s <- ncol(Y)
+  n_ref <- nrow(X_ref)
+
+  if (rts == "crs") {
+    theta <- .dea_batch_fast(X, Y, "input", "crs", X_ref, Y_ref)
+    return(sqrt(theta))
+  }
+
+  if (rts == "fdh") {
+    # Reference point j admits gamma iff gamma >= X_jm / x_im for all
+    # inputs and gamma >= y_is / Y_js for all outputs
+    gamma <- rep(NA_real_, n_eval)
+    for (i in seq_len(n_eval)) {
+      req_x <- apply(X_ref, 1, function(r) max(r / X[i, ]))
+      req_y <- apply(Y_ref, 1, function(r) max(Y[i, ] / r))
+      gamma[i] <- min(pmax(req_x, req_y))
+    }
+    return(gamma)
+  }
+
+  # vrs / drs / irs: bisection on feasibility LPs
+  lp <- lpSolveAPI::make.lp(0, n_ref)
+  lpSolveAPI::set.objfn(lp, rep(0, n_ref))
+  lpSolveAPI::lp.control(lp, sense = "min", verbose = "neutral")
+  for (mm in seq_len(m)) {
+    lpSolveAPI::add.constraint(lp, X_ref[, mm], "<=", 0)
+  }
+  for (ss in seq_len(s)) {
+    lpSolveAPI::add.constraint(lp, Y_ref[, ss], ">=", 0)
+  }
+  if (rts == "vrs") {
+    lpSolveAPI::add.constraint(lp, rep(1, n_ref), "=", 1)
+  } else if (rts == "drs") {
+    lpSolveAPI::add.constraint(lp, rep(1, n_ref), "<=", 1)
+  } else if (rts == "irs") {
+    lpSolveAPI::add.constraint(lp, rep(1, n_ref), ">=", 1)
+  }
+
+  feasible <- function(gamma, x_i, y_i) {
+    for (mm in seq_len(m)) {
+      lpSolveAPI::set.rhs(lp, gamma * x_i[mm], mm)
+    }
+    for (ss in seq_len(s)) {
+      lpSolveAPI::set.rhs(lp, y_i[ss] / gamma, m + ss)
+    }
+    lpSolveAPI::solve.lpExtPtr(lp) == 0
+  }
+
+  gamma <- rep(NA_real_, n_eval)
+  for (i in seq_len(n_eval)) {
+    if (!feasible(1, X[i, ], Y[i, ])) {
+      warning("Hyperbolic feasibility fails at gamma = 1 for a DMU.",
+              call. = FALSE)
+      next
+    }
+    lo <- 0
+    hi <- 1
+    for (iter in seq_len(40L)) {
+      if (hi - lo < 1e-8) break
+      mid <- (lo + hi) / 2
+      if (feasible(mid, X[i, ], Y[i, ])) {
+        hi <- mid
+      } else {
+        lo <- mid
+      }
+    }
+    gamma[i] <- hi
+  }
+  gamma
+}
+
+
+#' Hyperbolic group efficiency
+#'
+#' Mirrors \code{.fit_dea_group} with hyperbolic (graph) efficiency:
+#' the firm is projected to (gamma * x, y / gamma) with te = gamma.
+#'
+#' @keywords internal
+#' @noRd
+.fit_hyperbolic_group <- function(formula, data, rts, ...) {
+
+  mf <- model.frame(formula, data = data)
+  y_raw <- model.response(mf)
+  X_raw <- model.matrix(formula, data = data, rhs = 1)
+
+  if (colnames(X_raw)[1] == "(Intercept)") {
+    X_raw <- X_raw[, -1, drop = FALSE]
+  }
+
+  if (is.matrix(y_raw)) {
+    Y <- y_raw
+  } else {
+    Y <- matrix(y_raw, ncol = 1)
+  }
+
+  efficiency <- .hyperbolic_batch(X_raw, Y, rts)
+
+  list(
+    efficiency = efficiency,
+    nobs = nrow(X_raw),
+    rts = rts,
+    X = X_raw,
+    Y = Y
+  )
+}
+
+
+#' Hyperbolic metafrontier estimation
+#'
+#' Mirrors \code{.estimate_dea_metafrontier}: group gammas are read
+#' from the fitted group models, the meta gamma is computed against
+#' the pooled reference set, and tgr = gamma_meta / gamma_group lies
+#' in (0, 1] since the pooled reference set is a superset.
+#'
+#' @keywords internal
+#' @noRd
+.estimate_hyperbolic_metafrontier <- function(formula, data, group_vec,
+                                              group_levels, group_models,
+                                              rts) {
+
+  mf <- model.frame(formula, data = data)
+  y_raw <- model.response(mf)
+  X_raw <- model.matrix(formula, data = data, rhs = 1)
+  if (colnames(X_raw)[1] == "(Intercept)") {
+    X_raw <- X_raw[, -1, drop = FALSE]
+  }
+
+  if (!is.matrix(y_raw)) {
+    Y <- matrix(y_raw, ncol = 1)
+  } else {
+    Y <- y_raw
+  }
+
+  n <- nrow(X_raw)
+
+  # Group-level efficiency
+  te_group <- numeric(n)
+  for (g in group_levels) {
+    idx <- which(group_vec == g)
+    te_group[idx] <- group_models[[g]]$efficiency
+  }
+
+  # Pooled hyperbolic efficiency (metafrontier)
+  te_meta <- .hyperbolic_batch(X_raw, Y, rts)
+
+  tgr <- te_meta / te_group
+
+  list(
+    meta_coef = NULL,  # DEA is nonparametric
+    meta_vcov = NULL,
+    group_coef = NULL,
+    tgr = tgr,
+    te_group = te_group,
+    te_meta = te_meta,
+    group_frontier = NULL,
+    meta_frontier = NULL,
+    logLik_groups = NULL,
+    meta_logLik = NULL,
+    meta_convergence = 0L
   )
 }

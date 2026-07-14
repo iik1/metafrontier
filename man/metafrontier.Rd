@@ -12,13 +12,17 @@ metafrontier(
   meta_type = c("deterministic", "stochastic"),
   dist = c("hnormal", "tnormal", "exponential"),
   orientation = c("output", "input"),
-  rts = c("crs", "vrs", "drs", "irs"),
+  rts = c("crs", "vrs", "drs", "irs", "fdh"),
   models = NULL,
   panel = NULL,
   panel_dist = c("bc92", "bc95"),
-  type = c("radial", "directional"),
+  type = c("radial", "directional", "hyperbolic"),
   direction = c("proportional", "output", "input"),
   control = list(),
+  estimator = c("bc88", "jlms"),
+  objective = c("lp", "qp"),
+  engine = c("internal", "sfaR", "frontier", "Benchmarking"),
+  slack = FALSE,
   ...
 )
 }
@@ -57,13 +61,20 @@ Ignored when \code{method = "dea"}.}
 
 \item{rts}{character. Returns to scale for DEA: \code{"crs"}
 (constant, default), \code{"vrs"} (variable), \code{"drs"}
-(decreasing), or \code{"irs"} (increasing). Ignored when
+(decreasing), \code{"irs"} (increasing), or \code{"fdh"} (free
+disposable hull, i.e. no convexity). Ignored when
 \code{method = "sfa"}.}
 
 \item{models}{an optional named list of pre-fitted group-specific
-frontier models (objects from \pkg{sfaR}, \pkg{frontier}, or
-\pkg{Benchmarking}). If provided, \code{formula}, \code{data},
-and \code{group} are ignored.}
+frontier models (objects from \pkg{sfaR} or \pkg{frontier}, or
+hand-built lists). Fitted model objects are converted
+automatically via \code{\link{as_metafrontier_model}}, so no
+manual conversion is required (pre-converting is harmless, the
+conversion is idempotent). Farrell objects from
+\pkg{Benchmarking} store neither coefficients nor data and
+cannot be used here; use the formula interface with
+\code{method = "dea"} instead. If \code{models} is provided,
+\code{formula}, \code{data}, and \code{group} are ignored.}
 
 \item{panel}{an optional list with components \code{id} and
 \code{time} naming the panel identifier and time columns in
@@ -76,18 +87,61 @@ or \code{"bc95"} (Battese and Coelli 1995, observation-specific
 mean). Only used when \code{panel} is non-NULL.}
 
 \item{type}{character. For DEA: \code{"radial"} (default) for
-standard radial DEA or \code{"directional"} for directional
-distance functions.}
+standard radial DEA, \code{"directional"} for directional
+distance functions, or \code{"hyperbolic"} for hyperbolic
+(graph) efficiency, which contracts inputs and expands outputs
+simultaneously.}
 
-\item{direction}{character. Direction vector for DDF:
-\code{"proportional"} (default), \code{"output"}, or
-\code{"input"}. Only used when \code{type = "directional"}.}
+\item{direction}{direction vector for DDF. Either a character
+preset (\code{"proportional"} (default), \code{"output"}, or
+\code{"input"}), a numeric vector of length m + s giving a
+common direction (first m elements for inputs, last s for
+outputs), or a numeric n x (m + s) matrix of firm-specific
+directions. With numeric directions the ratio-based TGR is not
+defined; the additive gap (\code{ddf_gap}) is reported instead.
+Only used when \code{type = "directional"}.}
 
 \item{control}{a named list of control parameters passed to
 \code{\link[stats]{optim}}. Common options include
 \code{maxit} (maximum iterations, default 5000),
 \code{reltol} (relative convergence tolerance, default 1e-10),
 and \code{fnscale} (set to -1 internally for maximisation).}
+
+\item{estimator}{character. Technical efficiency estimator for
+SFA models: \code{"bc88"} (default) for the conditional
+expectation \eqn{E[\exp(-u)|\varepsilon]} of Battese and Coelli
+(1988), which is the consistent estimator of technical
+efficiency, or \code{"jlms"} for
+\eqn{\exp(-E[u|\varepsilon])} following Jondrow et al. (1982).
+Both are stored on the fitted object; see
+\code{\link{efficiencies}}. Ignored when \code{method = "dea"}.}
+
+\item{objective}{character. Identification criterion for the
+deterministic metafrontier: \code{"lp"} (default) minimises the
+sum of absolute deviations (a linear programme), \code{"qp"}
+minimises the sum of squared deviations (a quadratic programme,
+solved exactly via \pkg{quadprog} when available). Both criteria
+are proposed in Battese, Rao, and O'Donnell (2004). Only used
+when \code{method = "sfa"} and \code{meta_type =
+"deterministic"}.}
+
+\item{engine}{character. Estimation backend for the group
+frontiers: \code{"internal"} (default) uses the package's own
+estimators; \code{"sfaR"} or \code{"frontier"} delegate the SFA
+group frontiers to \code{\link[sfaR]{sfacross}} or
+\code{\link[frontier]{sfa}} (cross-sectional, single-part
+formulas only); \code{"Benchmarking"} delegates the DEA group
+frontiers and the pooled metafrontier to
+\code{\link[Benchmarking]{dea}} (radial only), using its
+\code{XREF}/\code{YREF} external-reference facility for the
+metafrontier stage. The metafrontier stage for SFA methods is
+always estimated internally (the Murphy-Topel correction
+requires the internal likelihood).}
+
+\item{slack}{logical. For radial DEA, compute second-stage input
+and output slacks (with the radial score held fixed) against
+both the group and the pooled reference sets. Default
+\code{FALSE}.}
 
 \item{...}{additional arguments passed to the group-level
 estimation functions.}
@@ -109,7 +163,15 @@ An object of class \code{"metafrontier"} (with subclass
     \item{groups}{group labels}
     \item{method}{estimation method used}
     \item{meta_type}{metafrontier type used}
-    \item{convergence}{convergence status}
+    \item{meta_convergence}{integer convergence code for the
+      metafrontier stage (0 = success; \code{\link[stats]{optim}}
+      codes for the stochastic metafrontier and the QP barrier
+      fallback; 0 for a successful LP or DEA solution). Each SFA
+      group model in \code{group_models} additionally carries its
+      own \code{convergence} code. Use
+      \code{\link{check_convergence}} to inspect all stages.}
+    \item{estimator, objective, engine, meta_solver}{the
+      estimation choices used for the fit}
   }
 }
 \description{
@@ -129,16 +191,32 @@ where \eqn{TE_i} is efficiency relative to the group frontier and
 \eqn{TGR_i} is the technology gap ratio measuring how close the
 group frontier is to the metafrontier.
 
-The deterministic metafrontier (Battese, Rao, and O'Donnell, 2004)
-is estimated by solving a linear program that minimises the total
-envelope overshoot subject to the constraint that the metafrontier
-envelops all group frontiers. BRO (2004) originally proposed a
-constrained least-squares (QP) formulation; the LP yields the
-tightest envelope and is solved via \pkg{lpSolveAPI}, with a QP
-fallback via \code{constrOptim()} when the LP is infeasible.
+The deterministic metafrontier is identified by one of the two
+criteria proposed by Battese, Rao, and O'Donnell (2004), subject in
+both cases to the constraint that the metafrontier envelops all
+group frontiers: minimising the sum of absolute deviations, which
+reduces to a linear programme because the envelope constraints
+force every deviation to be non-negative (O'Donnell, Rao, and
+Battese, 2008, Eqs. 23-25), or minimising the sum of squared
+deviations, a convex quadratic programme. The LP
+(\code{objective = "lp"}, the default) is solved via
+\pkg{lpSolveAPI}; the QP (\code{objective = "qp"}) is solved
+exactly via \pkg{quadprog} when available, with an adaptive-barrier
+fallback via \code{constrOptim()}.
 The stochastic metafrontier (Huang, Huang, and Liu, 2014) replaces
 this with a second-stage SFA, providing a distributional framework
 for inference on the TGR.
+
+\strong{Convergence and failure handling:} estimation stops with an
+error only when no usable estimate exists (for example, when both
+the BFGS and Nelder-Mead optimisers fail for a group frontier).
+When an optimiser stops at a non-zero convergence code, the fitted
+object is returned with a warning and the code is recorded; use
+\code{\link{check_convergence}} or \code{summary()} to verify all
+estimation stages before interpreting technology gap ratios,
+confidence intervals, or productivity decompositions. Infeasible
+DEA programmes yield \code{NA} efficiency scores, accompanied by a
+warning and counted by \code{\link{check_convergence}}.
 
 \strong{Note on standard errors (stochastic metafrontier):}
 The stochastic metafrontier is a two-stage estimator. Stage 2 treats

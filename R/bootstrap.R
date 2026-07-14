@@ -60,6 +60,10 @@ boot_tgr <- function(object, R = 999,
     stop("'object' must be a fitted metafrontier model.", call. = FALSE)
   }
 
+  # The parametric bootstrap draws new noise and inefficiency terms
+  # from the estimated error distributions, which requires a
+  # distributional model. DEA is nonparametric and provides no such
+  # model, so only case resampling is valid for DEA fits.
   if (type == "parametric" && object$method == "dea") {
     stop("Parametric bootstrap is not available for DEA metafrontiers. ",
          "Use type = 'nonparametric'.", call. = FALSE)
@@ -190,10 +194,13 @@ boot_tgr <- function(object, R = 999,
   groups <- object$groups
 
   if (type == "parametric") {
-    # Parametric: resample residuals from estimated distributions
+    # Parametric: keep the design fixed and regenerate the response by
+    # drawing new noise (v) and inefficiency (u) terms from the fitted
+    # group-specific error distributions
     boot_data <- .parametric_resample(object)
   } else {
-    # Nonparametric: resample rows within groups
+    # Nonparametric: case resampling, i.e. resample whole rows with
+    # replacement within each group so group sizes are preserved
     boot_data <- .nonparametric_resample(data, group_vec, groups)
   }
 
@@ -218,6 +225,19 @@ boot_tgr <- function(object, R = 999,
               !is.null(object$rts)) {
       object$rts
     } else "crs",
+    # Forward the estimation choices of the original fit so the
+    # bootstrap distribution reflects the reported point estimates.
+    type = if (!is.null(object$type)) object$type else "radial",
+    direction = if (!is.null(object$direction)) {
+      object$direction
+    } else "proportional",
+    estimator = if (!is.null(object$estimator)) {
+      object$estimator
+    } else "bc88",
+    objective = if (!is.null(object$objective)) {
+      object$objective
+    } else "lp",
+    engine = if (!is.null(object$engine)) object$engine else "internal",
     ...
   )
 
@@ -433,6 +453,12 @@ plot.boot_tgr <- function(x, which = c("distribution", "ci"),
       graphics::hist(group_means, main = paste("TGR:", g),
                      xlab = "Mean TGR", col = "lightblue", border = "white")
       graphics::abline(v = mean(x$tgr_original[idx]), col = "red", lwd = 2)
+      # Dashed lines at the group-level CI bounds (columns 3:4 of
+      # ci_group; names are level-dependent, e.g. "2.5%"/"97.5%")
+      if (!is.null(x$ci_group)) {
+        bounds <- unlist(x$ci_group[x$ci_group$Group == g, 3:4])
+        graphics::abline(v = bounds, col = "red", lwd = 1, lty = 2)
+      }
     }
   } else {
     # CI plot per group

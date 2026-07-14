@@ -39,7 +39,11 @@ metafrontier need not envelop the group frontiers at every point.
 
 A TGR of 1 means the group frontier coincides with the
 metafrontier at that input mix. Values less than 1 indicate a
-technology gap.
+technology gap. Since each group technology is a restricted subset
+of the common metatechnology (Battese, Rao and O'Donnell, 2004),
+the gap reflects the restrictions a group faces (regulation,
+environment, endowments) rather than a fundamentally different
+technology.
 }
 \examples{
 set.seed(42)

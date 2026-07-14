@@ -347,10 +347,10 @@ Index</h1>
 <h2>Motivation</h2>
 <p>Standard Malmquist productivity indices measure productivity change
 over time by decomposing it into efficiency change and technical change.
-When firms operate under different technologies, however, this
-decomposition misses an important dimension: changes in the
-<em>technology gap</em> between a group’s frontier and the global best
-practice.</p>
+When groups of firms face different restrictions of a common
+metatechnology, however, this decomposition misses an important
+dimension: changes in the <em>technology gap</em> between a group’s
+frontier and the global best practice.</p>
 <p>The <strong>metafrontier Malmquist TFP index</strong> of O’Donnell,
 Rao, and Battese (2008) extends the standard index with a three-way
 decomposition that separates within-group dynamics from cross-group
@@ -416,25 +416,31 @@ expect TGC &lt; 1 for G2 (falling behind) and TGC <span class="math inline">\(\a
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">data =</span> panel_data,</span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">orientation =</span> <span class="st">&quot;output&quot;</span>,</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>)</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>malm</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; Metafrontier Malmquist TFP Index</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; ================================</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; Orientation:  output </span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; RTS:          crs </span></span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; Groups:       G1, G2 </span></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; Periods:      1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; Mean decomposition (M* = TEC x TGC x TC*):</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.085 </span></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;   TC*  = 0.9818</span></span></code></pre></div>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;id&quot;</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">orientation =</span> <span class="st">&quot;output&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>)</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>malm</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; Metafrontier Malmquist TFP Index</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; ================================</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; Method:       dea </span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; Orientation:  output </span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; RTS:          crs </span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt; Groups:       G1, G2 </span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; Periods:      1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; Mean decomposition (M* = TEC x TGC x TC*):</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.145 </span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt;   TC*  = 1.002</span></span></code></pre></div>
+<p>The <code>id</code> argument identifies firms across periods. Firms
+not observed in both periods of a consecutive pair are dropped from that
+comparison, and <code>malmquist_meta()</code> warns about how many
+observations were dropped.</p>
 </div>
 <div id="detailed-results" class="section level2">
 <h2>Detailed results</h2>
@@ -447,56 +453,58 @@ period-level breakdowns:</p>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; Call:</span></span>
 <span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; malmquist_meta(formula = log_y ~ log_x1 + log_x2, data = panel_data, </span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, time = &quot;time&quot;, orientation = &quot;output&quot;, rts = &quot;crs&quot;)</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Orientation: output </span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; RTS:         crs </span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Groups:      G1, G2 </span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Periods:     1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; Overall means:</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.085 </span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;   TC*  = 0.9818 </span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; --- Three-Way Decomposition by Group ---</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; M* = TEC x TGC x TC*</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; Group: G1 (n = 150 )</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; 1.0726 1.2388 0.9833 0.9874 </span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; Group: G2 (n = 150 )</span></span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; 1.0962 1.0082 1.2703 0.9766 </span></span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; --- By Period ---</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;     group = &quot;group&quot;, time = &quot;time&quot;, id = &quot;id&quot;, orientation = &quot;output&quot;, </span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt;     rts = &quot;crs&quot;)</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; Method:      dea </span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Orientation: output </span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; RTS:         crs </span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Groups:      G1, G2 </span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; Periods:     1 -&gt; 2 -&gt; 3 -&gt; 4 </span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; Observations: 300 </span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; Overall means:</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;   MPI  = 1.145 </span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;   TEC  = 1.123 </span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;   TGC  = 1.127 </span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt;   TC*  = 1.002 </span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; --- Three-Way Decomposition by Group ---</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; M* = TEC x TGC x TC*</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; Group: G1 (n = 150 )</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; 1.1806 1.2388 0.9833 1.0273 </span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; Group: G2 (n = 150 )</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; 1.1096 1.0082 1.2703 0.9767 </span></span>
 <span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; Period 1 -&gt; 2 </span></span>
-<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
-<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; 1.1697 1.0360 1.3314 0.9044 </span></span>
-<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt; Period 2 -&gt; 3 </span></span>
-<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
-<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; 1.0470 1.5288 1.0757 0.6282 </span></span>
-<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; Period 3 -&gt; 4 </span></span>
-<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
-<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; 1.0364 0.8056 0.9732 1.4224 </span></span>
-<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratios ---</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; --- By Period ---</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; Period 1 -&gt; 2 </span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt; 1.3082 1.0360 1.3314 0.9567 </span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; Period 2 -&gt; 3 </span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; 1.0250 1.5288 1.0757 0.6300 </span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; Period 3 -&gt; 4 </span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt;    MPI    TEC    TGC     TC </span></span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; 1.1021 0.8056 0.9732 1.4194 </span></span>
 <span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt; Group: G1 </span></span>
-<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.987 </span></span>
-<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.9687 </span></span>
-<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        0.9833 </span></span>
-<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt; Group: G2 </span></span>
-<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.7011 </span></span>
-<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.8234 </span></span>
-<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        1.27</span></span></code></pre></div>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt; --- Technology Gap Ratios ---</span></span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt; Group: G1 </span></span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.987 </span></span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.9687 </span></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        0.9833 </span></span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a><span class="co">#&gt; Group: G2 </span></span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (from): 0.7011 </span></span>
+<span id="cb4-58"><a href="#cb4-58" tabindex="-1"></a><span class="co">#&gt;   Mean TGR (to):   0.8234 </span></span>
+<span id="cb4-59"><a href="#cb4-59" tabindex="-1"></a><span class="co">#&gt;   Mean TGC:        1.27</span></span></code></pre></div>
 </div>
 <div id="interpreting-the-decomposition" class="section level2">
 <h2>Interpreting the decomposition</h2>
@@ -559,7 +567,7 @@ decomposition and the metafrontier-level decomposition:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Within-group: MPI_group = EC_group x TC_group</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">head</span>(malm<span class="sc">$</span>group_malmquist)</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt;   id group period_from period_to MPI_group  EC_group  TC_group</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; 1  1    G1           1         2        NA 2.7812965        NA</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; 1  1    G1           1         2  6.164525 2.7812965 2.2164215</span></span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; 2  2    G1           1         2  1.757668 2.2260475 0.7895912</span></span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 3  3    G1           1         2  0.556865 0.6482012 0.8590929</span></span>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 4  4    G1           1         2  1.018773 1.1385028 0.8948361</span></span>
@@ -607,21 +615,24 @@ Under variable returns to scale, scale effects are netted out:</p>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">data =</span> panel_data,</span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;group&quot;</span>,</span>
 <span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;time&quot;</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>)</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># Compare mean MPI under CRS vs VRS</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">colMeans</span>(malm<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">colMeans</span>(malm_vrs<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>)</span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;           CRS      VRS</span></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; MPI 1.0847509 1.018219</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt; TEC 1.1234751 1.004931</span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt; TGC 1.1267757 1.014285</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; TC  0.9818377 1.005744</span></span></code></pre></div>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;id&quot;</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; Warning: 68 of 1200 cross-period DEA programs were infeasible (rts = &quot;vrs&quot;);</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; the affected TC and MPI values are NA and are excluded from reported means.</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co"># Compare mean MPI under CRS vs VRS</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>  <span class="at">CRS =</span> <span class="fu">colMeans</span>(malm<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>  <span class="at">VRS =</span> <span class="fu">colMeans</span>(malm_vrs<span class="sc">$</span>malmquist[, <span class="fu">c</span>(<span class="st">&quot;MPI&quot;</span>, <span class="st">&quot;TEC&quot;</span>, <span class="st">&quot;TGC&quot;</span>, <span class="st">&quot;TC&quot;</span>)],</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>                 <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>)</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;          CRS       VRS</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; MPI 1.145084 1.0121064</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; TEC 1.123475 1.0049310</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; TGC 1.126776 1.0142854</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; TC  1.002026 0.9998827</span></span></code></pre></div>
 </div>
 <div id="using-real-world-panel-data" class="section level2">
 <h2>Using real-world panel data</h2>
@@ -637,12 +648,15 @@ analysis:</p>
 <span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  <span class="at">data =</span> Produc,</span>
 <span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;region&quot;</span>,</span>
 <span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;year&quot;</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>)</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="fu">summary</span>(malm_us)</span></code></pre></div>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;state&quot;</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;crs&quot;</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="fu">summary</span>(malm_us)</span></code></pre></div>
 <p>Similarly, <code>sfaR::utility</code> provides electric utility data
-with a binary <code>regu</code> variable (regulated vs. deregulated)
-over 1986–1996:</p>
+with a binary <code>regu</code> variable (retail-access
+vs. traditionally regulated states) over 1986–1996, where
+<code>regu = 1</code> indicates that the state had enacted retail-access
+(restructuring) legislation:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">library</span>(sfaR)</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;utility&quot;</span>, <span class="at">package =</span> <span class="st">&quot;sfaR&quot;</span>)</span>
 <span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
@@ -651,13 +665,60 @@ over 1986–1996:</p>
 <span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  <span class="at">data =</span> utility,</span>
 <span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>  <span class="at">group =</span> <span class="st">&quot;regu&quot;</span>,</span>
 <span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  <span class="at">time =</span> <span class="st">&quot;year&quot;</span>,</span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
-<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>)</span>
-<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="fu">summary</span>(malm_util)</span></code></pre></div>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;firm&quot;</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>  <span class="at">rts =</span> <span class="st">&quot;vrs&quot;</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>)</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="fu">summary</span>(malm_util)</span></code></pre></div>
+</div>
+<div id="caveats" class="section level2">
+<h2>Caveats</h2>
+<p>A few limitations should be kept in mind when interpreting the
+results.</p>
+<div id="interpretation-of-the-index" class="section level3">
+<h3>Interpretation of the index</h3>
+<p>The Malmquist index, and by extension its metafrontier version, is
+not a proper index in the sense of O’Donnell (2012): it is not
+multiplicatively complete, and its binary comparisons are not
+transitive, so chained comparisons across several periods depend on the
+path taken. Interpretation should therefore be confined to binary
+period-to-period comparisons; avoid cumulating the indices into a
+multi-period productivity level series.</p>
+</div>
+<div id="cross-period-infeasibility" class="section level3">
+<h3>Cross-period infeasibility</h3>
+<p>Under <code>rts = &quot;vrs&quot;</code>, <code>&quot;drs&quot;</code>,
+<code>&quot;irs&quot;</code>, or <code>&quot;fdh&quot;</code>, the cross-period distance
+functions (evaluating a period-<span class="math inline">\(t\)</span>
+observation against the period-<span class="math inline">\(s\)</span>
+frontier) may have no feasible solution. Infeasible cases are returned
+as <code>NA</code> (never <code>Inf</code>), counted, and reported, so
+summary statistics over the remaining observations should be read with
+the reduced sample in mind. Under <code>rts = &quot;crs&quot;</code> the
+programmes are always feasible.</p>
+</div>
+<div id="firm-matching" class="section level3">
+<h3>Firm matching</h3>
+<p>Observations are matched across consecutive periods via the
+<code>id</code> variable. Firms observed in only one period of a pair
+are dropped from that comparison, and <code>malmquist_meta()</code>
+warns about the number of dropped observations. With substantial
+attrition or entry, the index is computed on the surviving matched
+sample only.</p>
+</div>
+<div id="sfa-based-index" class="section level3">
+<h3>SFA-based index</h3>
+<p>With <code>method = &quot;sfa&quot;</code>, the metafrontier at each period is
+formed as the pointwise maximum of the fitted group frontiers, an
+approximation that the function announces with a message. For exact
+decompositions, prefer the default <code>method = &quot;dea&quot;</code>.</p>
+</div>
 </div>
 <div id="references" class="section level2">
 <h2>References</h2>
 <ul>
+<li><p>O’Donnell, C.J. (2012). An aggregate quantity framework for
+measuring and decomposing productivity change. <em>Journal of
+Productivity Analysis</em>, 38(3), 255–272.</p></li>
 <li><p>O’Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 Metafrontier frameworks for the study of firm-level efficiencies and
 technology ratios. <em>Empirical Economics</em>, 34(2),
