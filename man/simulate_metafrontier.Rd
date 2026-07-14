@@ -12,7 +12,10 @@ simulate_metafrontier(
   tech_gap = NULL,
   sigma_u = NULL,
   sigma_v = 0.2,
-  seed = NULL
+  seed = NULL,
+  beta_groups = NULL,
+  input_means = NULL,
+  input_corr = NULL
 )
 }
 \arguments{
@@ -26,12 +29,15 @@ groups. If a vector, must be of length \code{n_groups}.}
 
 \item{beta_meta}{numeric vector. Metafrontier coefficients
 (including intercept). Length must be \code{n_inputs + 1}.
-Default: \code{c(1.0, 0.5, 0.3)}.}
+Default: \code{c(1.0, seq(0.5, 0.2, length.out = n_inputs))},
+i.e. \code{c(1.0, 0.5, 0.2)} for the default two inputs. Ignored
+when \code{beta_groups} is supplied.}
 
 \item{tech_gap}{numeric vector of length \code{n_groups}. The
 technology gap for each group, defined as the reduction in the
 intercept relative to the metafrontier. Default: evenly spaced
-from 0 to 0.5.}
+from 0 to 0.5. Ignored (with a warning) when \code{beta_groups}
+is supplied.}
 
 \item{sigma_u}{numeric vector of length \code{n_groups}. Standard
 deviation of the half-normal inefficiency term for each group.
@@ -42,6 +48,26 @@ term. Default: 0.2.}
 
 \item{seed}{integer or \code{NULL}. Random seed for
 reproducibility.}
+
+\item{beta_groups}{optional group-specific frontier coefficients,
+including slopes: either an \code{n_groups} x \code{(n_inputs + 1)}
+numeric matrix (one row per group) or a list of \code{n_groups}
+numeric vectors of length \code{n_inputs + 1}. When supplied, it
+replaces the intercept-shift construction based on
+\code{tech_gap}; see Details. Default \code{NULL} (intercept-shift
+design).}
+
+\item{input_means}{optional \code{n_groups} x \code{n_inputs} numeric
+matrix of per-group mean log-input levels. When supplied, the
+log-inputs for group \code{g} are drawn from a normal distribution
+centred at \code{input_means[g, ]}; see Details. Default
+\code{NULL} (identical uniform inputs across groups).}
+
+\item{input_corr}{optional \code{n_inputs} x \code{n_inputs}
+correlation matrix for the log-inputs. When supplied, the
+log-inputs are drawn from a multivariate normal distribution with
+this correlation structure; see Details. Default \code{NULL}
+(independent inputs).}
 }
 \value{
 A list with components:
@@ -53,8 +79,38 @@ A list with components:
 }
 \description{
 Generates synthetic data from a known metafrontier data-generating
-process. Useful for Monte Carlo simulations, package testing, and
-teaching.
+process. Each group frontier lies weakly below the metafrontier,
+consistent with groups facing different restrictions of a common
+metatechnology (Battese, Rao and O'Donnell, 2004). Useful for Monte
+Carlo simulations, package testing, and teaching.
+}
+\details{
+By default the group frontiers share the metafrontier slopes and
+differ only in their intercepts, so the true technology gap ratio
+(TGR) is constant within each group and equals
+\code{exp(-tech_gap[g])}. When \code{beta_groups} is supplied the
+group frontiers may differ in their slopes, in which case no single
+log-linear metafrontier envelops all groups: the tightest log-linear
+envelope is then a pseudo-true quantity. The returned
+\code{true_tgr} is instead computed observation by observation
+against the pointwise maximum over the group frontiers,
+\eqn{TGR_i = \exp(x_i^	op eta_g - \max_j x_i^	op eta_j)}, which is
+guaranteed to lie in (0, 1]. The true group frontier for each firm
+is \eqn{x_i^	op eta_g}, \code{true_te} is generated exactly as in the
+default design, and \code{true_te_star = true_te * true_tgr}. In
+this case \code{params$beta_meta} is \code{NULL} and
+\code{params$beta_groups} holds the supplied coefficients.
+
+By default the log-inputs are drawn i.i.d. from a uniform
+distribution on \code{[0, 5]}, identically across groups. Supplying
+\code{input_means} and/or \code{input_corr} switches to normal
+log-inputs with standard deviation \code{5 / sqrt(12)} (matching the
+spread of the uniform draws), centred at \code{input_means[g, ]}
+(2.5 for every group and input when \code{input_means} is
+\code{NULL}). When \code{input_corr} is supplied the draws are
+multivariate normal with that correlation matrix; when it is
+\code{NULL} but \code{input_means} is given, the inputs are drawn
+independently.
 }
 \examples{
 sim <- simulate_metafrontier(n_groups = 3, n_per_group = 200,
@@ -64,5 +120,11 @@ table(sim$data$group)
 
 # The true metafrontier coefficients
 sim$params$beta_meta
+
+# Group-specific slopes: per-observation true TGR
+sim2 <- simulate_metafrontier(
+  beta_groups = rbind(c(1.0, 0.5, 0.2), c(0.9, 0.6, 0.1))
+)
+range(sim2$data$true_tgr)
 
 }

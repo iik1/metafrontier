@@ -16,5 +16,20 @@ A data frame with columns: Group, N, Mean, SD, Min, Q1,
   Median, Q3, Max.
 }
 \description{
-Prints a summary table of TGR statistics by group.
+Prints a summary table of TGR statistics by group. The underlying
+observation-level TGR values are the same as those returned by
+\code{efficiencies(object, type = "tgr")}.
+}
+\examples{
+sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50,
+                             seed = 42)
+fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                    group = "group", method = "sfa",
+                    meta_type = "deterministic")
+tgr_summary(fit)
+
+}
+\seealso{
+\code{\link{efficiencies.metafrontier}},
+  \code{\link{technology_gap_ratio}}, \code{\link{boot_tgr}}
 }

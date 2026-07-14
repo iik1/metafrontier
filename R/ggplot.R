@@ -233,17 +233,20 @@ autoplot.malmquist_meta <- function(object,
       ggplot2::theme_minimal()
 
   } else {
-    mpi_mean <- aggregate(MPI ~ group + period_from, data = m, mean,
+    # Each MPI measures the change into period_to, so points sit at the
+    # end period of each transition (axis runs 2..T)
+    mpi_mean <- aggregate(MPI ~ group + period_to, data = m, mean,
                           na.rm = TRUE)
 
     p <- ggplot2::ggplot(mpi_mean,
-                         ggplot2::aes(x = .data$period_from,
+                         ggplot2::aes(x = .data$period_to,
                                       y = .data$MPI,
                                       color = .data$group)) +
       ggplot2::geom_line(linewidth = 1) +
       ggplot2::geom_point(size = 2) +
       ggplot2::geom_hline(yintercept = 1, linetype = "dashed") +
-      ggplot2::labs(x = "Period", y = "Mean MPI",
+      ggplot2::labs(x = "Period (change from previous period)",
+                    y = "Mean MPI",
                     title = "MPI Trend",
                     color = "Group") +
       ggplot2::theme_minimal()
@@ -297,10 +300,25 @@ autoplot.boot_tgr <- function(object,
     }
     df <- do.call(rbind, frames)
 
+    # Per-group CI bounds (columns 3:4 of ci_group carry level-dependent
+    # names such as "2.5%" and "97.5%", so index by position)
+    ci <- object$ci_group
+    ci_long <- data.frame(
+      group = rep(ci$Group, 2),
+      bound = c(ci[[3]], ci[[4]]),
+      stringsAsFactors = FALSE
+    )
+    ci_long <- ci_long[is.finite(ci_long$bound), , drop = FALSE]
+
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$mean_tgr,
                                            fill = .data$group)) +
       ggplot2::geom_histogram(bins = 30, alpha = 0.6,
                               position = "identity") +
+      ggplot2::geom_vline(
+        data = ci_long,
+        ggplot2::aes(xintercept = .data$bound, colour = .data$group),
+        linetype = "dashed", show.legend = FALSE
+      ) +
       ggplot2::labs(x = "Bootstrap Mean TGR",
                     y = "Count",
                     title = "Bootstrap TGR Distribution",

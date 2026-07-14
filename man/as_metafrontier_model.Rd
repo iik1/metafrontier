@@ -12,16 +12,33 @@ as_metafrontier_model(x, ...)
 \item{...}{additional arguments passed to methods.}
 }
 \value{
-A list with components: \code{coefficients}, \code{efficiency},
-  \code{X}, \code{y}, \code{sigma_v}, \code{sigma_u}, \code{logLik},
-  \code{hessian}, \code{n}, \code{dist}.
+A list of class \code{"metafrontier_model"} with components:
+  \code{beta}, \code{te}, \code{X}, \code{y}, \code{sigma_v},
+  \code{sigma_u}, \code{logLik}, \code{hessian}, \code{n},
+  \code{dist}.
 }
 \description{
 Generic function that extracts the components needed by
 \code{\link{metafrontier}} from a pre-fitted frontier model.
-Methods are provided for \pkg{sfaR}, \pkg{frontier}, and
-\pkg{Benchmarking} objects, as well as plain lists with the
+Methods are provided for \pkg{sfaR} (\code{"sfacross"}),
+\pkg{frontier} (\code{"frontier"}), and \pkg{Benchmarking}
+(\code{"Farrell"}) objects, as well as plain lists with the
 required fields.
+}
+\details{
+\code{metafrontier(models = ...)} calls this function internally on
+each supplied model, so fitted \pkg{sfaR} or \pkg{frontier} objects
+can be passed to \code{metafrontier()} directly. Manual conversion
+is only needed for hand-built list models. Converting an object that
+has already been converted is a no-op, so it is safe to pass
+converted objects to \code{metafrontier()} as well.
+
+Note that \code{Benchmarking::dea()} (\code{"Farrell"}) objects do
+not store the inputs, outputs, or frontier coefficients, so the
+converted model carries only efficiency scores and cannot be used
+with \code{metafrontier(models = ...)}; use the formula interface
+with \code{method = "dea"} instead. Converting a Farrell object
+therefore raises a warning.
 }
 \examples{
 # Using a named list:

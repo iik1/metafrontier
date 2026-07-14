@@ -12,10 +12,44 @@
 \item{...}{additional arguments (currently unused).}
 }
 \value{
-An object of class \code{"summary.metafrontier"}.
+An object of class \code{"summary.metafrontier"}: a list
+  with components
+  \describe{
+    \item{call}{the matched call of the original fit}
+    \item{method}{estimation method (\code{"sfa"} or \code{"dea"})}
+    \item{meta_type}{metafrontier type (\code{"deterministic"} or
+      \code{"stochastic"})}
+    \item{groups}{character vector of group labels}
+    \item{nobs}{named vector of observation counts (total and per
+      group)}
+    \item{group_tables}{named list of coefficient matrices, one per
+      group, with columns \code{Estimate}, \code{Std. Error},
+      \code{z value}, and \code{Pr(>|z|)} where standard errors are
+      available (empty list for DEA fits)}
+    \item{meta_table}{metafrontier coefficient matrix in the same
+      format, or \code{NULL} for DEA fits}
+    \item{tgr_summary}{data frame of TGR statistics by group, as
+      returned by \code{\link{tgr_summary}}}
+    \item{efficiency_summary}{data frame with mean TE, mean TGR,
+      and mean TE* by group}
+    \item{logLik_groups}{named vector of group log-likelihoods, or
+      \code{NULL}}
+    \item{meta_logLik}{Stage 2 log-likelihood of the stochastic
+      metafrontier, or \code{NULL}}
+    \item{convergence}{data frame with columns \code{stage},
+      \code{code}, and \code{converged} recording the optimiser
+      status of each estimation stage, or \code{NULL} if
+      unavailable; see \code{\link{check_convergence}}}
+  }
 }
 \description{
-Summary of a Metafrontier Model
+Computes group-level summaries of technical efficiency (TE),
+technology gap ratio (TGR), and metafrontier efficiency (TE*),
+full coefficient tables for each group frontier (including
+variance parameters and, for BC92 panels, \code{eta}, all with
+standard errors where a Hessian is available), the metafrontier
+coefficient table (with Murphy-Topel corrected standard errors
+where applicable), and a per-stage convergence table.
 }
 \examples{
 sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)

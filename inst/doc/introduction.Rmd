@@ -19,16 +19,26 @@ knitr::opts_chunk$set(
 ## What is a metafrontier?
 
 In efficiency analysis, we often study firms that operate under
-fundamentally different technologies. Steel producers using electric arc
-furnaces (EAF) face a different production possibility set than those using
-the blast furnace-basic oxygen furnace (BF-BOF) route. Hospitals in rural
-areas face different constraints than urban ones. Banks in developing
-economies operate under different regulatory and technological environments
-than those in advanced economies.
+different production environments. Steel producers using electric arc
+furnaces (EAF) face a different feasible set of input-output combinations
+than those using the blast furnace-basic oxygen furnace (BF-BOF) route.
+Hospitals in rural areas face different constraints than urban ones.
+Banks face different regulatory environments across jurisdictions.
+
+Following Battese, Rao, and O'Donnell (2004) and O'Donnell, Rao, and
+Battese (2008), we conceive of a single industry **metatechnology**
+$T^*$: the set of all input-output combinations that are technically
+feasible in the industry. Each group of firms operates within a
+**restricted subset** $T_j \subseteq T^*$ of this metatechnology, where
+the restrictions arise from regulation, the physical environment,
+resource endowments, or the cost of switching production systems. Groups
+do not possess fundamentally different technologies; they face different
+restrictions of a common metatechnology.
 
 Standard stochastic frontier analysis (SFA) or data envelopment analysis
-(DEA) applied to the pooled sample implicitly assumes all firms share the
-same technology -- an assumption that may be unrealistic. Estimating
+(DEA) applied to the pooled sample implicitly assumes that all firms
+have unrestricted access to the same technology set, an assumption
+that may be unrealistic. Estimating
 separate frontiers for each group solves this problem but makes efficiency
 scores incomparable across groups: a firm that is 90\% efficient relative
 to a less advanced group frontier may actually be less productive than a
@@ -111,10 +121,15 @@ The deterministic metafrontier is estimated in two stages:
 1. **Stage 1**: Fit separate SFA models for each group via maximum
    likelihood.
 2. **Stage 2**: Find metafrontier coefficients $\hat\beta^*$ by minimising
-   $$\sum_i \left[\ln f(x_i; \hat\beta^*) - \ln f(x_i; \hat\beta_j)\right]^2$$
+   $$\sum_i \left|\ln f(x_i; \hat\beta^*) - \ln f(x_i; \hat\beta_j)\right|$$
    subject to the constraint that the metafrontier envelops all group
    frontiers: $\ln f(x_i; \hat\beta^*) \ge \ln f(x_i; \hat\beta_j)$ for
-   all $i$ and $j$.
+   all $i$ and $j$. Since the envelopment constraints force the
+   deviations to be non-negative, this reduces to a linear programme
+   (`objective = "lp"`, the default). The alternative minimum sum of
+   squared deviations criterion is available via `objective = "qp"`;
+   both criteria are proposed by Battese, Rao, and O'Donnell (2004),
+   and the `methods` vignette discusses them in detail.
 
 This is the default method:
 
@@ -198,6 +213,16 @@ te_star <- efficiencies(fit_det, type = "meta")
 all.equal(te_star, te * tgr)
 ```
 
+For SFA fits, technical efficiencies are computed with the Battese and
+Coelli (1988) conditional expectation estimator by default
+(`estimator = "bc88"`). The Jondrow et al. (1982) estimator is computed
+and stored alongside it, so you can switch without refitting:
+
+```{r efficiencies-jlms}
+te_jlms <- efficiencies(fit_det, type = "group", estimator = "jlms")
+cor(te, te_jlms)
+```
+
 ### Technology gap ratio
 
 The `technology_gap_ratio()` function returns TGR values grouped by
@@ -277,9 +302,24 @@ statistically different from a single pooled frontier:
 poolability_test(fit_det)
 ```
 
-A significant result (small p-value) indicates that the technology groups
-have genuinely different production technologies, justifying the
-metafrontier approach.
+A significant result (small p-value) indicates that the group frontiers
+genuinely differ, that is, the groups face different restrictions of the
+common metatechnology, justifying the metafrontier approach.
+
+### Convergence diagnostics
+
+Every estimation stage of a metafrontier fit can be inspected with
+`check_convergence()`, which returns one row per stage (each group
+frontier and the metafrontier itself) with the estimation method, the
+optimiser's convergence code, and a logical convergence indicator:
+
+```{r convergence}
+check_convergence(fit_det)
+```
+
+The `summary()` method also prints a convergence block, so estimation
+problems are flagged even if you never call `check_convergence()`
+directly.
 
 
 ## Inefficiency distributions
@@ -455,6 +495,10 @@ head(data.frame(
 
 ## References
 
+- Battese, G.E. and Coelli, T.J. (1988). Prediction of firm-level
+  technical efficiencies with a generalized frontier production function
+  and panel data. *Journal of Econometrics*, 38(3), 387--399.
+
 - Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A metafrontier
   production function for estimation of technical efficiencies and
   technology gaps for firms operating under different technologies.
@@ -463,6 +507,10 @@ head(data.frame(
 - Huang, C.J., Huang, T.-H. and Liu, N.-H. (2014). A new approach to
   estimating the metafrontier production function based on a stochastic
   frontier framework. *Journal of Productivity Analysis*, 42(3), 241--254.
+
+- Jondrow, J., Lovell, C.A.K., Materov, I.S. and Schmidt, P. (1982). On
+  the estimation of technical inefficiency in the stochastic frontier
+  production function model. *Journal of Econometrics*, 19(2--3), 233--238.
 
 - O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008). Metafrontier
   frameworks for the study of firm-level efficiencies and technology

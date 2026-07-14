@@ -6,8 +6,10 @@ knitr::opts_chunk$set(
   fig.height = 5
 )
 
+
 ## ----setup--------------------------------------------------------------------
 library(metafrontier)
+
 
 ## ----simulate-panel-----------------------------------------------------------
 set.seed(42)
@@ -29,28 +31,34 @@ panel_data <- do.call(rbind, panels)
 
 table(panel_data$group, panel_data$time)
 
+
 ## ----malmquist----------------------------------------------------------------
 malm <- malmquist_meta(
   log_y ~ log_x1 + log_x2,
   data = panel_data,
   group = "group",
   time = "time",
+  id = "id",
   orientation = "output",
   rts = "crs"
 )
 
 malm
 
+
 ## ----summary------------------------------------------------------------------
 summary(malm)
 
+
 ## ----results-table------------------------------------------------------------
 head(malm$malmquist, 10)
+
 
 ## ----verify-identity----------------------------------------------------------
 m <- malm$malmquist
 complete <- complete.cases(m[, c("MPI", "TEC", "TGC", "TC")])
 all.equal(m$MPI[complete], m$TEC[complete] * m$TGC[complete] * m$TC[complete])
+
 
 ## ----group-vs-meta------------------------------------------------------------
 # Within-group: MPI_group = EC_group x TC_group
@@ -59,14 +67,17 @@ head(malm$group_malmquist)
 # Metafrontier: MPI_meta = EC_meta x TC_meta
 head(malm$meta_malmquist)
 
+
 ## ----tgr-dynamics-------------------------------------------------------------
 tgr_df <- malm$tgr
 
 # Mean TGR by group and period
 aggregate(cbind(TGR_from, TGR_to) ~ group, data = tgr_df, FUN = mean)
 
+
 ## ----tgc-by-group-------------------------------------------------------------
 aggregate(TGC ~ group, data = tgr_df, FUN = mean)
+
 
 ## ----vrs-comparison-----------------------------------------------------------
 malm_vrs <- malmquist_meta(
@@ -74,6 +85,7 @@ malm_vrs <- malmquist_meta(
   data = panel_data,
   group = "group",
   time = "time",
+  id = "id",
   rts = "vrs"
 )
 
@@ -85,6 +97,7 @@ data.frame(
                  na.rm = TRUE)
 )
 
+
 ## ----produc-example, eval = FALSE---------------------------------------------
 # library(plm)
 # data("Produc", package = "plm")
@@ -94,9 +107,11 @@ data.frame(
 #   data = Produc,
 #   group = "region",
 #   time = "year",
+#   id = "state",
 #   rts = "crs"
 # )
 # summary(malm_us)
+
 
 ## ----utility-example, eval = FALSE--------------------------------------------
 # library(sfaR)
@@ -107,6 +122,7 @@ data.frame(
 #   data = utility,
 #   group = "regu",
 #   time = "year",
+#   id = "firm",
 #   rts = "vrs"
 # )
 # summary(malm_util)

@@ -24,9 +24,10 @@ library(metafrontier)
 
 Standard Malmquist productivity indices measure productivity change over
 time by decomposing it into efficiency change and technical change. When
-firms operate under different technologies, however, this decomposition
-misses an important dimension: changes in the *technology gap* between a
-group's frontier and the global best practice.
+groups of firms face different restrictions of a common metatechnology,
+however, this decomposition misses an important dimension: changes in
+the *technology gap* between a group's frontier and the global best
+practice.
 
 The **metafrontier Malmquist TFP index** of O'Donnell, Rao, and Battese
 (2008) extends the standard index with a three-way decomposition that
@@ -97,12 +98,17 @@ malm <- malmquist_meta(
   data = panel_data,
   group = "group",
   time = "time",
+  id = "id",
   orientation = "output",
   rts = "crs"
 )
 
 malm
 ```
+
+The `id` argument identifies firms across periods. Firms not observed
+in both periods of a consecutive pair are dropped from that comparison,
+and `malmquist_meta()` warns about how many observations were dropped.
 
 
 ## Detailed results
@@ -190,6 +196,7 @@ malm_vrs <- malmquist_meta(
   data = panel_data,
   group = "group",
   time = "time",
+  id = "id",
   rts = "vrs"
 )
 
@@ -218,13 +225,16 @@ malm_us <- malmquist_meta(
   data = Produc,
   group = "region",
   time = "year",
+  id = "state",
   rts = "crs"
 )
 summary(malm_us)
 ```
 
 Similarly, `sfaR::utility` provides electric utility data with a binary
-`regu` variable (regulated vs. deregulated) over 1986--1996:
+`regu` variable (retail-access vs. traditionally regulated states) over
+1986--1996, where `regu = 1` indicates that the state had enacted
+retail-access (restructuring) legislation:
 
 ```{r utility-example, eval = FALSE}
 library(sfaR)
@@ -235,13 +245,58 @@ malm_util <- malmquist_meta(
   data = utility,
   group = "regu",
   time = "year",
+  id = "firm",
   rts = "vrs"
 )
 summary(malm_util)
 ```
 
 
+## Caveats
+
+A few limitations should be kept in mind when interpreting the results.
+
+### Interpretation of the index
+
+The Malmquist index, and by extension its metafrontier version, is not
+a proper index in the sense of O'Donnell (2012): it is not
+multiplicatively complete, and its binary comparisons are not
+transitive, so chained comparisons across several periods depend on the
+path taken. Interpretation should therefore be confined to binary
+period-to-period comparisons; avoid cumulating the indices into a
+multi-period productivity level series.
+
+### Cross-period infeasibility
+
+Under `rts = "vrs"`, `"drs"`, `"irs"`, or `"fdh"`, the cross-period
+distance functions (evaluating a period-$t$ observation against the
+period-$s$ frontier) may have no feasible solution. Infeasible cases
+are returned as `NA` (never `Inf`), counted, and reported, so summary
+statistics over the remaining observations should be read with the
+reduced sample in mind. Under `rts = "crs"` the programmes are always
+feasible.
+
+### Firm matching
+
+Observations are matched across consecutive periods via the `id`
+variable. Firms observed in only one period of a pair are dropped from
+that comparison, and `malmquist_meta()` warns about the number of
+dropped observations. With substantial attrition or entry, the index is
+computed on the surviving matched sample only.
+
+### SFA-based index
+
+With `method = "sfa"`, the metafrontier at each period is formed as the
+pointwise maximum of the fitted group frontiers, an approximation that
+the function announces with a message. For exact decompositions, prefer
+the default `method = "dea"`.
+
+
 ## References
+
+- O'Donnell, C.J. (2012). An aggregate quantity framework for measuring
+  and decomposing productivity change. *Journal of Productivity
+  Analysis*, 38(3), 255--272.
 
 - O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008). Metafrontier
   frameworks for the study of firm-level efficiencies and technology

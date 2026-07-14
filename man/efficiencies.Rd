@@ -7,7 +7,7 @@
 \usage{
 efficiencies(object, ...)
 
-\method{efficiencies}{metafrontier}(object, type = c("meta", "group", "tgr"), ...)
+\method{efficiencies}{metafrontier}(object, type = c("meta", "group", "tgr"), estimator = NULL, ...)
 }
 \arguments{
 \item{object}{a fitted \code{"metafrontier"} object.}
@@ -18,6 +18,17 @@ efficiencies(object, ...)
 \code{"group"} for efficiency relative to the group frontier,
 \code{"meta"} (default) for efficiency relative to the
 metafrontier, or \code{"tgr"} for the technology gap ratio.}
+
+\item{estimator}{optional character. Override the efficiency
+estimator used at fit time: \code{"bc88"} for the Battese-Coelli
+(1988) conditional expectation \eqn{E[\exp(-u)|\varepsilon]} or
+\code{"jlms"} for \eqn{\exp(-E[u|\varepsilon])} (Jondrow et al.,
+1982). Both are stored on SFA fits, so no refitting is needed;
+\code{type = "meta"} is recomputed as \eqn{TE \times TGR}. The
+TGR itself does not depend on the estimator. Ignored (with a
+warning) for DEA fits and externally fitted group models that do
+not carry both estimators. Default \code{NULL} returns the
+scores selected at fit time.}
 }
 \value{
 A numeric vector of efficiency scores of length

@@ -6,8 +6,10 @@ knitr::opts_chunk$set(
   fig.height = 5
 )
 
+
 ## ----setup--------------------------------------------------------------------
 library(metafrontier)
+
 
 ## ----simulate-----------------------------------------------------------------
 sim <- simulate_metafrontier(
@@ -23,6 +25,7 @@ sim <- simulate_metafrontier(
 str(sim$data[, c("log_y", "log_x1", "log_x2", "group")])
 table(sim$data$group)
 
+
 ## ----estimate-----------------------------------------------------------------
 fit <- metafrontier(
   log_y ~ log_x1 + log_x2,
@@ -34,6 +37,7 @@ fit <- metafrontier(
 
 fit
 
+
 ## ----deterministic------------------------------------------------------------
 fit_det <- metafrontier(
   log_y ~ log_x1 + log_x2,
@@ -43,6 +47,7 @@ fit_det <- metafrontier(
 )
 
 summary(fit_det)
+
 
 ## ----stochastic---------------------------------------------------------------
 fit_sto <- metafrontier(
@@ -54,8 +59,10 @@ fit_sto <- metafrontier(
 
 summary(fit_sto)
 
+
 ## ----vcov---------------------------------------------------------------------
 vcov(fit_sto)
+
 
 ## ----dea----------------------------------------------------------------------
 fit_dea <- metafrontier(
@@ -68,6 +75,7 @@ fit_dea <- metafrontier(
 
 fit_dea
 
+
 ## ----efficiencies-------------------------------------------------------------
 te <- efficiencies(fit_det, type = "group")
 tgr <- efficiencies(fit_det, type = "tgr")
@@ -76,12 +84,20 @@ te_star <- efficiencies(fit_det, type = "meta")
 # Verify the fundamental identity: TE* = TE x TGR
 all.equal(te_star, te * tgr)
 
+
+## ----efficiencies-jlms--------------------------------------------------------
+te_jlms <- efficiencies(fit_det, type = "group", estimator = "jlms")
+cor(te, te_jlms)
+
+
 ## ----tgr----------------------------------------------------------------------
 tgr_by_group <- technology_gap_ratio(fit_det)
 lapply(tgr_by_group, summary)
 
+
 ## ----tgr-summary--------------------------------------------------------------
 tgr_summary(fit_det)
+
 
 ## ----coefs--------------------------------------------------------------------
 # Metafrontier coefficients
@@ -89,6 +105,7 @@ coef(fit_det, which = "meta")
 
 # Group-specific coefficients
 coef(fit_det, which = "group")
+
 
 ## ----model-info---------------------------------------------------------------
 # Log-likelihood (sum of group log-likelihoods for deterministic)
@@ -100,17 +117,26 @@ nobs(fit_det)
 # AIC and BIC (available automatically via logLik method)
 AIC(fit_det)
 
+
 ## ----plot-tgr, fig.height=4---------------------------------------------------
 plot(fit_det, which = "tgr")
+
 
 ## ----plot-eff, fig.height=4---------------------------------------------------
 plot(fit_det, which = "efficiency")
 
+
 ## ----plot-decomp, fig.height=4, fig.width=9-----------------------------------
 plot(fit_det, which = "decomposition")
 
+
 ## ----poolability--------------------------------------------------------------
 poolability_test(fit_det)
+
+
+## ----convergence--------------------------------------------------------------
+check_convergence(fit_det)
+
 
 ## ----distributions, eval=FALSE------------------------------------------------
 # # Half-normal (default): u ~ |N(0, sigma_u^2)|
@@ -128,6 +154,7 @@ poolability_test(fit_det)
 #                         data = sim$data, group = "group",
 #                         dist = "exponential")
 
+
 ## ----compare-truth------------------------------------------------------------
 # True vs estimated metafrontier coefficients
 cbind(
@@ -143,6 +170,7 @@ cbind(True = true_tgr, Estimated = est_tgr)
 # Correlation between true and estimated efficiency
 cor(sim$data$true_te, fit_det$te_group)
 cor(sim$data$true_te_star, fit_det$te_meta)
+
 
 ## ----panel-sfa, eval=FALSE----------------------------------------------------
 # # Simulate panel data
@@ -164,6 +192,7 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 # # eta > 0: inefficiency decreasing over time
 # # eta < 0: inefficiency increasing over time
 
+
 ## ----bootstrap, eval=FALSE----------------------------------------------------
 # sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
 # fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
@@ -183,6 +212,7 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 # # Parametric bootstrap (resample from estimated error distributions)
 # boot_par <- boot_tgr(fit, R = 499, type = "parametric", seed = 1)
 
+
 ## ----murphy-topel, eval=FALSE-------------------------------------------------
 # fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
 #                     group = "group", meta_type = "stochastic")
@@ -195,6 +225,7 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 # 
 # # Corrected confidence intervals
 # confint(fit, correction = "murphy-topel")
+
 
 ## ----latent-class, eval=FALSE-------------------------------------------------
 # sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
@@ -214,6 +245,7 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 #   n_classes_range = 2:4, n_starts = 3, seed = 42
 # )
 # print(bic_table)  # choose n_classes with lowest BIC
+
 
 ## ----ddf, eval=FALSE----------------------------------------------------------
 # sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
