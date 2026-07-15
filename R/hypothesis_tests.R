@@ -68,7 +68,7 @@
 #'
 #' Kneip, A., Simar, L. and Wilson, P.W. (2016). Testing hypotheses
 #' in nonparametric models of production. \emph{Journal of Business &
-#' Economic Statistics}, 34(3), 435--447.
+#' Economic Statistics}, 34(3), 435--456.
 #' \doi{10.1080/07350015.2015.1049747}
 #'
 #' @examples
