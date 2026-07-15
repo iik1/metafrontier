@@ -1,10 +1,19 @@
+## Resubmission
+
+This is a resubmission of 0.3.0. The previous upload was auto-rejected
+because two \eqn expressions in simulate_metafrontier.Rd contained
+corrupted control characters (tab and backspace), which broke the PDF
+manual build. The documentation source has been repaired, and R CMD
+check with the PDF manual now passes cleanly. A stray Rplots.pdf test
+artifact has also been removed from tests/.
+
 ## R CMD check results
 
 0 errors | 0 warnings | 0 notes
 
 (CRAN incoming checks may show 1 NOTE for possibly misspelled words:
-Battese, Malmquist, Metafrontier, SFA. These are correct
-domain-specific terms.)
+QP, metatechnology, poolability, pre (from "pre-fitted"). These are
+intentional domain-specific terms.)
 
 ## Release summary
 

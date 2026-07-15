@@ -56,9 +56,9 @@
 #' envelope is then a pseudo-true quantity. The returned
 #' \code{true_tgr} is instead computed observation by observation
 #' against the pointwise maximum over the group frontiers,
-#' \eqn{TGR_i = \exp(x_i^	op eta_g - \max_j x_i^	op eta_j)}, which is
+#' \eqn{TGR_i = \exp(x_i^\top \beta_g - \max_j x_i^\top \beta_j)}, which is
 #' guaranteed to lie in (0, 1]. The true group frontier for each firm
-#' is \eqn{x_i^	op eta_g}, \code{true_te} is generated exactly as in the
+#' is \eqn{x_i^\top \beta_g}, \code{true_te} is generated exactly as in the
 #' default design, and \code{true_te_star = true_te * true_tgr}. In
 #' this case \code{params$beta_meta} is \code{NULL} and
 #' \code{params$beta_groups} holds the supplied coefficients.
