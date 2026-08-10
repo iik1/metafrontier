@@ -1,3 +1,19 @@
+# metafrontier 0.3.1
+
+## Bug fixes
+
+- BC88/BC92 efficiencies are now evaluated on the log scale
+  (`pnorm(log.p = TRUE)`), with an asymptotic closed form in the far
+  left tail of the conditional distribution. The previous
+  natural-scale ratio `Phi(mu*/sigma* - sigma*) / Phi(mu*/sigma*)`
+  could return 0, `Inf`, or values above one on platforms without
+  extended-precision long doubles (the CRAN noLD additional check)
+  when both `Phi` terms were subnormal, which occurred in degenerate
+  fits with `sigma_u` near zero. On standard platforms results are
+  unchanged to near machine precision; in the affected tail region the
+  new evaluation is also more accurate than the previous fallback to
+  the JLMS value.
+
 # metafrontier 0.3.0
 
 ## Breaking changes
