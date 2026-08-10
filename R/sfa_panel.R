@@ -222,17 +222,10 @@
     u_hat <- mu_star + sigma_star * .safe_mills(mu_star / sigma_star)
     te_jlms <- as.numeric(exp(-u_hat))
 
-    # BC88 (Battese and Coelli, 1988): E[exp(-u)|eps]. Where
-    # Phi(mu*/sigma*) underflows to zero the ratio is indeterminate;
-    # those observations fall back to the JLMS value.
-    bc_ratio <- mu_star / sigma_star
-    bc_denom <- pnorm(bc_ratio)
-    te_bc88 <- as.numeric(
-      exp(-mu_star + 0.5 * sigma_star^2) *
-        pnorm(bc_ratio - sigma_star) / bc_denom
-    )
-    bc_bad <- !is.finite(te_bc88) | bc_denom == 0
-    te_bc88[bc_bad] <- te_jlms[bc_bad]
+    # BC88 (Battese and Coelli, 1988): E[exp(-u)|eps], evaluated by
+    # .bc88_te(), which is stable in the tails on platforms without
+    # long doubles.
+    te_bc88 <- .bc88_te(as.numeric(mu_star), sigma_star, te_jlms)
 
     te <- if (estimator == "bc88") te_bc88 else te_jlms
 
@@ -370,14 +363,10 @@
     u_it <- E_ui * d_t
     te_jlms[idx] <- exp(-u_it)
 
-    # BC92 closed form; where Phi(mu*/sigma*) underflows to zero the
-    # ratio is indeterminate, so fall back to the JLMS value
-    denom <- pnorm(ratio)
-    te_f <- pnorm(ratio - d_t * sigma_star) / denom *
-      exp(-d_t * mu_star + 0.5 * d_t^2 * sigma_star2)
-    bad <- !is.finite(te_f) | denom == 0
-    te_f[bad] <- te_jlms[idx][bad]
-    te_bc88[idx] <- te_f
+    # BC92 closed form, evaluated by .bc88_te() with c = d_t, which is
+    # stable in the tails on platforms without long doubles
+    te_bc88[idx] <- .bc88_te(mu_star, sigma_star, te_jlms[idx],
+                             c_comp = d_t)
   }
 
   list(jlms = te_jlms, bc88 = te_bc88)

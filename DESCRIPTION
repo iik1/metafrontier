@@ -1,7 +1,7 @@
 Package: metafrontier
 Type: Package
 Title: Analysis of Metafrontier Models for Efficiency and Productivity
-Version: 0.3.0
+Version: 0.3.1
 Authors@R: c(
     person("Erik", "Enstad", email = "erik.enstad@nhh.no",
            role = c("aut", "cre"),

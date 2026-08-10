@@ -226,16 +226,9 @@
   # BC88 (Battese and Coelli, 1988) point efficiency: E[exp(-u)|eps]
   #   = exp(-mu* + sigma*^2/2) * Phi(mu*/sigma* - sigma*) / Phi(mu*/sigma*)
   # For the exponential distribution sigma* is sigma_v (set in the
-  # branches above). Where Phi(mu*/sigma*) underflows to zero the ratio
-  # is indeterminate; those observations fall back to the JLMS value.
-  bc_ratio <- as.numeric(mu_star) / sigma_star
-  bc_denom <- pnorm(bc_ratio)
-  te_bc88 <- as.numeric(
-    exp(-as.numeric(mu_star) + 0.5 * sigma_star^2) *
-      pnorm(bc_ratio - sigma_star) / bc_denom
-  )
-  bc_bad <- !is.finite(te_bc88) | bc_denom == 0
-  te_bc88[bc_bad] <- te_jlms[bc_bad]
+  # branches above). Evaluated by .bc88_te(), which is stable in the
+  # tails on platforms without long doubles.
+  te_bc88 <- .bc88_te(as.numeric(mu_star), sigma_star, te_jlms)
 
   te <- if (estimator == "bc88") te_bc88 else te_jlms
 
@@ -274,6 +267,53 @@
   }
 
   result
+}
+
+
+#' Battese-Coelli conditional efficiency E[exp(-c u) | eps]
+#'
+#' Computes E[exp(-c u) | eps] where u | eps is N(mu_star, sigma_star^2)
+#' truncated at zero: the BC88 estimator (Battese and Coelli, 1988,
+#' Eq. 6) for c = 1, and the BC92 time-varying form (Battese and
+#' Coelli, 1992, Eq. 10) for c = d_t.
+#'
+#' The Phi ratio is evaluated on the log scale via
+#' \code{pnorm(log.p = TRUE)} so it cannot underflow. On platforms
+#' without long doubles the natural-scale ratio of two subnormal Phi
+#' values can return 0, Inf, or values above one; the log scale avoids
+#' this. In the far left tail (mu*/sigma* below -1e4) the two log Phi
+#' terms cancel catastrophically, but there u | eps is asymptotically
+#' exponential with rate -mu*/sigma*^2, giving the closed form
+#' 1 / (1 + c sigma*^2 / (-mu*)). Any remaining non-finite values fall
+#' back to the JLMS estimate.
+#'
+#' @param mu_star,sigma_star conditional posterior parameters of u.
+#' @param te_jlms JLMS efficiencies, used as a last-resort fallback.
+#' @param c_comp scalar or vector multiplier of u (1 for BC88, the
+#'   temporal decay d_t for BC92).
+#' @return numeric vector of efficiencies in (0, 1].
+#' @keywords internal
+#' @noRd
+.bc88_te <- function(mu_star, sigma_star, te_jlms, c_comp = 1) {
+  n <- max(length(mu_star), length(sigma_star), length(c_comp))
+  mu_star <- rep_len(as.numeric(mu_star), n)
+  sigma_star <- rep_len(as.numeric(sigma_star), n)
+  c_comp <- rep_len(as.numeric(c_comp), n)
+
+  ratio <- mu_star / sigma_star
+  log_te <- -c_comp * mu_star + 0.5 * c_comp^2 * sigma_star^2 +
+    pnorm(ratio - c_comp * sigma_star, log.p = TRUE) -
+    pnorm(ratio, log.p = TRUE)
+  te <- exp(pmin(log_te, 0))
+
+  far <- which(ratio < -1e4)
+  if (length(far)) {
+    te[far] <- 1 / (1 + c_comp[far] * sigma_star[far]^2 / (-mu_star[far]))
+  }
+
+  bad <- !is.finite(te)
+  te[bad] <- te_jlms[bad]
+  te
 }
 
 
