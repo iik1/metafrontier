@@ -28,9 +28,20 @@
   (regression-tested). Results for data already sorted by group are
   unchanged. Nonparametric `boot_tgr` objects created with earlier
   versions from unsorted data should be recomputed.
-- `boot_tgr(type = "nonparametric")` now resamples only the rows used
-  in the fit. An SFA fit with rows dropped for missing values
-  previously made the bootstrap stop with a replacement-length error.
+- `boot_tgr()` now bootstraps only the rows used in the fit. For an
+  SFA fit with rows dropped for missing values, the nonparametric
+  bootstrap previously stopped with a replacement-length error, and the
+  parametric bootstrap, with only recycling warnings, simulated each
+  group's response from fitted frontier values shifted out of line with
+  the inputs from the group's first dropped row onwards, giving wrong
+  intervals. Both now match the bootstrap on the complete cases
+  (regression-tested).
+- `boot_tgr()` refitted each replicate by looking up a column named
+  `"group"` in the data whenever the fit was given `group` as a vector.
+  Without such a column every replicate failed; with an unrelated
+  column of that name the replicates were silently regrouped by it. The
+  refits now use the fitted group labels directly, and results match
+  those of the same fit made with a column name (regression-tested).
 
 ## New features
 

@@ -156,17 +156,49 @@ test_that("nonparametric bootstrap reports no observation-level CIs", {
   expect_output(print(boot), "median TGR")
 })
 
-test_that("nonparametric bootstrap skips rows dropped for missing values", {
+test_that("bootstrap skips rows dropped for missing values", {
+  na_rows <- c(5, 200)
   d <- test_data
-  d$log_x1[c(5, 200)] <- NA
-  fit <- metafrontier(log_y ~ log_x1 + log_x2, data = d, group = "group",
-                      meta_type = "deterministic")
+  d$log_x1[na_rows] <- NA
+  fit_na <- metafrontier(log_y ~ log_x1 + log_x2, data = d,
+                         group = "group", meta_type = "deterministic")
+  fit_cc <- metafrontier(log_y ~ log_x1 + log_x2, data = d[-na_rows, ],
+                         group = "group", meta_type = "deterministic")
 
-  boot <- boot_tgr(fit, R = 5, type = "nonparametric", seed = 1,
-                   progress = FALSE)
+  # Rows dropped from the fit carry no information, so with the same
+  # seed the bootstrap must match the one on the complete cases
+  for (type in c("parametric", "nonparametric")) {
+    b_na <- boot_tgr(fit_na, R = 5, type = type, seed = 1,
+                     progress = FALSE)
+    b_cc <- boot_tgr(fit_cc, R = 5, type = type, seed = 1,
+                     progress = FALSE)
+    expect_equal(b_na, b_cc)
+  }
+})
 
-  expect_true(boot$R_effective > 0)
-  expect_equal(ncol(boot$tgr_boot), length(fit$tgr))
-  expect_equal(length(boot$boot_group), length(fit$tgr))
-  expect_equal(length(boot$group_vec), length(fit$tgr))
+test_that("bootstrap uses group labels passed as a vector", {
+  fit_col <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                          group = "group", meta_type = "deterministic")
+
+  # Same groups given as a vector, with no 'group' column in the data or
+  # with an unrelated one that the refits must not pick up
+  d_none <- test_data
+  d_none$group <- NULL
+  d_other <- test_data
+  d_other$group <- rep(c("X", "Y"), length.out = nrow(d_other))
+
+  fits_vec <- lapply(list(d_none, d_other), function(d) {
+    metafrontier(log_y ~ log_x1 + log_x2, data = d,
+                 group = test_data$group, meta_type = "deterministic")
+  })
+
+  for (type in c("parametric", "nonparametric")) {
+    b_col <- boot_tgr(fit_col, R = 5, type = type, seed = 1,
+                      progress = FALSE)
+    for (fit_vec in fits_vec) {
+      b_vec <- boot_tgr(fit_vec, R = 5, type = type, seed = 1,
+                        progress = FALSE)
+      expect_equal(b_vec, b_col)
+    }
+  }
 })

@@ -93,7 +93,7 @@ bootstrap.
 Group-level intervals are percentile intervals of the within-group
 mean (\code{ci_group}) and median (\code{ci_group_median}) of the
 TGR across replicates. Rows dropped from the fit because of missing
-values are not resampled.
+values are left out of both bootstraps.
 }
 \examples{
 \donttest{
