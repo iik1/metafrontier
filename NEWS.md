@@ -42,6 +42,20 @@
   column of that name the replicates were silently regrouped by it. The
   refits now use the fitted group labels directly, and results match
   those of the same fit made with a column name (regression-tested).
+- `boot_tgr()` now stops with an informative error for metafrontiers
+  built from pre-fitted `models`, whose group models cannot be
+  re-estimated on bootstrap samples. Every replicate previously failed,
+  leaving only a warning. Fit from `formula`, `data` and `group`
+  instead.
+- `boot_tgr(type = "parametric")` failed in every replicate for fits
+  with `engine = "sfaR"` or `engine = "frontier"`: their group models
+  stored no fitted frontier values, and with `sfaR` 1.x the error
+  scales were read as `NA` because `sfaR` reports them as log variances
+  under different names. External-engine group models now store
+  `fitted`, and `sfaR` fits yield `sigma_v`, `sigma_u` and, for
+  `dist = "tnormal"`, `mu`, matching the internal estimates
+  (regression-tested). The corrected scales also apply to
+  `as_metafrontier_model()` for `sfacross` objects.
 
 ## New features
 
