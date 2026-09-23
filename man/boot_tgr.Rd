@@ -28,7 +28,9 @@ groups with replacement.}
 \item{level}{numeric. Confidence level (default 0.95).}
 
 \item{ci_type}{character. \code{"percentile"} (default) or
-\code{"bca"} (bias-corrected and accelerated).}
+\code{"bca"} (bias-corrected and accelerated). Applies to the
+observation-level intervals of the parametric bootstrap; the
+group-level intervals are always percentile intervals.}
 
 \item{seed}{optional integer seed for reproducibility.}
 
@@ -42,21 +44,56 @@ groups with replacement.}
 \value{
 An object of class \code{"boot_tgr"} containing:
   \describe{
-    \item{tgr_boot}{R x n matrix of bootstrapped TGR values}
+    \item{tgr_boot}{R x n matrix of bootstrapped TGR values. For the
+      parametric bootstrap, column \code{i} is DMU \code{i}; for the
+      nonparametric bootstrap, column \code{j} is the \code{j}-th
+      resampled unit (see Details).}
     \item{tgr_original}{original TGR estimates}
-    \item{ci}{n x 2 matrix of observation-level confidence intervals}
+    \item{ci}{n x 2 matrix of observation-level confidence intervals
+      (parametric bootstrap), or \code{NULL} (nonparametric
+      bootstrap)}
     \item{ci_group}{data frame of group-level mean TGR intervals}
+    \item{ci_group_median}{data frame of group-level median TGR
+      intervals}
     \item{R_effective}{number of successful replications}
     \item{R}{requested number of replications}
     \item{type}{bootstrap type used}
     \item{ci_type}{CI type used}
     \item{level}{confidence level}
+    \item{group_vec}{group of each element of \code{tgr_original}}
+    \item{boot_group}{group of each column of \code{tgr_boot}}
+    \item{groups}{group labels}
   }
 }
 \description{
 Computes bootstrap confidence intervals for TGR estimates from
 a fitted metafrontier model. Supports both parametric (residual
 resampling) and nonparametric (case resampling) bootstraps.
+}
+\details{
+The parametric bootstrap keeps the design fixed and redraws the
+response, so column \code{i} of \code{tgr_boot} is the TGR of DMU
+\code{i} in every replicate. It returns observation-level intervals
+(\code{ci}) as well as group-level intervals.
+
+The nonparametric bootstrap resamples rows with replacement within
+each group, stacks the resampled rows group by group in the order of
+\code{groups}, and refits the model. Column \code{j} of
+\code{tgr_boot} is then the \code{j}-th resampled unit, a random
+draw from group \code{boot_group[j]}, not DMU \code{j}. The
+group-level intervals are computed over these position blocks and
+do not depend on the row order of the data. No observation-level
+intervals are returned (\code{ci} is \code{NULL}): a column is not
+tied to any DMU, and evaluating the original DMUs against each
+bootstrap frontier instead is, for DEA, the naive bootstrap, which
+is inconsistent (Kneip, Simar and Wilson, 2008). For SFA fits,
+observation-level intervals are available from the parametric
+bootstrap.
+
+Group-level intervals are percentile intervals of the within-group
+mean (\code{ci_group}) and median (\code{ci_group_median}) of the
+TGR across replicates. Rows dropped from the fit because of missing
+values are not resampled.
 }
 \examples{
 \donttest{
@@ -68,6 +105,17 @@ fit <- metafrontier(log_y ~ log_x1 + log_x2,
 boot <- boot_tgr(fit, R = 50, seed = 1)
 print(boot)
 confint(boot)
+
+# Nonparametric bootstrap: group-level intervals only
+boot_np <- boot_tgr(fit, R = 50, type = "nonparametric", seed = 1)
+boot_np$ci_group
+boot_np$ci_group_median
 }
 
+}
+\references{
+Kneip, A., Simar, L. and Wilson, P.W. (2008). Asymptotics and
+consistent bootstraps for DEA estimators in nonparametric frontier
+models. \emph{Econometric Theory}, 24(6), 1663--1697.
+\doi{10.1017/S0266466608080651}
 }

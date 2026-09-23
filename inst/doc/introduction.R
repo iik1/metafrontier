@@ -202,15 +202,16 @@ cor(sim$data$true_te_star, fit_det$te_meta)
 # boot <- boot_tgr(fit, R = 499, type = "nonparametric", seed = 1)
 # print(boot)
 # 
-# # Observation-level CIs
-# ci <- confint(boot)
-# head(ci)
-# 
-# # Group-level mean TGR CIs
+# # Group-level mean and median TGR CIs
 # boot$ci_group
+# boot$ci_group_median
 # 
 # # Parametric bootstrap (resample from estimated error distributions)
 # boot_par <- boot_tgr(fit, R = 499, type = "parametric", seed = 1)
+# 
+# # Observation-level CIs (parametric bootstrap only)
+# ci <- confint(boot_par)
+# head(ci)
 
 
 ## ----murphy-topel, eval=FALSE-------------------------------------------------

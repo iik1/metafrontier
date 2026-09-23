@@ -397,7 +397,12 @@ summary(fit_panel)
 ## Bootstrap Confidence Intervals for TGR
 
 The `boot_tgr()` function provides parametric and nonparametric
-bootstrap confidence intervals for the technology gap ratio:
+bootstrap confidence intervals for the technology gap ratio. The
+nonparametric bootstrap resamples DMUs within each group, so a column
+of the bootstrap matrix is a resampled unit rather than a fixed DMU; it
+reports intervals for the group mean and median TGR only. The
+parametric bootstrap keeps the design fixed and also reports
+observation-level intervals.
 
 ```{r bootstrap, eval=FALSE}
 sim <- simulate_metafrontier(n_groups = 2, n_per_group = 100, seed = 42)
@@ -408,15 +413,16 @@ fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
 boot <- boot_tgr(fit, R = 499, type = "nonparametric", seed = 1)
 print(boot)
 
-# Observation-level CIs
-ci <- confint(boot)
-head(ci)
-
-# Group-level mean TGR CIs
+# Group-level mean and median TGR CIs
 boot$ci_group
+boot$ci_group_median
 
 # Parametric bootstrap (resample from estimated error distributions)
 boot_par <- boot_tgr(fit, R = 499, type = "parametric", seed = 1)
+
+# Observation-level CIs (parametric bootstrap only)
+ci <- confint(boot_par)
+head(ci)
 ```
 
 

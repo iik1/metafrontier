@@ -290,8 +290,9 @@ autoplot.boot_tgr <- function(object,
     # Distribution of mean TGR per group across bootstrap reps
     frames <- list()
     for (g in object$groups) {
-      idx <- which(object$group_vec == g)
-      group_means <- apply(object$tgr_boot[, idx, drop = FALSE], 1, mean)
+      group_means <- apply(
+        object$tgr_boot[, object$boot_group == g, drop = FALSE], 1, mean
+      )
       frames[[g]] <- data.frame(
         group = g,
         mean_tgr = group_means,
