@@ -911,7 +911,11 @@ the truth:</p>
 <h2>Bootstrap Confidence Intervals for TGR</h2>
 <p>The <code>boot_tgr()</code> function provides parametric and
 nonparametric bootstrap confidence intervals for the technology gap
-ratio:</p>
+ratio. The nonparametric bootstrap resamples DMUs within each group, so
+a column of the bootstrap matrix is a resampled unit rather than a fixed
+DMU; it reports intervals for the group mean and median TGR only. The
+parametric bootstrap keeps the design fixed and also reports
+observation-level intervals.</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_metafrontier</span>(<span class="at">n_groups =</span> <span class="dv">2</span>, <span class="at">n_per_group =</span> <span class="dv">100</span>, <span class="at">seed =</span> <span class="dv">42</span>)</span>
 <span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">metafrontier</span>(log_y <span class="sc">~</span> log_x1 <span class="sc">+</span> log_x2, <span class="at">data =</span> sim<span class="sc">$</span>data,</span>
 <span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>                    <span class="at">group =</span> <span class="st">&quot;group&quot;</span>, <span class="at">meta_type =</span> <span class="st">&quot;stochastic&quot;</span>)</span>
@@ -920,15 +924,16 @@ ratio:</p>
 <span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>boot <span class="ot">&lt;-</span> <span class="fu">boot_tgr</span>(fit, <span class="at">R =</span> <span class="dv">499</span>, <span class="at">type =</span> <span class="st">&quot;nonparametric&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
 <span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="fu">print</span>(boot)</span>
 <span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="co"># Observation-level CIs</span></span>
-<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(boot)</span>
-<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="fu">head</span>(ci)</span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="co"># Group-level mean and median TGR CIs</span></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>boot<span class="sc">$</span>ci_group</span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a>boot<span class="sc">$</span>ci_group_median</span>
 <span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a></span>
-<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="co"># Group-level mean TGR CIs</span></span>
-<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a>boot<span class="sc">$</span>ci_group</span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="co"># Parametric bootstrap (resample from estimated error distributions)</span></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a>boot_par <span class="ot">&lt;-</span> <span class="fu">boot_tgr</span>(fit, <span class="at">R =</span> <span class="dv">499</span>, <span class="at">type =</span> <span class="st">&quot;parametric&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
 <span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a></span>
-<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="co"># Parametric bootstrap (resample from estimated error distributions)</span></span>
-<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a>boot_par <span class="ot">&lt;-</span> <span class="fu">boot_tgr</span>(fit, <span class="at">R =</span> <span class="dv">499</span>, <span class="at">type =</span> <span class="st">&quot;parametric&quot;</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span></code></pre></div>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="co"># Observation-level CIs (parametric bootstrap only)</span></span>
+<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a>ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(boot_par)</span>
+<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a><span class="fu">head</span>(ci)</span></code></pre></div>
 </div>
 <div id="murphy-topel-variance-correction" class="section level2">
 <h2>Murphy-Topel Variance Correction</h2>

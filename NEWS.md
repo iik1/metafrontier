@@ -1,3 +1,43 @@
+# metafrontier (development version)
+
+## Breaking changes
+
+- `boot_tgr(type = "nonparametric")` no longer returns
+  observation-level intervals: `ci` is `NULL` and `confint()` signals
+  an error. Each replicate refits the model on rows resampled within
+  groups, so column `i` of `tgr_boot` is a random draw from a group,
+  not DMU `i`, and the previous `ci[i, ]` was not specific to DMU `i`
+  whatever the row order. Evaluating the original DMUs against each
+  bootstrap frontier instead would, for DEA, be the naive bootstrap,
+  which is inconsistent (Kneip, Simar and Wilson, 2008). The
+  parametric bootstrap keeps the design fixed and still returns
+  observation-level intervals.
+
+## Bug fixes
+
+- `boot_tgr(type = "nonparametric")`: group-level intervals mixed
+  bootstrap draws across groups whenever the data were not sorted by
+  group. Each replicate stacks the resampled rows group by group, so
+  column `j` of `tgr_boot` is a draw from the `j`-th position block,
+  but `ci_group`, and the distribution panels of `plot()` and
+  `autoplot()`, selected columns by the groups of the original rows.
+  With unsorted groups of different TGR levels, the intervals were
+  pulled towards the pooled mean and could exclude the group estimate.
+  Group intervals now use the position blocks, stored in the new
+  element `boot_group`, and do not depend on row order
+  (regression-tested). Results for data already sorted by group are
+  unchanged. Nonparametric `boot_tgr` objects created with earlier
+  versions from unsorted data should be recomputed.
+- `boot_tgr(type = "nonparametric")` now resamples only the rows used
+  in the fit. An SFA fit with rows dropped for missing values
+  previously made the bootstrap stop with a replacement-length error.
+
+## New features
+
+- `boot_tgr()` returns percentile intervals for the group median TGR
+  (`ci_group_median`) alongside those for the group mean
+  (`ci_group`), and `print()` shows both.
+
 # metafrontier 0.3.1
 
 ## Bug fixes
