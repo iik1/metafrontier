@@ -17,7 +17,10 @@ boot_tgr(
 )
 }
 \arguments{
-\item{object}{a \code{"metafrontier"} object.}
+\item{object}{a \code{"metafrontier"} object fitted from
+\code{formula}, \code{data} and \code{group}. Metafrontiers built
+from pre-fitted \code{models} are not supported, because the group
+models cannot be re-estimated on bootstrap samples.}
 
 \item{R}{integer. Number of bootstrap replications (default 999).}
 

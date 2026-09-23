@@ -28,7 +28,10 @@
 #' TGR across replicates. Rows dropped from the fit because of missing
 #' values are left out of both bootstraps.
 #'
-#' @param object a \code{"metafrontier"} object.
+#' @param object a \code{"metafrontier"} object fitted from
+#'   \code{formula}, \code{data} and \code{group}. Metafrontiers built
+#'   from pre-fitted \code{models} are not supported, because the group
+#'   models cannot be re-estimated on bootstrap samples.
 #' @param R integer. Number of bootstrap replications (default 999).
 #' @param type character. \code{"parametric"} resamples from estimated
 #'   error distributions; \code{"nonparametric"} resamples rows within
@@ -105,6 +108,16 @@ boot_tgr <- function(object, R = 999,
 
   if (!inherits(object, "metafrontier")) {
     stop("'object' must be a fitted metafrontier model.", call. = FALSE)
+  }
+
+  # A metafrontier built from pre-fitted group models keeps only their
+  # model matrices, not the data and estimator that produced them, so
+  # the group models cannot be re-estimated on bootstrap samples
+  if (!is.null(object$call$models)) {
+    stop("boot_tgr() is not available for metafrontiers built from ",
+         "pre-fitted 'models': the group models cannot be re-estimated ",
+         "on bootstrap samples. Fit the metafrontier from 'formula', ",
+         "'data' and 'group' instead.", call. = FALSE)
   }
 
   # The parametric bootstrap draws new noise and inefficiency terms
@@ -365,6 +378,7 @@ boot_tgr <- function(object, R = 999,
         # Truncated normal: draw from N(mu, sigma_u^2) truncated at 0
         mu_val <- if (!is.null(gm$mu_vec)) mean(gm$mu_vec)
                   else if ("mu" %in% names(gm$all_params)) gm$all_params["mu"]
+                  else if (!is.null(gm$mu)) gm$mu  # external engines
                   else 0
         # Simple rejection sampling for truncated normal
         raw <- rnorm(n_g * 3, mean = mu_val, sd = sigma_u)

@@ -674,6 +674,18 @@ metafrontier <- function(formula = NULL,
   sigma_v <- if (length(sv_name)) exp(all_coef[sv_name[1]]) else NA_real_
   sigma_u <- if (length(su_name)) exp(all_coef[su_name[1]]) else NA_real_
 
+  # sfaR 1.x reports log variances ("Zv_(Intercept)", "Zu_(Intercept)")
+  # and the truncation mean ("Zmu_(Intercept)"). Use them only when the
+  # intercept is the sole term, i.e. without heteroscedasticity or
+  # determinants of mu.
+  only_term <- function(prefix) {
+    terms <- grep(paste0("^", prefix, "_"), names(all_coef), value = TRUE)
+    identical(terms, paste0(prefix, "_(Intercept)"))
+  }
+  if (only_term("Zv")) sigma_v <- exp(all_coef[["Zv_(Intercept)"]] / 2)
+  if (only_term("Zu")) sigma_u <- exp(all_coef[["Zu_(Intercept)"]] / 2)
+  mu <- if (only_term("Zmu")) all_coef[["Zmu_(Intercept)"]] else NULL
+
   udist <- model$udist
   if (is.null(udist)) udist <- "hnormal"
 
@@ -686,6 +698,7 @@ metafrontier <- function(formula = NULL,
     y = as.numeric(y),
     sigma_v = as.numeric(sigma_v),
     sigma_u = as.numeric(sigma_u),
+    mu = mu,
     logLik = if (is.null(model$mlLoglik)) NA_real_ else model$mlLoglik,
     hessian = model$mlHessian,
     n = length(y),
@@ -746,11 +759,15 @@ metafrontier <- function(formula = NULL,
     estimator = estimator,
     sigma_v = ex$sigma_v,
     sigma_u = ex$sigma_u,
+    mu = ex$mu,
     logLik = ex$logLik,
     hessian = ex$hessian,
     nobs = ex$n,
     X = ex$X,
     y = ex$y,
+    # Group frontier at the observed inputs, as for internal fits (the
+    # parametric bootstrap builds its responses from it)
+    fitted = as.numeric(ex$X %*% ex$beta),
     dist = ex$dist,
     engine = engine
   )
