@@ -26,7 +26,7 @@
 #' Group-level intervals are percentile intervals of the within-group
 #' mean (\code{ci_group}) and median (\code{ci_group_median}) of the
 #' TGR across replicates. Rows dropped from the fit because of missing
-#' values are not resampled.
+#' values are left out of both bootstraps.
 #'
 #' @param object a \code{"metafrontier"} object.
 #' @param R integer. Number of bootstrap replications (default 999).
@@ -259,37 +259,41 @@ boot_tgr <- function(object, R = 999,
 # ---------- Internal: single bootstrap replicate ----------
 
 .boot_one_replicate <- function(object, type, ...) {
-  data <- object$data
   formula <- object$formula
-  group_vec <- object$group_vec
   groups <- object$groups
+
+  # Only rows used in the original fit (an SFA fit drops rows with
+  # missing values) enter the bootstrap, so the data line up with the
+  # group models and every replicate returns one TGR per fitted row
+  rows <- if (!is.null(object$valid_rows)) {
+    object$valid_rows
+  } else {
+    seq_len(nrow(object$data))
+  }
+  data <- object$data[rows, , drop = FALSE]
+  group_vec <- object$group_vec[rows]
 
   if (type == "parametric") {
     # Parametric: keep the design fixed and regenerate the response by
     # drawing new noise (v) and inefficiency (u) terms from the fitted
     # group-specific error distributions
-    boot_data <- .parametric_resample(object)
+    boot_data <- .parametric_resample(object, data, group_vec)
   } else {
     # Nonparametric: case resampling, i.e. resample whole rows with
-    # replacement within each group so group sizes are preserved. Only
-    # rows used in the original fit are resampled, so every replicate
-    # returns one TGR per position of the stacked group blocks.
-    rows <- if (!is.null(object$valid_rows)) {
-      object$valid_rows
-    } else {
-      seq_len(nrow(data))
-    }
-    boot_data <- .nonparametric_resample(data[rows, , drop = FALSE],
-                                         group_vec[rows], groups)
+    # replacement within each group so group sizes are preserved
+    boot_rows <- .nonparametric_resample(group_vec, groups)
+    boot_data <- data[boot_rows, , drop = FALSE]
+    rownames(boot_data) <- NULL
+    group_vec <- group_vec[boot_rows]
   }
 
-  # Re-fit the metafrontier using the original group column name
-  group_col <- if (!is.null(object$group_col)) object$group_col else "group"
-
+  # Re-fit the metafrontier with the fitted group labels rather than a
+  # column name: the fit may have been given 'group' as a vector, and
+  # the data may hold an unrelated column called "group"
   boot_fit <- metafrontier(
     formula = formula,
     data = boot_data,
-    group = group_col,
+    group = group_vec,
     method = object$method,
     meta_type = object$meta_type,
     dist = if (object$method == "sfa" &&
@@ -324,9 +328,9 @@ boot_tgr <- function(object, R = 999,
 }
 
 
-.parametric_resample <- function(object) {
-  data <- object$data
-  group_vec <- object$group_vec
+# data and group_vec are restricted to the rows used in the fit, so the
+# response, the group labels and each group's fitted frontier line up
+.parametric_resample <- function(object, data, group_vec) {
   groups <- object$groups
   formula <- object$formula
 
@@ -387,16 +391,15 @@ boot_tgr <- function(object, R = 999,
 }
 
 
-.nonparametric_resample <- function(data, group_vec, groups) {
+# Row indices of a case resample, stacked group by group
+.nonparametric_resample <- function(group_vec, groups) {
   boot_rows <- integer(0)
   for (g in groups) {
     idx <- which(group_vec == g)
     boot_idx <- sample(idx, length(idx), replace = TRUE)
     boot_rows <- c(boot_rows, boot_idx)
   }
-  boot_data <- data[boot_rows, , drop = FALSE]
-  rownames(boot_data) <- NULL
-  boot_data
+  boot_rows
 }
 
 
