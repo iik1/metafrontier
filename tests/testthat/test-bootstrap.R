@@ -52,6 +52,64 @@ test_that("nonparametric bootstrap works for DEA", {
   expect_true(boot$R_effective > 0)
 })
 
+test_that("bootstrap errors for metafrontiers built from pre-fitted models", {
+  f <- Formula::Formula(log_y ~ log_x1 + log_x2)
+  models <- lapply(split(test_data, test_data$group), function(d) {
+    metafrontier:::.fit_sfa_group(f, d, "hnormal", list())
+  })
+  fit <- metafrontier(models = models, meta_type = "deterministic")
+
+  for (type in c("parametric", "nonparametric")) {
+    expect_error(
+      boot_tgr(fit, R = 2, type = type, progress = FALSE),
+      "not available for metafrontiers built from pre-fitted 'models'"
+    )
+  }
+})
+
+test_that("parametric bootstrap works with external SFA engines", {
+  fit_int <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                          group = "group", meta_type = "deterministic")
+
+  for (engine in c("frontier", "sfaR")) {
+    if (!requireNamespace(engine, quietly = TRUE)) next
+    fit <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                        group = "group", meta_type = "deterministic",
+                        engine = engine)
+
+    # The parametric resampler builds responses from each group's fitted
+    # frontier and error scales, which must match the internal ML fit
+    for (g in fit$groups) {
+      gm <- fit$group_models[[g]]
+      gm_int <- fit_int$group_models[[g]]
+      expect_equal(gm$fitted, fit$group_frontier[fit$group_vec == g])
+      expect_equal(gm$sigma_v, unname(gm_int$sigma_v), tolerance = 1e-3)
+      expect_equal(gm$sigma_u, unname(gm_int$sigma_u), tolerance = 1e-3)
+    }
+
+    boot <- boot_tgr(fit, R = 5, type = "parametric", seed = 1,
+                     progress = FALSE)
+    expect_gt(boot$R_effective, 0)
+    expect_true(all(is.finite(boot$ci_group[[3]])))
+  }
+})
+
+test_that("sfaR truncated-normal fits carry mu for the parametric bootstrap", {
+  skip_if_not_installed("sfaR")
+  fit <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                      group = "group", meta_type = "deterministic",
+                      engine = "sfaR", dist = "tnormal")
+  fit_int <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                          group = "group", meta_type = "deterministic",
+                          dist = "tnormal")
+
+  for (g in fit$groups) {
+    expect_equal(fit$group_models[[g]]$mu,
+                 unname(fit_int$group_models[[g]]$all_params["mu"]),
+                 tolerance = 0.05)
+  }
+})
+
 test_that("parametric bootstrap errors for DEA", {
   fit_dea <- metafrontier(log_y ~ log_x1 + log_x2,
                           data = test_data, group = "group",
