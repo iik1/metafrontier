@@ -76,3 +76,26 @@ test_that("models= with sfaR works", {
   expect_length(result$groups, 2)
   expect_true(all(result$te_group > 0))
 })
+
+
+test_that("sfaR sigma_v and sigma_u are extracted from the log variances", {
+  skip_if_not_installed("sfaR")
+
+  for (d in c("hnormal", "tnormal", "exponential")) {
+    fits <- lapply(split(test_data, test_data$group), function(dat) {
+      sfaR::sfacross(log_y ~ log_x1 + log_x2, udist = d, data = dat, S = 1)
+    })
+    fit_mod <- metafrontier(models = fits, meta_type = "deterministic")
+    fit_eng <- metafrontier(log_y ~ log_x1 + log_x2, data = test_data,
+                            group = "group", meta_type = "deterministic",
+                            dist = d, engine = "sfaR")
+
+    for (g in names(fits)) {
+      expected <- unname(exp(coef(fits[[g]])[c("Zv_(Intercept)",
+                                               "Zu_(Intercept)")] / 2))
+      for (gm in list(fit_mod$group_models[[g]], fit_eng$group_models[[g]])) {
+        expect_equal(c(gm$sigma_v, gm$sigma_u), expected)
+      }
+    }
+  }
+})

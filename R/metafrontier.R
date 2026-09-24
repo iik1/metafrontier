@@ -669,12 +669,11 @@ metafrontier <- function(formula = NULL,
   X <- model.matrix(f, data = dat)
 
   # Sigma parameters
-  sv_name <- intersect(c("lnsigmaV", "lnSigmaV"), names(all_coef))
-  su_name <- intersect(c("lnsigmaU", "lnSigmaU"), names(all_coef))
-  sigma_v <- if (length(sv_name)) exp(all_coef[sv_name[1]]) else NA_real_
-  sigma_u <- if (length(su_name)) exp(all_coef[su_name[1]]) else NA_real_
+  sigma_v <- NA_real_
+  sigma_u <- NA_real_
 
-  # sfaR 1.x reports log variances ("Zv_(Intercept)", "Zu_(Intercept)")
+  # sfaR (all releases, 0.0.91 to 1.0.1) reports log variances
+  # ("Zv_(Intercept)", "Zu_(Intercept)")
   # and the truncation mean ("Zmu_(Intercept)"). Use them only when the
   # intercept is the sole term, i.e. without heteroscedasticity or
   # determinants of mu.
