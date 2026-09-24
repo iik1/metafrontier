@@ -49,13 +49,15 @@
   instead.
 - `boot_tgr(type = "parametric")` failed in every replicate for fits
   with `engine = "sfaR"` or `engine = "frontier"`: their group models
-  stored no fitted frontier values, and with `sfaR` 1.x the error
-  scales were read as `NA` because `sfaR` reports them as log variances
-  under different names. External-engine group models now store
-  `fitted`, and `sfaR` fits yield `sigma_v`, `sigma_u` and, for
-  `dist = "tnormal"`, `mu`, matching the internal estimates
-  (regression-tested). The corrected scales also apply to
-  `as_metafrontier_model()` for `sfacross` objects.
+  stored no fitted frontier values, and the error scales `sigma_v` and
+  `sigma_u` of `sfaR` fits were `NA` because every `sfaR` release
+  reports them as log variances (`Zv_(Intercept)`, `Zu_(Intercept)`),
+  not under the names the extractor looked for. External-engine group
+  models now store `fitted`, and `sfaR` fits yield `sigma_v`, `sigma_u`
+  and, for `dist = "tnormal"`, `mu`, matching the internal estimates
+  (regression-tested for `"hnormal"`, `"tnormal"` and `"exponential"`).
+  The corrected scales also apply to `sfacross` objects passed to
+  `metafrontier(models = )` or `as_metafrontier_model()`.
 
 ## New features
 
