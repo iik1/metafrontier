@@ -28,14 +28,17 @@ to the global metafrontier at each observation's input mix.
 \details{
 The technology gap ratio is defined as:
 \deqn{TGR_i = \frac{f(x_i; \hat\beta_j)}{f(x_i; \hat\beta^*)}}
-for SFA-based metafrontiers, and
+for the deterministic SFA metafrontier, and
 \deqn{TGR_i = \frac{TE^*_i}{TE^{group}_i}}
-for DEA-based metafrontiers.
+for DEA-based metafrontiers. Under the stochastic metafrontier of
+Huang, Huang, and Liu (2014) the Stage 2 model is
+\eqn{\ln f(x_i; \hat\beta_j) = x_i'\beta^* + v^*_i - u^*_i}, and the
+TGR is the conditional expectation
+\deqn{TGR_i = E[\exp(-u^*_i) \mid \varepsilon^*_i]}
+(Battese and Coelli, 1988), so the noise \eqn{v^*_i} is not part of
+the technology gap.
 
-Under the deterministic metafrontier and DEA, TGR lies in (0, 1]
-by construction. Under the stochastic metafrontier of Huang, Huang,
-and Liu (2014), TGR can exceed 1 for some observations because the
-metafrontier need not envelop the group frontiers at every point.
+In all cases TGR lies in (0, 1].
 
 A TGR of 1 means the group frontier coincides with the
 metafrontier at that input mix. Values less than 1 indicate a

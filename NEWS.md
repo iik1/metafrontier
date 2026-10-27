@@ -15,6 +15,35 @@
 
 ## Bug fixes
 
+- Stochastic metafrontier (`meta_type = "stochastic"`): the TGR was
+  computed as `exp(group_frontier - meta_frontier)`, which equals
+  `exp(v* - u*)` and so included the Stage 2 noise; values above 1
+  were common. The TGR is now `E[exp(-u*) | eps*]`, the conditional
+  expectation of Huang, Huang and Liu (2014), and lies in (0, 1].
+  `te_meta` changes accordingly. Stochastic fits from earlier versions
+  should be re-estimated (regression-tested).
+
+- `malmquist_meta(method = "sfa")`: technical change was inverted. The
+  SFA path works with `frontier(x) / y`, the reciprocal of the output
+  distance function, but used the DEA ratios, so a frontier shift up
+  was reported as technical regress (`TC_group`, `TC_meta`, `MPI`,
+  `MPI_group` and `MPI_meta` were all affected). `EC_meta` also used
+  the metafrontier level where the TGR belongs; it now equals
+  `TEC x TGC`. A simulated 22% frontier shift is now recovered
+  (regression-tested). The DEA path was correct and is unchanged.
+
+- Rows with a missing model variable or group label are now dropped
+  once, before estimation, in `metafrontier()`, `malmquist_meta()`
+  (also for a missing period or id) and `latent_class_metafrontier()`.
+  Previously the group fits dropped them but the pooled stage and the
+  stored `group_vec` and `nobs` did not: SFA fits had fewer TGRs than
+  rows, so `summary()` failed and `print()` misreported group means;
+  DEA fits silently recycled group efficiencies onto the wrong rows;
+  rows with a missing group got `te_group = 0` and entered the
+  metafrontier; and latent class fits failed. A fit on data with
+  missing values now equals the fit on the complete rows
+  (regression-tested).
+
 - `boot_tgr(type = "nonparametric")`: group-level intervals mixed
   bootstrap draws across groups whenever the data were not sorted by
   group. Each replicate stacks the resampled rows group by group, so

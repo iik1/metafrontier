@@ -67,6 +67,27 @@ test_that("stochastic metafrontier produces standard errors", {
   expect_true(is.finite(fit$meta_logLik))
 })
 
+test_that("stochastic TGR is E[exp(-u*)|eps*], not exp(v* - u*)", {
+  fit <- metafrontier(log_y ~ log_x1 + log_x2,
+                      data = test_data,
+                      group = "group",
+                      meta_type = "stochastic")
+
+  # Half-normal BC88 expectation from the Stage 2 parameters
+  p <- fit$meta_opt$par
+  sv <- exp(p[["log_sigma_v"]])
+  su <- exp(p[["log_sigma_u"]])
+  eps <- fit$group_frontier - fit$meta_frontier
+  mu_star <- -eps * su^2 / (sv^2 + su^2)
+  sigma_star <- sv * su / sqrt(sv^2 + su^2)
+  expected <- exp(-mu_star + sigma_star^2 / 2) *
+    pnorm(mu_star / sigma_star - sigma_star) / pnorm(mu_star / sigma_star)
+
+  expect_equal(fit$tgr, expected, tolerance = 1e-8)
+  expect_true(all(fit$tgr > 0 & fit$tgr <= 1))
+  expect_equal(fit$te_meta, fit$te_group * fit$tgr)
+})
+
 test_that("convergence is achieved", {
   fit <- metafrontier(log_y ~ log_x1 + log_x2,
                       data = test_data,

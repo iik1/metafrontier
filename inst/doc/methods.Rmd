@@ -255,10 +255,13 @@ logLik(fit_sto)
 
 ### 3.5 A note on TGR values
 
-Under the stochastic metafrontier, TGR values are not constrained to be
-$\le 1$ in finite samples, since the metafrontier need not strictly
-envelop all group frontiers. Values slightly above 1 can occur and are
-consistent with the stochastic framework.
+Under the stochastic metafrontier the fitted metafrontier need not
+envelop every group frontier, so the raw ratio
+$\exp(\ln \hat f - x'\hat\beta^*) = \exp(v^* - u^*)$ can exceed 1. That
+ratio mixes the technology gap with the Stage 2 noise. Following Huang,
+Huang, and Liu (2014), the package reports
+$TGR_i = E[\exp(-u^*_i) \mid \varepsilon^*_i]$, which removes the noise
+and lies in $(0, 1]$.
 
 ```{r tgr-range}
 tgr_vals <- efficiencies(fit_sto, type = "tgr")
