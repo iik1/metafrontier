@@ -119,6 +119,19 @@
 #'   technology gap ratios are reported for the selected rows.
 #'   Half-normal or exponential inefficiency; cross-sectional SFA with
 #'   the internal engine only.
+#' @param spatial an optional list \code{list(W = , row_standardise =
+#'   FALSE, model = "sar")}. \code{W} is an n x n spatial weights matrix
+#'   for the rows of \code{data} (a matrix, a \pkg{Matrix} matrix or an
+#'   \pkg{spdep} \code{listw} object) with a zero diagonal. Each group
+#'   frontier is then the spatial-autoregressive stochastic frontier
+#'   \eqn{y = \rho_g W_g y + x'\beta_g + v - u} (Glass, Kenjegalieva and
+#'   Sickles, 2016), where \eqn{W_g} is the block of \code{W} for the
+#'   group's own units (re-row-standardised when \code{row_standardise =
+#'   TRUE}), so spillovers between groups are excluded. Each group model
+#'   reports \code{rho} and the direct, indirect and total input effects
+#'   (\code{effects}). The technology gap compares the direct technology
+#'   \eqn{x'\beta_g} with the metafrontier. Cross-sectional SFA without
+#'   inefficiency determinants, internal engine only.
 #' @param ... additional arguments passed to the group-level
 #'   estimation functions.
 #'
@@ -260,6 +273,7 @@ metafrontier <- function(formula = NULL,
                          slack = FALSE,
                          frontier = c("production", "cost"),
                          selection = NULL,
+                         spatial = NULL,
                          ...) {
 
   cl <- match.call()
@@ -321,6 +335,22 @@ metafrontier <- function(formula = NULL,
     stop("'selection' is available for cross-sectional SFA with the ",
          "internal engine and the formula interface only.", call. = FALSE)
   }
+  if (!is.null(spatial)) {
+    if (method != "sfa" || !is.null(panel) || !is.null(selection) ||
+        engine != "internal" || !is.null(models)) {
+      stop("'spatial' is available for cross-sectional SFA with the ",
+           "internal engine and the formula interface only, without ",
+           "'selection'.", call. = FALSE)
+    }
+    if (!is.null(spatial$model) && !identical(spatial$model, "sar")) {
+      stop("Only spatial$model = \"sar\" is supported.", call. = FALSE)
+    }
+    if (length(Formula::Formula(formula))[2] > 1L) {
+      stop("'spatial' does not support inefficiency determinants.",
+           call. = FALSE)
+    }
+    spatial$W <- .spatial_weights(spatial$W, nrow(data))
+  }
   if (objective == "qp" && (method != "sfa" ||
                             meta_type != "deterministic")) {
     warning("'objective' applies only to the deterministic SFA ",
@@ -350,7 +380,8 @@ metafrontier <- function(formula = NULL,
                                   engine = engine,
                                   slack = slack,
                                   frontier = frontier,
-                                  selection = selection, ...)
+                                  selection = selection,
+                                  spatial = spatial, ...)
   } else {
     result <- .estimate_from_models(models, meta_type, control,
                                     objective = objective, ...)
@@ -374,6 +405,7 @@ metafrontier <- function(formula = NULL,
   result$engine <- engine
   result$frontier <- frontier
   result$selection <- selection
+  if (!is.null(spatial)) result$spatial <- spatial["row_standardise"]
   if (method == "sfa") {
     result$estimator <- estimator
     if (meta_type == "deterministic") result$objective <- objective
@@ -406,7 +438,8 @@ metafrontier <- function(formula = NULL,
                                 engine = "internal",
                                 slack = FALSE,
                                 frontier = "production",
-                                selection = NULL, ...) {
+                                selection = NULL,
+                                spatial = NULL, ...) {
 
   sign <- if (frontier == "cost") -1 else 1
 
@@ -448,6 +481,7 @@ metafrontier <- function(formula = NULL,
     if (is.matrix(direction) && nrow(direction) == length(keep)) {
       direction <- direction[keep, , drop = FALSE]
     }
+    if (!is.null(spatial)) spatial$W <- spatial$W[keep, keep, drop = FALSE]
   }
 
   group_vec <- droplevels(as.factor(group_vec))
@@ -486,6 +520,16 @@ metafrontier <- function(formula = NULL,
         group_models[[g]] <- .fit_sfa_selection_group(
           f, selection, data_g, dist, control, estimator = estimator,
           sign = sign
+        )
+      } else if (!is.null(spatial)) {
+        # Within-group weights only: no spillovers between technologies
+        W_g <- spatial$W[idx, idx, drop = FALSE]
+        if (isTRUE(spatial$row_standardise)) {
+          rs <- rowSums(W_g)
+          W_g[rs > 0, ] <- W_g[rs > 0, , drop = FALSE] / rs[rs > 0]
+        }
+        group_models[[g]] <- .fit_sfa_spatial_group(
+          f, data_g, W_g, dist, control, estimator = estimator, sign = sign
         )
       } else {
         group_models[[g]] <- .fit_sfa_group(f, data_g, dist, control,

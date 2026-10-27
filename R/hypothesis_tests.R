@@ -100,9 +100,9 @@ poolability_test <- function(object, B = 199, seed = NULL, ...) {
     stop("Poolability test requires an SFA- or DEA-based metafrontier.",
          call. = FALSE)
   }
-  if (!is.null(object$selection)) {
-    stop("poolability_test() is not available for sample-selection ",
-         "metafrontiers.", call. = FALSE)
+  if (!is.null(object$selection) || !is.null(object$spatial)) {
+    stop("poolability_test() is not available for sample-selection or ",
+         "spatial metafrontiers.", call. = FALSE)
   }
 
   # Fit a pooled model (single frontier, no groups)

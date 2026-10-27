@@ -56,6 +56,12 @@
 #'   \code{z1 ~ N(0, 1)} and indicator \code{d = 1(g0 + g1 z1 + w > 0)},
 #'   with \code{corr(w, v) = rho}; \code{log_y} is \code{NA} when
 #'   \code{d = 0}. Default \code{NULL} (no selection).
+#' @param spatial optional list \code{list(rho = , k = 5)} for a
+#'   spatial-autoregressive design: units get random coordinates in the
+#'   unit square, \code{W} is the row-standardised k-nearest-neighbour
+#'   matrix within each group, and \code{log_y = (I - rho W_g)^{-1}
+#'   (x'beta_g + v -/+ u)}. The block-diagonal n x n matrix is returned
+#'   as \code{W}. Default \code{NULL} (no spatial dependence).
 #'
 #' @details
 #' By default the group frontiers share the metafrontier slopes and
@@ -120,7 +126,8 @@ simulate_metafrontier <- function(n_groups = 2L,
                                   input_means = NULL,
                                   input_corr = NULL,
                                   frontier = c("production", "cost"),
-                                  selection = NULL) {
+                                  selection = NULL,
+                                  spatial = NULL) {
 
   frontier <- match.arg(frontier)
   sign <- if (frontier == "cost") -1 else 1
@@ -226,6 +233,8 @@ simulate_metafrontier <- function(n_groups = 2L,
   frames <- vector("list", n_groups)
   group_names <- paste0("G", seq_len(n_groups))
 
+  W_list <- vector("list", n_groups)
+
   # Group-specific betas: shift intercept by tech_gap (unless supplied)
   if (!custom_betas) {
     beta_groups <- vector("list", n_groups)
@@ -283,6 +292,19 @@ simulate_metafrontier <- function(n_groups = 2L,
 
     # Observed output (or cost: inefficiency raises it)
     log_y <- as.numeric(frontier_y + v - sign * u)
+    if (!is.null(spatial)) {
+      # SAR outcome with row-standardised kNN weights within the group
+      k_nn <- if (is.null(spatial$k)) 5L else spatial$k
+      coords <- matrix(stats::runif(2 * n_g), n_g, 2)
+      dmat <- as.matrix(stats::dist(coords))
+      W_list[[g]] <- t(apply(dmat, 1, function(r) {
+        w <- numeric(n_g)
+        w[order(r)[1L + seq_len(k_nn)]] <- 1 / k_nn
+        w
+      }))
+      log_y <- as.numeric(solve(diag(n_g) - spatial$rho * W_list[[g]],
+                                log_y))
+    }
 
     # True values
     true_te <- exp(-u)
@@ -328,10 +350,22 @@ simulate_metafrontier <- function(n_groups = 2L,
     n_groups = n_groups,
     n_per_group = setNames(n_per_group, group_names),
     frontier = frontier,
-    selection = selection
+    selection = selection,
+    spatial = spatial
   )
 
-  list(data = data, params = params)
+  out <- list(data = data, params = params)
+  if (!is.null(spatial)) {
+    # Block-diagonal weights in data order: no links between groups
+    W <- matrix(0, n_total, n_total)
+    ends <- cumsum(n_per_group)
+    for (g in seq_len(n_groups)) {
+      idx <- (ends[g] - n_per_group[g] + 1L):ends[g]
+      W[idx, idx] <- W_list[[g]]
+    }
+    out$W <- W
+  }
+  out
 }
 
 

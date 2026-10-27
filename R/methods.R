@@ -514,9 +514,9 @@ vcov.metafrontier <- function(object,
            "(meta_type = 'stochastic').", call. = FALSE)
     }
     # The Stage 1 scores use the cross-sectional SFA likelihood
-    if (!is.null(object$selection)) {
+    if (!is.null(object$selection) || !is.null(object$spatial)) {
       stop("The Murphy-Topel correction is not available for ",
-           "sample-selection group frontiers.", call. = FALSE)
+           "sample-selection or spatial group frontiers.", call. = FALSE)
     }
     if (!requireNamespace("numDeriv", quietly = TRUE)) {
       stop("Package 'numDeriv' is required for the Murphy-Topel ",

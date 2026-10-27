@@ -17,7 +17,8 @@ simulate_metafrontier(
   input_means = NULL,
   input_corr = NULL,
   frontier = c("production", "cost"),
-  selection = NULL
+  selection = NULL,
+  spatial = NULL
 )
 }
 \arguments{
@@ -83,6 +84,13 @@ for a Greene (2010) sample-selection design: a selection regressor
 \code{z1 ~ N(0, 1)} and indicator \code{d = 1(g0 + g1 z1 + w > 0)},
 with \code{corr(w, v) = rho}; \code{log_y} is \code{NA} when
 \code{d = 0}. Default \code{NULL} (no selection).}
+
+\item{spatial}{optional list \code{list(rho = , k = 5)} for a
+spatial-autoregressive design: units get random coordinates in the
+unit square, \code{W} is the row-standardised k-nearest-neighbour
+matrix within each group, and \code{log_y = (I - rho W_g)^{-1}
+(x'beta_g + v -/+ u)}. The block-diagonal n x n matrix is returned
+as \code{W}. Default \code{NULL} (no spatial dependence).}
 }
 \value{
 A list with components:
