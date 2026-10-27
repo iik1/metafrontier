@@ -45,6 +45,12 @@
 #'   log-inputs are drawn from a multivariate normal distribution with
 #'   this correlation structure; see Details. Default \code{NULL}
 #'   (independent inputs).
+#' @param frontier character. \code{"production"} (default) or
+#'   \code{"cost"}. For a cost frontier the column \code{log_y} holds
+#'   log cost, generated as \eqn{x_i^\top \beta_g + v_i + u_i}; group
+#'   cost frontiers lie on or above the metafrontier (the intercept is
+#'   raised by \code{tech_gap}), and \code{true_tgr} is the ratio of
+#'   minimum costs, \code{exp(-tech_gap[g])} in the default design.
 #'
 #' @details
 #' By default the group frontiers share the metafrontier slopes and
@@ -107,8 +113,11 @@ simulate_metafrontier <- function(n_groups = 2L,
                                   seed = NULL,
                                   beta_groups = NULL,
                                   input_means = NULL,
-                                  input_corr = NULL) {
+                                  input_corr = NULL,
+                                  frontier = c("production", "cost")) {
 
+  frontier <- match.arg(frontier)
+  sign <- if (frontier == "cost") -1 else 1
   if (!is.null(seed)) set.seed(seed)
 
   custom_betas <- !is.null(beta_groups)
@@ -243,9 +252,10 @@ simulate_metafrontier <- function(n_groups = 2L,
                    nrow = n_g)
       frontier_y <- XB[, g]
     } else {
-      # Group-specific frontier = metafrontier - tech_gap (intercept only)
+      # Group-specific frontier = metafrontier -/+ tech_gap (intercept
+      # only): below the production metafrontier, above the cost one
       beta_g <- beta_meta
-      beta_g[1] <- beta_meta[1] - tech_gap[g]
+      beta_g[1] <- beta_meta[1] - sign * tech_gap[g]
       beta_groups[[g]] <- beta_g
 
       # Frontier output
@@ -256,14 +266,16 @@ simulate_metafrontier <- function(n_groups = 2L,
     v <- stats::rnorm(n_g, 0, sigma_v)
     u <- abs(stats::rnorm(n_g, 0, sigma_u[g]))
 
-    # Observed output
-    log_y <- as.numeric(frontier_y + v - u)
+    # Observed output (or cost: inefficiency raises it)
+    log_y <- as.numeric(frontier_y + v - sign * u)
 
     # True values
     true_te <- exp(-u)
     if (custom_betas) {
-      # TGR against the pointwise maximum over group frontiers, in (0, 1]
-      true_tgr <- exp(frontier_y - apply(XB, 1, max))
+      # TGR against the pointwise maximum (cost: minimum) over group
+      # frontiers, in (0, 1]
+      envelope <- sign * apply(sign * XB, 1, max)
+      true_tgr <- exp(sign * (frontier_y - envelope))
     } else {
       true_tgr <- exp(-tech_gap[g])  # constant for intercept-shift DGP
     }
@@ -294,7 +306,8 @@ simulate_metafrontier <- function(n_groups = 2L,
     sigma_u = setNames(sigma_u, group_names),
     sigma_v = sigma_v,
     n_groups = n_groups,
-    n_per_group = setNames(n_per_group, group_names)
+    n_per_group = setNames(n_per_group, group_names),
+    frontier = frontier
   )
 
   list(data = data, params = params)

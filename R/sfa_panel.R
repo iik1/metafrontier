@@ -30,7 +30,8 @@
 
 .fit_sfa_panel_group <- function(formula, data, dist, panel_dist,
                                  panel_info, control, ...,
-                                 estimator = c("bc88", "jlms")) {
+                                 estimator = c("bc88", "jlms"),
+                                 sign = 1) {
 
   estimator <- match.arg(estimator)
 
@@ -71,6 +72,8 @@
 
   n <- length(y)
   k <- ncol(X)
+  # Fit the production-equivalent model on sign * y (see .unflip_frontier)
+  y <- sign * y
 
   # Panel structure; drop any rows removed from the model frame by
   # na.omit so that firms/times stay aligned with y and X
@@ -256,7 +259,7 @@
     )
   }
 
-  result
+  .unflip_frontier(result, sign)
 }
 
 

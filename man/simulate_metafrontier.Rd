@@ -15,7 +15,8 @@ simulate_metafrontier(
   seed = NULL,
   beta_groups = NULL,
   input_means = NULL,
-  input_corr = NULL
+  input_corr = NULL,
+  frontier = c("production", "cost")
 )
 }
 \arguments{
@@ -68,6 +69,13 @@ correlation matrix for the log-inputs. When supplied, the
 log-inputs are drawn from a multivariate normal distribution with
 this correlation structure; see Details. Default \code{NULL}
 (independent inputs).}
+
+\item{frontier}{character. \code{"production"} (default) or
+\code{"cost"}. For a cost frontier the column \code{log_y} holds
+log cost, generated as \eqn{x_i^\top \beta_g + v_i + u_i}; group
+cost frontiers lie on or above the metafrontier (the intercept is
+raised by \code{tech_gap}), and \code{true_tgr} is the ratio of
+minimum costs, \code{exp(-tech_gap[g])} in the default design.}
 }
 \value{
 A list with components:

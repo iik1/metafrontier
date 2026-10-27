@@ -19,6 +19,9 @@ print.metafrontier <- function(x, ...) {
   cat("------------------\n")
   cat("Method:          ", x$method, "\n")
   cat("Metafrontier:    ", x$meta_type, "\n")
+  if (!is.null(x$frontier) && x$method == "sfa") {
+    cat("Frontier:        ", x$frontier, "\n")
+  }
   if (!is.null(x$estimator)) {
     cat("Estimator:       ", x$estimator, "\n")
   }
@@ -210,6 +213,7 @@ summary.metafrontier <- function(object, ...) {
     call = object$call,
     method = object$method,
     meta_type = object$meta_type,
+    frontier = if (object$method == "sfa") object$frontier,
     groups = object$groups,
     nobs = object$nobs,
     group_tables = group_tables,
@@ -232,7 +236,9 @@ print.summary.metafrontier <- function(x, digits = 4, ...) {
   cat("Call:\n")
   print(x$call)
   cat("\nMethod:       ", x$method, "\n")
-  cat("Metafrontier: ", x$meta_type, "\n\n")
+  cat("Metafrontier: ", x$meta_type, "\n")
+  if (!is.null(x$frontier)) cat("Frontier:     ", x$frontier, "\n")
+  cat("\n")
 
   # Group-specific frontiers
   if (length(x$group_tables) > 0) {

@@ -1,5 +1,21 @@
 # metafrontier (development version)
 
+## New features
+
+- Cost frontiers (#6): `metafrontier(frontier = "cost")` estimates group
+  cost frontiers with composed error v + u and a cost metafrontier that
+  lies on or below every group cost frontier. Cost efficiency, TGR (the
+  ratio of minimum costs) and TE* lie in (0, 1]. Supported for
+  cross-sectional, heteroscedastic and panel (BC92/BC95) group models,
+  deterministic (LP and QP) and stochastic metafrontiers, the `sfaR`
+  (`S = -1`) and `frontier` (`ineffDecrease = FALSE`) engines,
+  `models =` imports (the frontier type is read from the models, and
+  mixing production and cost models is an error), `boot_tgr()`,
+  Murphy-Topel standard errors and `poolability_test()`.
+  `simulate_metafrontier(frontier = "cost")` generates cost data. Cost
+  DEA and cost latent class models are not supported and stop with an
+  error. Production results are unchanged.
+
 ## Breaking changes
 
 - `boot_tgr(type = "nonparametric")` no longer returns

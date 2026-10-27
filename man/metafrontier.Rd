@@ -23,6 +23,7 @@ metafrontier(
   objective = c("lp", "qp"),
   engine = c("internal", "sfaR", "frontier", "Benchmarking"),
   slack = FALSE,
+  frontier = c("production", "cost"),
   ...
 )
 }
@@ -143,6 +144,12 @@ and output slacks (with the radial score held fixed) against
 both the group and the pooled reference sets. Default
 \code{FALSE}.}
 
+\item{frontier}{character. \code{"production"} (default), with
+composed error \eqn{\varepsilon = v - u}, or \code{"cost"}, with
+\eqn{\varepsilon = v + u} and a cost metafrontier that lies on or
+below every group cost frontier. Efficiencies and technology gap
+ratios lie in (0, 1] in both cases. SFA methods only.}
+
 \item{...}{additional arguments passed to the group-level
 estimation functions.}
 }
@@ -229,10 +236,13 @@ confidence intervals via \code{\link{boot_tgr}} for corrected
 inference.
 
 \strong{Note on frontier orientation (SFA path):}
-The SFA estimation path assumes a production frontier
-(\eqn{\varepsilon = v - u}). Cost frontiers (\eqn{\varepsilon = v + u})
-are not currently supported via the SFA path. The DEA path supports
-both \code{orientation = "output"} and \code{orientation = "input"}.
+The SFA path estimates production frontiers
+(\eqn{\varepsilon = v - u}) by default and cost frontiers
+(\eqn{\varepsilon = v + u}) with \code{frontier = "cost"}. For cost
+frontiers the deterministic metafrontier envelops the group cost
+frontiers from below, and TGR is the ratio of metatechnology to
+group minimum cost. The DEA path supports both
+\code{orientation = "output"} and \code{orientation = "input"}.
 }
 \examples{
 # Simulate metafrontier data
