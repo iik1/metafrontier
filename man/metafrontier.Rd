@@ -25,6 +25,7 @@ metafrontier(
   slack = FALSE,
   frontier = c("production", "cost"),
   selection = NULL,
+  spatial = NULL,
   ...
 )
 }
@@ -161,6 +162,20 @@ only the probit and may have a missing outcome; efficiencies and
 technology gap ratios are reported for the selected rows.
 Half-normal or exponential inefficiency; cross-sectional SFA with
 the internal engine only.}
+
+\item{spatial}{an optional list \code{list(W = , row_standardise =
+FALSE, model = "sar")}. \code{W} is an n x n spatial weights matrix
+for the rows of \code{data} (a matrix, a \pkg{Matrix} matrix or an
+\pkg{spdep} \code{listw} object) with a zero diagonal. Each group
+frontier is then the spatial-autoregressive stochastic frontier
+\eqn{y = \rho_g W_g y + x'\beta_g + v - u} (Glass, Kenjegalieva and
+Sickles, 2016), where \eqn{W_g} is the block of \code{W} for the
+group's own units (re-row-standardised when \code{row_standardise =
+TRUE}), so spillovers between groups are excluded. Each group model
+reports \code{rho} and the direct, indirect and total input effects
+(\code{effects}). The technology gap compares the direct technology
+\eqn{x'\beta_g} with the metafrontier. Cross-sectional SFA without
+inefficiency determinants, internal engine only.}
 
 \item{...}{additional arguments passed to the group-level
 estimation functions.}

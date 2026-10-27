@@ -42,6 +42,23 @@
   `sfaR` 1.0.1 misaligns the probit index in
   `efficiencies.sfaselectioncross()`.
 
+- Spatial SFA metafrontier (#8): `metafrontier(spatial = list(W = ))`
+  estimates each group frontier as a spatial-autoregressive stochastic
+  frontier, y = rho W y + x'beta + v - u (Glass, Kenjegalieva and
+  Sickles, 2016), with W restricted to the group's own units (optionally
+  re-row-standardised), so there are no spillovers between technologies.
+  rho is estimated by profiling the full likelihood (log-Jacobian from
+  the eigenvalues of W); each group model reports `rho`, a Hessian that
+  includes rho, and direct, indirect and total input effects with
+  delta-method standard errors (LeSage and Pace, 2009). The TGR compares
+  the direct technology x'beta. W may be a matrix, a `Matrix` or an
+  `spdep` `listw`; rows dropped for missing values are dropped from W.
+  Works with `frontier = "cost"` and both metafrontier types.
+  `simulate_metafrontier(spatial = list(rho, k))` generates SAR data with
+  a block-diagonal kNN W. The bootstrap, the Murphy-Topel correction and
+  the poolability test are not available for spatial fits and stop with
+  an error.
+
 ## Breaking changes
 
 - `boot_tgr(type = "nonparametric")` no longer returns

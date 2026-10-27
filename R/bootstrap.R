@@ -120,9 +120,10 @@ boot_tgr <- function(object, R = 999,
          "'data' and 'group' instead.", call. = FALSE)
   }
   # Replicates would need to redraw selection as well as the frontier,
-  # and the number of selected rows would vary across replicates
-  if (!is.null(object$selection)) {
-    stop("boot_tgr() is not available for sample-selection ",
+  # and the number of selected rows would vary across replicates; the
+  # resamplers ignore the spatial lag
+  if (!is.null(object$selection) || !is.null(object$spatial)) {
+    stop("boot_tgr() is not available for sample-selection or spatial ",
          "metafrontiers.", call. = FALSE)
   }
 
