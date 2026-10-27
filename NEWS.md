@@ -16,6 +16,16 @@
   DEA and cost latent class models are not supported and stop with an
   error. Production results are unchanged.
 
+- Fare-Primont and Lowe TFP indexes (#10): `tfp_index()` computes
+  multiplicatively complete, transitive TFP levels and indexes (O'Donnell
+  2012), decomposes TFP efficiency (TFPE = OTE x OME x ROSE = OTE x OSE x
+  RME, and the input-oriented analogue) against each group's technology
+  and against the metatechnology, and reports the TFP metatechnology
+  ratio (TFPE_meta = TFPE_group x MTR). Output or input orientation, CRS
+  or VRS, contemporaneous or sequential technologies; `print`, `summary`
+  and `autoplot` methods. Results against the metatechnology match
+  `productivity::fareprim()` and `productivity::lowe()`.
+
 ## Breaking changes
 
 - `boot_tgr(type = "nonparametric")` no longer returns

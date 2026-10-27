@@ -178,7 +178,8 @@ the issue, as does the hyperbolic orientation available in
 Note that the standard Malmquist index is not a \sQuote{proper}
 (multiplicatively complete and transitive) TFP index in the sense
 of O'Donnell (2012), so chained comparisons of index levels
-across more than two periods should be avoided.
+across more than two periods should be avoided. For transitive
+indexes with a metafrontier decomposition use \code{\link{tfp_index}}.
 }
 \examples{
 # Simulate panel data for 2 groups, 3 time periods

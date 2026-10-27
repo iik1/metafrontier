@@ -49,7 +49,8 @@ Suggests:
     quadprog,
     plm,
     ggplot2,
-    parallel
+    parallel,
+    productivity
 VignetteBuilder: knitr
 URL: https://github.com/iik1/metafrontier
 BugReports: https://github.com/iik1/metafrontier/issues
