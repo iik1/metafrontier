@@ -26,6 +26,22 @@
   and `autoplot` methods. Results against the metatechnology match
   `productivity::fareprim()` and `productivity::lowe()`.
 
+- Sample-selection metafrontier (#7): `metafrontier(selection = d ~ z)`
+  estimates each group frontier as Greene's (2010) sample-selection
+  stochastic frontier (probit first step; second step by Gauss-Hermite
+  quadrature over u, half-normal or exponential), with the noise
+  correlated with the selection error (`rho`). Unselected rows enter only
+  the probit and may have a missing outcome; TE, TGR and TE* are
+  reported for the selected rows. Works with `frontier = "cost"` and both
+  metafrontier types; `summary()` shows the selection equations and
+  `check_convergence()` the probit. `simulate_metafrontier(selection = )`
+  generates selection data. The bootstrap, the Murphy-Topel correction
+  and the poolability test are not available for selection fits and stop
+  with an error. Group estimates match `sfaR::sfaselectioncross()`;
+  efficiencies are checked against direct numerical integration because
+  `sfaR` 1.0.1 misaligns the probit index in
+  `efficiencies.sfaselectioncross()`.
+
 ## Breaking changes
 
 - `boot_tgr(type = "nonparametric")` no longer returns
