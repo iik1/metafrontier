@@ -343,3 +343,60 @@ autoplot.boot_tgr <- function(object,
 
   p
 }
+
+
+#' ggplot2 Visualisation of TFP Indexes
+#'
+#' @param object a \code{"tfp_meta"} object from \code{\link{tfp_index}}.
+#' @param which \code{"levels"} (mean TFP by group over time) or
+#'   \code{"decomposition"} (mean group TFP efficiency, metatechnology
+#'   ratio and metatechnology TFP efficiency by group).
+#' @param ... unused.
+#' @return A \code{ggplot} object.
+#' @examples
+#' set.seed(1)
+#' d <- expand.grid(firm = 1:6, year = 1:3)
+#' d$region <- ifelse(d$firm <= 3, "A", "B")
+#' d$x <- runif(nrow(d), 1, 10)
+#' d$y <- d$x^0.6 * runif(nrow(d), 0.6, 1)
+#' tfp <- tfp_index(y ~ x, data = d, group = "region", time = "year",
+#'                  id = "firm")
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   ggplot2::autoplot(tfp, which = "decomposition")
+#' }
+#' @exportS3Method ggplot2::autoplot
+autoplot.tfp_meta <- function(object, which = c("levels", "decomposition"),
+                              ...) {
+  which <- match.arg(which)
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package 'ggplot2' is required for autoplot().", call. = FALSE)
+  }
+  lv <- object$levels
+
+  if (which == "levels") {
+    df <- aggregate(lv["TFP"], by = list(group = lv$group, time = lv[[3]]),
+                    FUN = mean, na.rm = TRUE)
+    return(
+      ggplot2::ggplot(df, ggplot2::aes(x = .data$time, y = .data$TFP,
+                                       colour = .data$group)) +
+        ggplot2::geom_line() +
+        ggplot2::geom_point() +
+        ggplot2::labs(x = names(lv)[3], y = "Mean TFP", colour = "Group") +
+        ggplot2::theme_minimal()
+    )
+  }
+
+  comps <- c("TFPE_group", "MTR", "TFPE_meta")
+  means <- aggregate(lv[comps], by = list(group = lv$group), FUN = mean,
+                     na.rm = TRUE)
+  df <- data.frame(group = rep(means$group, length(comps)),
+                   component = factor(rep(comps, each = nrow(means)),
+                                      levels = comps),
+                   value = unlist(means[comps], use.names = FALSE))
+  ggplot2::ggplot(df, ggplot2::aes(x = .data$group, y = .data$value,
+                                   fill = .data$component)) +
+    ggplot2::geom_col(position = "dodge") +
+    ggplot2::labs(x = "Group", y = "Mean", fill = NULL,
+                  title = "TFPE_meta = TFPE_group x MTR") +
+    ggplot2::theme_minimal()
+}

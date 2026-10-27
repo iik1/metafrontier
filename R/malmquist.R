@@ -145,7 +145,8 @@
 #' Note that the standard Malmquist index is not a \sQuote{proper}
 #' (multiplicatively complete and transitive) TFP index in the sense
 #' of O'Donnell (2012), so chained comparisons of index levels
-#' across more than two periods should be avoided.
+#' across more than two periods should be avoided. For transitive
+#' indexes with a metafrontier decomposition use \code{\link{tfp_index}}.
 #'
 #' @references
 #' O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
