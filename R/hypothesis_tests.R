@@ -106,7 +106,8 @@ poolability_test <- function(object, B = 199, seed = NULL, ...) {
     formula = object$formula,
     data = object$data,
     dist = object$group_models[[1]]$dist,
-    control = list()
+    control = list(),
+    sign = if (identical(object$frontier, "cost")) -1 else 1
   )
 
   ll_pooled <- pooled$logLik

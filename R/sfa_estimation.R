@@ -25,7 +25,7 @@
 #' @keywords internal
 #' @noRd
 .fit_sfa_group <- function(formula, data, dist, control, ...,
-                           estimator = c("bc88", "jlms")) {
+                           estimator = c("bc88", "jlms"), sign = 1) {
 
   estimator <- match.arg(estimator)
 
@@ -61,6 +61,8 @@
 
   n <- length(y)
   k <- ncol(X)
+  # Fit the production-equivalent model on sign * y (see .unflip_frontier)
+  y <- sign * y
 
   # OLS starting values
   ols <- lm.fit(X, y)
@@ -266,7 +268,45 @@
     if (dist == "tnormal") result$mu_vec <- mu_vec
   }
 
-  result
+  .unflip_frontier(result, sign)
+}
+
+
+#' Map a production-equivalent fit back to the frontier's own scale
+#'
+#' A cost frontier y = x'beta + v + u is the production frontier
+#' -y = x'(-beta) + v' - u with v' = -v, so the group fitters estimate
+#' on sign * y (sign = 1 production, -1 cost) and this flips the
+#' beta-type quantities back. Efficiencies, inefficiencies and the
+#' variance and inefficiency-determinant parameters are unchanged.
+#'
+#' @keywords internal
+#' @noRd
+.unflip_frontier <- function(res, sign) {
+  res$sign <- sign
+  if (sign == 1) return(res)
+  k <- length(res$coefficients)
+  res$coefficients <- -res$coefficients
+  res$fitted <- -res$fitted
+  res$residuals <- -res$residuals
+  res$y <- -res$y
+  res$all_params <- .flip_k(res$all_params, k, sign)
+  res$hessian <- .flip_k_mat(res$hessian, k, sign)
+  res
+}
+
+# Flip the sign of the first k parameters (sign = -1), or of the
+# matching rows and columns of a Hessian or covariance matrix
+.flip_k <- function(x, k, sign) {
+  if (sign == 1 || is.null(x)) return(x)
+  x[seq_len(k)] <- -x[seq_len(k)]
+  x
+}
+.flip_k_mat <- function(H, k, sign) {
+  if (sign == 1 || is.null(H)) return(H)
+  J <- rep(1, nrow(H))
+  J[seq_len(k)] <- -1
+  H * outer(J, J)
 }
 
 
@@ -634,11 +674,14 @@
 #' @keywords internal
 #' @noRd
 .score_vector_sfa <- function(group_model) {
-  params <- group_model$all_params
-  y <- group_model$y
   X <- group_model$X
   has_z <- !is.null(group_model$Z)
   k <- ncol(X)
+  # Evaluate on the production-equivalent scale of a cost fit (see
+  # .unflip_frontier); the beta columns are mapped back below
+  sign <- if (is.null(group_model$sign)) 1 else group_model$sign
+  params <- .flip_k(group_model$all_params, k, sign)
+  y <- sign * group_model$y
 
   if (has_z) {
     Z <- group_model$Z
@@ -655,6 +698,8 @@
     )
   }
 
-  numDeriv::jacobian(obs_fn, params,
-                     method.args = list(eps = 1e-4))
+  S <- numDeriv::jacobian(obs_fn, params, method.args = list(eps = 1e-4))
+  # Chain rule: d theta_internal / d theta = -1 for the betas of a cost fit
+  S[, seq_len(k)] <- sign * S[, seq_len(k)]
+  S
 }

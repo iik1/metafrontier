@@ -334,6 +334,7 @@ boot_tgr <- function(object, R = 999,
       object$objective
     } else "lp",
     engine = if (!is.null(object$engine)) object$engine else "internal",
+    frontier = if (!is.null(object$frontier)) object$frontier else "production",
     ...
   )
 
@@ -392,9 +393,11 @@ boot_tgr <- function(object, R = 999,
       abs(rnorm(n_g, mean = 0, sd = sigma_u))  # default fallback
     )
 
-    # Fitted frontier value = X %*% beta
+    # Fitted frontier value = X %*% beta; inefficiency lowers output
+    # and raises cost
     fitted_g <- gm$fitted
-    boot_y[idx] <- fitted_g + v_new - u_new
+    sign_g <- if (is.null(gm$sign)) 1 else gm$sign
+    boot_y[idx] <- fitted_g + v_new - sign_g * u_new
   }
 
   # Replace response in data

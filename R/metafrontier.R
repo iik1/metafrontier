@@ -104,6 +104,11 @@
 #'   and output slacks (with the radial score held fixed) against
 #'   both the group and the pooled reference sets. Default
 #'   \code{FALSE}.
+#' @param frontier character. \code{"production"} (default), with
+#'   composed error \eqn{\varepsilon = v - u}, or \code{"cost"}, with
+#'   \eqn{\varepsilon = v + u} and a cost metafrontier that lies on or
+#'   below every group cost frontier. Efficiencies and technology gap
+#'   ratios lie in (0, 1] in both cases. SFA methods only.
 #' @param ... additional arguments passed to the group-level
 #'   estimation functions.
 #'
@@ -182,10 +187,13 @@
 #' inference.
 #'
 #' \strong{Note on frontier orientation (SFA path):}
-#' The SFA estimation path assumes a production frontier
-#' (\eqn{\varepsilon = v - u}). Cost frontiers (\eqn{\varepsilon = v + u})
-#' are not currently supported via the SFA path. The DEA path supports
-#' both \code{orientation = "output"} and \code{orientation = "input"}.
+#' The SFA path estimates production frontiers
+#' (\eqn{\varepsilon = v - u}) by default and cost frontiers
+#' (\eqn{\varepsilon = v + u}) with \code{frontier = "cost"}. For cost
+#' frontiers the deterministic metafrontier envelops the group cost
+#' frontiers from below, and TGR is the ratio of metatechnology to
+#' group minimum cost. The DEA path supports both
+#' \code{orientation = "output"} and \code{orientation = "input"}.
 #'
 #' @references
 #' Battese, G.E., Rao, D.S.P. and O'Donnell, C.J. (2004). A
@@ -240,9 +248,12 @@ metafrontier <- function(formula = NULL,
                          objective = c("lp", "qp"),
                          engine = c("internal", "sfaR", "frontier", "Benchmarking"),
                          slack = FALSE,
+                         frontier = c("production", "cost"),
                          ...) {
 
   cl <- match.call()
+  frontier_given <- !missing(frontier)
+  frontier <- match.arg(frontier)
   method <- match.arg(method)
   meta_type <- match.arg(meta_type)
   dist <- match.arg(dist)
@@ -289,6 +300,10 @@ metafrontier <- function(formula = NULL,
            call. = FALSE)
     }
   }
+  if (frontier == "cost" && method != "sfa") {
+    stop("frontier = \"cost\" is available for SFA metafrontiers only; ",
+         "cost DEA requires input prices.", call. = FALSE)
+  }
   if (objective == "qp" && (method != "sfa" ||
                             meta_type != "deterministic")) {
     warning("'objective' applies only to the deterministic SFA ",
@@ -316,10 +331,18 @@ metafrontier <- function(formula = NULL,
                                   estimator = estimator,
                                   objective = objective,
                                   engine = engine,
-                                  slack = slack, ...)
+                                  slack = slack,
+                                  frontier = frontier, ...)
   } else {
     result <- .estimate_from_models(models, meta_type, control,
                                     objective = objective, ...)
+    # The frontier type of imported models is read from the models
+    if (frontier_given && frontier != result$frontier) {
+      stop("frontier = \"", frontier, "\" does not match the imported ",
+           "models, which are ", result$frontier, " frontiers.",
+           call. = FALSE)
+    }
+    frontier <- result$frontier
   }
 
   result$call <- cl
@@ -331,6 +354,7 @@ metafrontier <- function(formula = NULL,
   result$direction <- direction
   result$slack <- slack
   result$engine <- engine
+  result$frontier <- frontier
   if (method == "sfa") {
     result$estimator <- estimator
     if (meta_type == "deterministic") result$objective <- objective
@@ -361,7 +385,10 @@ metafrontier <- function(formula = NULL,
                                 estimator = "bc88",
                                 objective = "lp",
                                 engine = "internal",
-                                slack = FALSE, ...) {
+                                slack = FALSE,
+                                frontier = "production", ...) {
+
+  sign <- if (frontier == "cost") -1 else 1
 
   # Parse the group variable
   if (is.character(group) && length(group) == 1L) {
@@ -417,16 +444,17 @@ metafrontier <- function(formula = NULL,
     if (method == "sfa") {
       if (engine %in% c("sfaR", "frontier")) {
         group_models[[g]] <- .fit_sfa_group_external(
-          f, data_g, dist, engine, estimator
+          f, data_g, dist, engine, estimator, sign = sign
         )
       } else if (!is.null(panel)) {
         group_models[[g]] <- .fit_sfa_panel_group(
           f, data_g, dist, panel_dist, panel, control,
-          estimator = estimator, ...
+          estimator = estimator, sign = sign, ...
         )
       } else {
         group_models[[g]] <- .fit_sfa_group(f, data_g, dist, control,
-                                            estimator = estimator, ...)
+                                            estimator = estimator,
+                                            sign = sign, ...)
       }
     } else {
       if (engine == "Benchmarking") {
@@ -454,7 +482,7 @@ metafrontier <- function(formula = NULL,
   if (method == "sfa") {
     meta_result <- .estimate_sfa_metafrontier(
       f, data, group_vec, group_levels, group_models,
-      meta_type, dist, control, objective = objective
+      meta_type, dist, control, objective = objective, sign = sign
     )
   } else {
     if (engine == "Benchmarking") {
@@ -525,6 +553,16 @@ metafrontier <- function(formula = NULL,
     }
   }
 
+  # A metafrontier envelops technologies of one kind: production or cost
+  signs <- vapply(extracted, function(ex) {
+    if (is.null(ex$sign)) 1 else ex$sign
+  }, numeric(1))
+  if (length(unique(signs)) > 1L) {
+    stop("'models' mixes production and cost frontiers; a metafrontier ",
+         "requires all group models to be of the same kind.", call. = FALSE)
+  }
+  sign <- signs[[1]]
+
   # Build internal group_models structure
   group_models <- vector("list", n_groups)
   names(group_models) <- group_levels
@@ -545,7 +583,8 @@ metafrontier <- function(formula = NULL,
       nobs = ex$n,
       X = ex$X,
       y = ex$y,
-      dist = ex$dist
+      dist = ex$dist,
+      sign = sign
     )
     all_X[[g]] <- ex$X
     all_y[[g]] <- ex$y
@@ -573,20 +612,13 @@ metafrontier <- function(formula = NULL,
   group_coef <- lapply(group_models, function(m) m$coefficients)
 
   # Estimate the metafrontier
-  if (meta_type == "deterministic") {
-    meta_result <- .deterministic_metafrontier_lp(
-      X_combined, group_frontier, group_vec, group_levels, group_coef, k,
-      objective = objective
-    )
-  } else {
-    meta_result <- .stochastic_metafrontier(
-      X_combined, group_frontier, group_vec, group_levels, "hnormal", control
-    )
-  }
+  meta_result <- .meta_stage(X_combined, group_frontier, group_vec,
+                             group_levels, group_coef, k, meta_type,
+                             "hnormal", control, NULL, objective, sign)
 
   meta_frontier <- as.numeric(X_combined %*% meta_result$meta_coef)
   tgr <- if (meta_type == "deterministic") {
-    pmin(exp(group_frontier - meta_frontier), 1.0)
+    pmin(exp(sign * (group_frontier - meta_frontier)), 1.0)
   } else {
     meta_result$tgr
   }
@@ -623,7 +655,8 @@ metafrontier <- function(formula = NULL,
     nobs = c(
       total = n,
       setNames(table(group_vec), group_levels)
-    )
+    ),
+    frontier = if (sign == -1) "cost" else "production"
   )
 }
 
@@ -720,7 +753,9 @@ metafrontier <- function(formula = NULL,
                   "hnormal" = "hnormal",
                   "tnormal" = "tnormal",
                   "exponential" = "exponential",
-                  "hnormal")
+                  "hnormal"),
+    # sfacross fits cost frontiers with S = -1
+    sign = if (identical(model$S, -1)) -1 else 1
   )
 }
 
@@ -730,7 +765,7 @@ metafrontier <- function(formula = NULL,
 #' Fit a group SFA frontier via an external engine (sfaR or frontier)
 #' @noRd
 .fit_sfa_group_external <- function(formula, data, dist, engine,
-                                    estimator = "bc88") {
+                                    estimator = "bc88", sign = 1) {
   if (inherits(formula, "Formula") && length(formula)[2] > 1L) {
     stop("External SFA engines support single-part formulas only ",
          "(no inefficiency determinants).", call. = FALSE)
@@ -747,14 +782,14 @@ metafrontier <- function(formula = NULL,
            call. = FALSE)
     }
     fit <- sfaR::sfacross(formula = f_base, udist = dist, data = data,
-                          S = 1)
+                          S = sign)
     ex <- .extract_sfacross(fit, estimator = estimator)
   } else {
     if (!requireNamespace("frontier", quietly = TRUE)) {
       stop("Package 'frontier' is required for engine = \"frontier\".",
            call. = FALSE)
     }
-    fit <- frontier::sfa(f_base, data = data)
+    fit <- frontier::sfa(f_base, data = data, ineffDecrease = sign == 1)
     ex <- .extract_frontier(fit)
     ex$te_bc88 <- ex$te  # frontier::efficiencies() is the BC88-type estimator
     ex$te_jlms <- NULL
@@ -783,6 +818,7 @@ metafrontier <- function(formula = NULL,
     # parametric bootstrap builds its responses from it)
     fitted = as.numeric(ex$X %*% ex$beta),
     dist = ex$dist,
+    sign = sign,
     engine = engine
   )
 }

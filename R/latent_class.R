@@ -80,6 +80,12 @@ latent_class_metafrontier <- function(formula, data,
 
   dist <- match.arg(dist)
   meta_type <- match.arg(meta_type)
+  # The EM classifies on production-frontier likelihoods
+  frontier <- list(...)$frontier
+  if (!is.null(frontier) && !identical(frontier, "production")) {
+    stop("latent_class_metafrontier() supports production frontiers only.",
+         call. = FALSE)
+  }
 
   if (!is.null(seed)) set.seed(seed)
 

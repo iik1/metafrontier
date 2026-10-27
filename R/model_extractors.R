@@ -146,7 +146,9 @@ as_metafrontier_model.default <- function(x, ...) {
     logLik = model$mleLogl,
     hessian = NULL,
     n = length(y),
-    dist = "hnormal"
+    dist = "hnormal",
+    # frontier fits cost frontiers with ineffDecrease = FALSE
+    sign = if (isFALSE(model$ineffDecrease)) -1 else 1
   )
 }
 

@@ -9,7 +9,8 @@
 .estimate_sfa_metafrontier <- function(formula, data, group_vec,
                                        group_levels, group_models,
                                        meta_type, dist, control,
-                                       objective = c("lp", "qp")) {
+                                       objective = c("lp", "qp"),
+                                       sign = 1) {
 
   objective <- match.arg(objective)
 
@@ -52,24 +53,16 @@
   # Collect group coefficients
   group_coef <- lapply(group_models, function(m) m$coefficients)
 
-  if (meta_type == "deterministic") {
-    meta_result <- .deterministic_metafrontier_lp(
-      X, group_frontier, group_vec_valid, group_levels, group_coef, k,
-      objective = objective
-    )
-  } else {
-    meta_result <- .stochastic_metafrontier(
-      X, group_frontier, group_vec_valid, group_levels, dist, control,
-      group_models
-    )
-  }
+  meta_result <- .meta_stage(X, group_frontier, group_vec_valid,
+                             group_levels, group_coef, k, meta_type,
+                             dist, control, group_models, objective, sign)
 
   # Compute TGR and metafrontier efficiency. The stochastic TGR is
   # E[exp(-u*)|eps*] from the Stage 2 model; the deterministic TGR is
   # the frontier ratio, bounded to (0, 1].
   meta_frontier <- as.numeric(X %*% meta_result$meta_coef)
   tgr <- if (meta_type == "deterministic") {
-    pmin(exp(group_frontier - meta_frontier), 1.0)
+    pmin(exp(sign * (group_frontier - meta_frontier)), 1.0)
   } else {
     meta_result$tgr
   }
@@ -95,6 +88,40 @@
     valid_rows = valid_rows,
     n_valid = n_valid
   )
+}
+
+
+#' Metafrontier stage for production or cost group frontiers
+#'
+#' Solves the deterministic or stochastic metafrontier for the
+#' production-equivalent frontier values sign * group_frontier and maps
+#' the coefficient-type results back (see .unflip_frontier). For a cost
+#' frontier (sign = -1) this turns the production envelope from above
+#' into the cost envelope from below, x'beta* <= group frontier.
+#'
+#' @keywords internal
+#' @noRd
+.meta_stage <- function(X, group_frontier, group_vec, group_levels,
+                        group_coef, k, meta_type, dist, control,
+                        group_models, objective, sign) {
+  gf <- sign * group_frontier
+  res <- if (meta_type == "deterministic") {
+    .deterministic_metafrontier_lp(
+      X, gf, group_vec, group_levels,
+      lapply(group_coef, function(b) sign * b), k, objective = objective
+    )
+  } else {
+    .stochastic_metafrontier(X, gf, group_vec, group_levels, dist,
+                             control, group_models)
+  }
+  if (sign == 1) return(res)
+  res$meta_coef <- -res$meta_coef
+  res$meta_vcov <- .flip_k_mat(res$meta_vcov, k, sign)
+  if (!is.null(res$meta_opt)) {
+    res$meta_opt$par <- .flip_k(res$meta_opt$par, k, sign)
+    res$meta_opt$hessian <- .flip_k_mat(res$meta_opt$hessian, k, sign)
+  }
+  res
 }
 
 
@@ -446,11 +473,17 @@
   )
   group_vec <- object$group_vec
   group_levels <- object$groups
-  group_frontier <- object$group_frontier
   meta_opt <- object$meta_opt
 
   n <- nrow(X)
   k <- ncol(X)
+
+  # Work on the production-equivalent scale of a cost fit (sign * group
+  # frontier, see .meta_stage); the result is mapped back at the end
+  sign <- if (identical(object$frontier, "cost")) -1 else 1
+  group_frontier <- sign * object$group_frontier
+  meta_opt$par <- .flip_k(meta_opt$par, k, sign)
+  meta_opt$hessian <- .flip_k_mat(meta_opt$hessian, k, sign)
 
   # Select log-likelihood functions based on Stage 2 dist
   loglik_fn <- switch(object$meta_dist,
@@ -531,7 +564,7 @@
       function(theta1) {
         gf_mod <- group_frontier
         beta_g_new <- theta1[seq_len(k_g)]
-        gf_mod[idx] <- X[idx, , drop = FALSE] %*% beta_g_new
+        gf_mod[idx] <- sign * X[idx, , drop = FALSE] %*% beta_g_new
         numDeriv::grad(
           function(p) loglik_fn(p, y = gf_mod, X = X),
           meta_opt$par,
@@ -570,5 +603,5 @@
             "Projected to nearest PSD matrix.", call. = FALSE)
   }
 
-  V_MT
+  .flip_k_mat(V_MT, k, sign)
 }
