@@ -249,6 +249,21 @@ malmquist_meta <- function(formula = NULL,
          call. = FALSE)
   }
 
+  # Parse formula
+  f <- Formula::Formula(formula)
+
+  # Drop rows with a missing model variable, group, period or id once,
+  # here, so the DEA/SFA scores and the period/group indices line up
+  keep <- complete.cases(model.frame(f, data = data, na.action = na.pass)) &
+    !is.na(group_vec) & !is.na(time_vec)
+  if (!is.null(id_vec)) keep <- keep & !is.na(id_vec)
+  if (!all(keep)) {
+    data <- data[keep, , drop = FALSE]
+    group_vec <- droplevels(group_vec[keep])
+    time_vec <- time_vec[keep]
+    if (!is.null(id_vec)) id_vec <- id_vec[keep]
+  }
+
   group_levels <- levels(group_vec)
   time_levels <- sort(unique(time_vec))
 
@@ -277,9 +292,6 @@ malmquist_meta <- function(formula = NULL,
             "panels sorted identically in every period. Supply 'id' ",
             "to match firms explicitly.")
   }
-
-  # Parse formula
-  f <- Formula::Formula(formula)
 
   # --- SFA Malmquist path ---
   if (method == "sfa") {
@@ -904,9 +916,10 @@ print.summary.malmquist_meta <- function(x, ...) {
         y_s <- y_all[is]
         y_t <- y_all[it]
 
-        # SFA distance: D(x,y|beta) = exp(x'beta - ln_y)
-        # = exp(x'beta) / exp(ln_y) = frontier(x) / y
-        # For log output, ln D = x'beta - y (since y is already log)
+        # d = exp(x'beta - ln_y) = frontier(x) / y, the reciprocal of
+        # the Shephard output distance D_o = y / frontier(x), so the
+        # technical-change ratios below are inverted relative to the
+        # DEA path, which works with D_o directly
         d_grp_ss <- exp(sum(x_s * beta_s) - y_s)  # same-period
         d_grp_tt <- exp(sum(x_t * beta_t) - y_t)
 
@@ -926,9 +939,10 @@ print.summary.malmquist_meta <- function(x, ...) {
         # TEC = TE_t / TE_s
         tec <- te_t / te_s
 
-        # Group TC (geometric mean)
-        tc_grp_1 <- d_grp_st / d_grp_tt
-        tc_grp_2 <- d_grp_ss / d_grp_ts
+        # Group TC (geometric mean): D_o^s(t)/D_o^t(t) = d_tt/d_st and
+        # D_o^s(s)/D_o^t(s) = d_ts/d_ss
+        tc_grp_1 <- d_grp_tt / d_grp_st
+        tc_grp_2 <- d_grp_ts / d_grp_ss
         tc_grp <- sqrt(tc_grp_1 * tc_grp_2)
 
         ec_grp <- tec
@@ -959,14 +973,15 @@ print.summary.malmquist_meta <- function(x, ...) {
 
         # TGR in [0,1]: Farrell TE ratio for DEA, distance function ratio for SFA
         # Both conventions yield TGR = TE_meta/TE_group <= 1 (BRO 2004 definition)
-        # SFA path: d_grp and meta are Shephard distance function values (>=1), so
-        # TGR = D_group / D_meta <= 1 because D_meta >= D_group.
+        # SFA path: d_grp / meta = frontier_group(x) / frontier_meta(x) <= 1
+        # because the meta frontier is the pointwise maximum.
         tgr_s <- d_grp_ss / meta_ss
         tgr_t <- d_grp_tt / meta_tt
         tgc <- tgr_t / tgr_s
 
-        ec_meta <- meta_tt * te_t / (meta_ss * te_s)
-        tc_meta <- sqrt((meta_st / meta_tt) * (meta_ss / meta_ts))
+        # Meta efficiency TE* = TE x TGR, so EC* = TEC x TGC
+        ec_meta <- tec * tgc
+        tc_meta <- sqrt((meta_tt / meta_st) * (meta_ts / meta_ss))
         mpi_meta <- ec_meta * tc_meta
 
         tc_star <- if (tec > 0 && tgc > 0 && is.finite(mpi_meta))

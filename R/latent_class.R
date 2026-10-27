@@ -85,6 +85,10 @@ latent_class_metafrontier <- function(formula, data,
 
   f <- Formula::Formula(formula)
   f_base <- formula(f, rhs = 1)
+  # Drop incomplete rows up front so the class labels line up with data
+  data <- data[complete.cases(model.frame(f, data = data,
+                                          na.action = na.pass)), ,
+               drop = FALSE]
   mf <- model.frame(f_base, data = data, na.action = na.omit)
   y <- model.response(mf)
   X <- model.matrix(f_base, data = mf)

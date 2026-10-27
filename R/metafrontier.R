@@ -377,7 +377,22 @@ metafrontier <- function(formula = NULL,
     group_vec <- group
   }
 
-  group_vec <- as.factor(group_vec)
+  # Parse formula
+  f <- Formula::Formula(formula)
+
+  # Drop rows with a missing group or model variable once, here, so the
+  # group fits, the pooled stage and every per-row result line up
+  keep <- complete.cases(model.frame(f, data = data, na.action = na.pass)) &
+    !is.na(group_vec)
+  if (!all(keep)) {
+    data <- data[keep, , drop = FALSE]
+    group_vec <- group_vec[keep]
+    if (is.matrix(direction) && nrow(direction) == length(keep)) {
+      direction <- direction[keep, , drop = FALSE]
+    }
+  }
+
+  group_vec <- droplevels(as.factor(group_vec))
   group_levels <- levels(group_vec)
   n_groups <- length(group_levels)
 
@@ -385,9 +400,6 @@ metafrontier <- function(formula = NULL,
     stop("At least 2 groups are required for metafrontier analysis.",
          call. = FALSE)
   }
-
-  # Parse formula
-  f <- Formula::Formula(formula)
 
   # Estimate group-specific models
   group_models <- vector("list", n_groups)
@@ -573,8 +585,11 @@ metafrontier <- function(formula = NULL,
   }
 
   meta_frontier <- as.numeric(X_combined %*% meta_result$meta_coef)
-  tgr <- exp(group_frontier - meta_frontier)
-  if (meta_type == "deterministic") tgr <- pmin(tgr, 1.0)
+  tgr <- if (meta_type == "deterministic") {
+    pmin(exp(group_frontier - meta_frontier), 1.0)
+  } else {
+    meta_result$tgr
+  }
   te_meta <- te_group * tgr
 
   # Construct a minimal Formula for downstream methods

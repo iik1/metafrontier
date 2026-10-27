@@ -64,13 +64,14 @@
     )
   }
 
-  # Compute TGR and metafrontier efficiency
+  # Compute TGR and metafrontier efficiency. The stochastic TGR is
+  # E[exp(-u*)|eps*] from the Stage 2 model; the deterministic TGR is
+  # the frontier ratio, bounded to (0, 1].
   meta_frontier <- as.numeric(X %*% meta_result$meta_coef)
-  tgr <- exp(group_frontier - meta_frontier)
-
-  # Bound TGR to (0, 1] for deterministic metafrontier
-  if (meta_type == "deterministic") {
-    tgr <- pmin(tgr, 1.0)
+  tgr <- if (meta_type == "deterministic") {
+    pmin(exp(group_frontier - meta_frontier), 1.0)
+  } else {
+    meta_result$tgr
   }
 
   te_meta <- te_group * tgr
@@ -382,6 +383,22 @@
   sigma_v <- exp(opt$par["log_sigma_v"])
   sigma_u <- exp(opt$par["log_sigma_u"])
 
+  # TGR_i = E[exp(-u*_i) | eps*_i] (Huang, Huang and Liu, 2014), the
+  # BC88 conditional expectation of the Stage 2 one-sided term, so the
+  # noise v* stays out of the technology gap
+  eps <- group_frontier - as.numeric(X %*% meta_coef)
+  if (dist == "exponential") {
+    mu_star <- -eps - sigma_v^2 / sigma_u
+    sigma_star <- sigma_v
+  } else {
+    mu <- if (dist == "tnormal") opt$par["mu"] else 0
+    sigma_sq <- sigma_v^2 + sigma_u^2
+    mu_star <- (mu * sigma_v^2 - eps * sigma_u^2) / sigma_sq
+    sigma_star <- sigma_v * sigma_u / sqrt(sigma_sq)
+  }
+  u_hat <- pmax(mu_star + sigma_star * .safe_mills(mu_star / sigma_star), 0)
+  tgr <- .bc88_te(mu_star, sigma_star, exp(-u_hat))
+
   # Variance-covariance from inverse of negative Hessian
   meta_vcov <- tryCatch(
     solve(-opt$hessian),
@@ -398,6 +415,7 @@
     meta_sigma_v = sigma_v,
     meta_sigma_u = sigma_u,
     meta_logLik = opt$value,
+    tgr = tgr,
     convergence = opt$convergence,
     meta_opt = opt,
     meta_dist = dist,

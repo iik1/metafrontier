@@ -37,6 +37,13 @@ test_that("models= with stochastic metafrontier works", {
 
   expect_s3_class(result, "metafrontier")
   expect_true(!is.null(result$meta_vcov))
+
+  # Same TGR as the formula interface on the same data
+  fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                      group = "group", meta_type = "stochastic")
+  expect_true(all(result$tgr > 0 & result$tgr <= 1))
+  expect_equal(result$tgr, fit$tgr[order(sim$data$group)],
+               tolerance = 1e-6)
 })
 
 
