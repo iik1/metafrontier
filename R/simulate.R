@@ -51,6 +51,11 @@
 #'   cost frontiers lie on or above the metafrontier (the intercept is
 #'   raised by \code{tech_gap}), and \code{true_tgr} is the ratio of
 #'   minimum costs, \code{exp(-tech_gap[g])} in the default design.
+#' @param selection optional list \code{list(gamma = c(g0, g1), rho = )}
+#'   for a Greene (2010) sample-selection design: a selection regressor
+#'   \code{z1 ~ N(0, 1)} and indicator \code{d = 1(g0 + g1 z1 + w > 0)},
+#'   with \code{corr(w, v) = rho}; \code{log_y} is \code{NA} when
+#'   \code{d = 0}. Default \code{NULL} (no selection).
 #'
 #' @details
 #' By default the group frontiers share the metafrontier slopes and
@@ -114,7 +119,8 @@ simulate_metafrontier <- function(n_groups = 2L,
                                   beta_groups = NULL,
                                   input_means = NULL,
                                   input_corr = NULL,
-                                  frontier = c("production", "cost")) {
+                                  frontier = c("production", "cost"),
+                                  selection = NULL) {
 
   frontier <- match.arg(frontier)
   sign <- if (frontier == "cost") -1 else 1
@@ -262,8 +268,17 @@ simulate_metafrontier <- function(n_groups = 2L,
       frontier_y <- X %*% beta_g
     }
 
-    # Noise and inefficiency
-    v <- stats::rnorm(n_g, 0, sigma_v)
+    # Noise and inefficiency; under selection the noise is correlated
+    # with the selection error w
+    if (is.null(selection)) {
+      v <- stats::rnorm(n_g, 0, sigma_v)
+    } else {
+      z1 <- stats::rnorm(n_g)
+      w <- stats::rnorm(n_g)
+      rho <- selection$rho
+      v <- sigma_v * (rho * w + sqrt(1 - rho^2) * stats::rnorm(n_g))
+      d <- as.numeric(selection$gamma[1] + selection$gamma[2] * z1 + w > 0)
+    }
     u <- abs(stats::rnorm(n_g, 0, sigma_u[g]))
 
     # Observed output (or cost: inefficiency raises it)
@@ -291,6 +306,11 @@ simulate_metafrontier <- function(n_groups = 2L,
       true_v = v,
       stringsAsFactors = FALSE
     )
+    if (!is.null(selection)) {
+      df_g$z1 <- z1
+      df_g$d <- d
+      df_g$log_y[d == 0] <- NA
+    }
 
     frames[[g]] <- df_g
   }
@@ -307,7 +327,8 @@ simulate_metafrontier <- function(n_groups = 2L,
     sigma_v = sigma_v,
     n_groups = n_groups,
     n_per_group = setNames(n_per_group, group_names),
-    frontier = frontier
+    frontier = frontier,
+    selection = selection
   )
 
   list(data = data, params = params)

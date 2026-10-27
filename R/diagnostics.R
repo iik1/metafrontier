@@ -55,6 +55,11 @@
       code[i] <- as.integer(gm$convergence)
       converged[i] <- code[i] == 0L
       note[i] <- ""
+      # Sample-selection models also have a first-step probit
+      if (isFALSE(gm$probit_converged)) {
+        converged[i] <- FALSE
+        note[i] <- "selection probit did not converge"
+      }
     }
   }
 

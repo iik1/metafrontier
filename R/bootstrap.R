@@ -119,6 +119,12 @@ boot_tgr <- function(object, R = 999,
          "on bootstrap samples. Fit the metafrontier from 'formula', ",
          "'data' and 'group' instead.", call. = FALSE)
   }
+  # Replicates would need to redraw selection as well as the frontier,
+  # and the number of selected rows would vary across replicates
+  if (!is.null(object$selection)) {
+    stop("boot_tgr() is not available for sample-selection ",
+         "metafrontiers.", call. = FALSE)
+  }
 
   # The parametric bootstrap draws new noise and inefficiency terms
   # from the estimated error distributions, which requires a

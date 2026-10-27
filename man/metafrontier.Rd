@@ -24,6 +24,7 @@ metafrontier(
   engine = c("internal", "sfaR", "frontier", "Benchmarking"),
   slack = FALSE,
   frontier = c("production", "cost"),
+  selection = NULL,
   ...
 )
 }
@@ -149,6 +150,17 @@ composed error \eqn{\varepsilon = v - u}, or \code{"cost"}, with
 \eqn{\varepsilon = v + u} and a cost metafrontier that lies on or
 below every group cost frontier. Efficiencies and technology gap
 ratios lie in (0, 1] in both cases. SFA methods only.}
+
+\item{selection}{an optional two-sided formula \code{d ~ z1 + z2}
+naming a 0/1 selection indicator and its regressors. Each group
+frontier is then estimated as the sample-selection stochastic
+frontier of Greene (2010): a probit selection equation, and a
+frontier observed when \code{d = 1} whose noise is correlated
+(\code{rho}) with the selection error. Rows with \code{d = 0} enter
+only the probit and may have a missing outcome; efficiencies and
+technology gap ratios are reported for the selected rows.
+Half-normal or exponential inefficiency; cross-sectional SFA with
+the internal engine only.}
 
 \item{...}{additional arguments passed to the group-level
 estimation functions.}

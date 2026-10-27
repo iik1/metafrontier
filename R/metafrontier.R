@@ -109,6 +109,16 @@
 #'   \eqn{\varepsilon = v + u} and a cost metafrontier that lies on or
 #'   below every group cost frontier. Efficiencies and technology gap
 #'   ratios lie in (0, 1] in both cases. SFA methods only.
+#' @param selection an optional two-sided formula \code{d ~ z1 + z2}
+#'   naming a 0/1 selection indicator and its regressors. Each group
+#'   frontier is then estimated as the sample-selection stochastic
+#'   frontier of Greene (2010): a probit selection equation, and a
+#'   frontier observed when \code{d = 1} whose noise is correlated
+#'   (\code{rho}) with the selection error. Rows with \code{d = 0} enter
+#'   only the probit and may have a missing outcome; efficiencies and
+#'   technology gap ratios are reported for the selected rows.
+#'   Half-normal or exponential inefficiency; cross-sectional SFA with
+#'   the internal engine only.
 #' @param ... additional arguments passed to the group-level
 #'   estimation functions.
 #'
@@ -249,6 +259,7 @@ metafrontier <- function(formula = NULL,
                          engine = c("internal", "sfaR", "frontier", "Benchmarking"),
                          slack = FALSE,
                          frontier = c("production", "cost"),
+                         selection = NULL,
                          ...) {
 
   cl <- match.call()
@@ -304,6 +315,12 @@ metafrontier <- function(formula = NULL,
     stop("frontier = \"cost\" is available for SFA metafrontiers only; ",
          "cost DEA requires input prices.", call. = FALSE)
   }
+  if (!is.null(selection) &&
+      (method != "sfa" || !is.null(panel) || engine != "internal" ||
+       !is.null(models))) {
+    stop("'selection' is available for cross-sectional SFA with the ",
+         "internal engine and the formula interface only.", call. = FALSE)
+  }
   if (objective == "qp" && (method != "sfa" ||
                             meta_type != "deterministic")) {
     warning("'objective' applies only to the deterministic SFA ",
@@ -332,7 +349,8 @@ metafrontier <- function(formula = NULL,
                                   objective = objective,
                                   engine = engine,
                                   slack = slack,
-                                  frontier = frontier, ...)
+                                  frontier = frontier,
+                                  selection = selection, ...)
   } else {
     result <- .estimate_from_models(models, meta_type, control,
                                     objective = objective, ...)
@@ -355,6 +373,7 @@ metafrontier <- function(formula = NULL,
   result$slack <- slack
   result$engine <- engine
   result$frontier <- frontier
+  result$selection <- selection
   if (method == "sfa") {
     result$estimator <- estimator
     if (meta_type == "deterministic") result$objective <- objective
@@ -386,7 +405,8 @@ metafrontier <- function(formula = NULL,
                                 objective = "lp",
                                 engine = "internal",
                                 slack = FALSE,
-                                frontier = "production", ...) {
+                                frontier = "production",
+                                selection = NULL, ...) {
 
   sign <- if (frontier == "cost") -1 else 1
 
@@ -411,6 +431,17 @@ metafrontier <- function(formula = NULL,
   # group fits, the pooled stage and every per-row result line up
   keep <- complete.cases(model.frame(f, data = data, na.action = na.pass)) &
     !is.na(group_vec)
+  if (!is.null(selection)) {
+    # Unselected rows enter only the probit, so their frontier variables
+    # (typically the outcome) may be missing
+    smf <- model.frame(selection, data = data, na.action = na.pass)
+    d <- model.response(smf)
+    sel_ok <- complete.cases(smf)
+    if (!all(d[sel_ok] %in% c(0, 1))) {
+      stop("The selection indicator must be 0/1 or logical.", call. = FALSE)
+    }
+    keep <- sel_ok & !is.na(group_vec) & (keep | (sel_ok & d == 0))
+  }
   if (!all(keep)) {
     data <- data[keep, , drop = FALSE]
     group_vec <- group_vec[keep]
@@ -451,6 +482,11 @@ metafrontier <- function(formula = NULL,
           f, data_g, dist, panel_dist, panel, control,
           estimator = estimator, sign = sign, ...
         )
+      } else if (!is.null(selection)) {
+        group_models[[g]] <- .fit_sfa_selection_group(
+          f, selection, data_g, dist, control, estimator = estimator,
+          sign = sign
+        )
       } else {
         group_models[[g]] <- .fit_sfa_group(f, data_g, dist, control,
                                             estimator = estimator,
@@ -476,6 +512,14 @@ metafrontier <- function(formula = NULL,
                                             slack = slack, ...)
       }
     }
+  }
+
+  # Under sample selection the metafrontier and every per-row result
+  # refer to the selected rows
+  if (!is.null(selection)) {
+    selected <- model.response(model.frame(selection, data = data)) == 1
+    data <- data[selected, , drop = FALSE]
+    group_vec <- group_vec[selected]
   }
 
   # Estimate the metafrontier
