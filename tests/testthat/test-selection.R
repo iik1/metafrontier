@@ -106,6 +106,9 @@ test_that("unsupported selection combinations fail loudly", {
   expect_error(metafrontier(y ~ x1 + x2, data = sel_data, group = "group",
                             selection = d ~ z1, engine = "sfaR"),
                "selection")
+  expect_error(metafrontier(y ~ x1 + x2 | z1, data = sel_data,
+                            group = "group", selection = d ~ z1),
+               "inefficiency determinants")
   fit <- metafrontier(y ~ x1 + x2, data = sel_data, group = "group",
                       selection = d ~ z1, meta_type = "stochastic")
   expect_error(boot_tgr(fit, R = 5, progress = FALSE), "selection")

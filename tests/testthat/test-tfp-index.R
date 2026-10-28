@@ -134,6 +134,13 @@ test_that("tfp_index drops incomplete rows and validates prices", {
                          index = "lowe", output_prices = "p1",
                          input_prices = c("w1", "w2")),
                "one price column per output")
+  d_neg <- tfp_data
+  d_neg$p1[4] <- -1
+  expect_error(tfp_index(cbind(y1, y2) ~ x1 + x2, data = d_neg,
+                         group = "region", time = "year", id = "firm",
+                         index = "lowe", output_prices = c("p1", "p2"),
+                         input_prices = c("w1", "w2")),
+               "positive")
   expect_output(print(tfp_index(cbind(y1, y2) ~ x1 + x2, data = tfp_data,
                                 group = "region", time = "year",
                                 id = "firm")), "Fare-Primont")

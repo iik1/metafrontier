@@ -77,7 +77,11 @@ resampling) and nonparametric (case resampling) bootstraps.
 The parametric bootstrap keeps the design fixed and redraws the
 response, so column \code{i} of \code{tgr_boot} is the TGR of DMU
 \code{i} in every replicate. It returns observation-level intervals
-(\code{ci}) as well as group-level intervals.
+(\code{ci}) as well as group-level intervals. Because every replicate
+re-estimates the group frontiers before rebuilding the metafrontier,
+the intervals carry the first-stage (group frontier) estimation
+uncertainty into the TGR, for the deterministic as well as the
+stochastic metafrontier.
 
 The nonparametric bootstrap resamples rows with replacement within
 each group, stacks the resampled rows group by group in the order of

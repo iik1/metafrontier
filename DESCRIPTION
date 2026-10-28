@@ -50,7 +50,9 @@ Suggests:
     plm,
     ggplot2,
     parallel,
-    productivity
+    productivity,
+    Matrix,
+    spdep
 VignetteBuilder: knitr
 URL: https://github.com/iik1/metafrontier
 BugReports: https://github.com/iik1/metafrontier/issues

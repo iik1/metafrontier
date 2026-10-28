@@ -164,7 +164,7 @@ Half-normal or exponential inefficiency; cross-sectional SFA with
 the internal engine only.}
 
 \item{spatial}{an optional list \code{list(W = , row_standardise =
-FALSE, model = "sar")}. \code{W} is an n x n spatial weights matrix
+FALSE)}. \code{W} is an n x n spatial weights matrix
 for the rows of \code{data} (a matrix, a \pkg{Matrix} matrix or an
 \pkg{spdep} \code{listw} object) with a zero diagonal. Each group
 frontier is then the spatial-autoregressive stochastic frontier
