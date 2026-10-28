@@ -400,8 +400,16 @@
     }
   )
 
-  # Check convergence
-  if (opt$convergence != 0L) {
+  # Check convergence; code 99 flags a non-finite or impossibly large
+  # log-likelihood (see .sfa_loglik_problem())
+  ll_problem <- .sfa_loglik_problem(opt$value, exp(opt$par["log_sigma_v"]),
+                                    n)
+  if (!is.null(ll_problem)) {
+    if (opt$convergence == 0L) opt$convergence <- 99L
+    warning("Stage 2 SFA optimisation failed numerically (code ",
+            opt$convergence, ": ", ll_problem, "; see ?check_convergence). ",
+            "Results are unreliable.", call. = FALSE)
+  } else if (opt$convergence != 0L) {
     warning("Stage 2 SFA optimisation did not converge (code ",
             opt$convergence, "). Results may be unreliable.",
             call. = FALSE)

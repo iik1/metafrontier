@@ -145,8 +145,18 @@
     }
   )
 
-  # Check convergence
-  if (opt$convergence != 0L) {
+  # Check convergence. optim() can report success (code 0) at a point
+  # where the log-likelihood is non-finite or impossibly large, i.e. at
+  # a numerical failure rather than a maximum; flag those with code 99.
+  ll_problem <- .sfa_loglik_problem(opt$value, exp(opt$par["log_sigma_v"]),
+                                    n)
+  if (!is.null(ll_problem)) {
+    if (opt$convergence == 0L) opt$convergence <- 99L
+    warning("SFA optimisation failed numerically (code ", opt$convergence,
+            ": ", ll_problem, "; see ?check_convergence). The estimates ",
+            "are not a maximum of the likelihood and should not be used.",
+            call. = FALSE)
+  } else if (opt$convergence != 0L) {
     warning("SFA optimisation did not converge (code ", opt$convergence,
             "). Results may be unreliable. Consider increasing maxit ",
             "via control or checking the data for outliers.", call. = FALSE)
@@ -357,6 +367,42 @@
 }
 
 
+#' Detect a numerically failed SFA log-likelihood
+#'
+#' In every SFA model of the package the noise v ~ N(0, sigma_v^2) is
+#' added to an independent inefficiency term, so the density of each
+#' observation is an average of normal densities with standard
+#' deviation sigma_v and cannot exceed 1 / (sigma_v sqrt(2 pi)). A
+#' log-likelihood above n (-log(sigma_v) - log(2 pi) / 2) is therefore
+#' not a genuine value: it arises when rounding error in evaluating the
+#' likelihood swamps the true value and the optimiser follows it. A
+#' non-finite value, or the -1e20 the likelihood functions return in
+#' place of one, likewise means no maximum was found.
+#'
+#' @param logLik log-likelihood at the optimiser's solution.
+#' @param sigma_v estimated noise standard deviation (NA skips the
+#'   bound check).
+#' @param n number of observations.
+#' @return \code{NULL} if the log-likelihood is admissible, otherwise a
+#'   short description of the problem.
+#' @keywords internal
+#' @noRd
+.sfa_loglik_problem <- function(logLik, sigma_v, n) {
+  logLik <- as.numeric(logLik)[1]
+  sigma_v <- as.numeric(sigma_v)[1]
+  if (!is.finite(logLik) || logLik <= -1e20) {
+    return("logLik not finite")
+  }
+  if (is.na(sigma_v) || n < 1L) return(NULL)
+  bound <- n * (-log(sigma_v) - 0.5 * log(2 * pi))
+  tol <- if (is.finite(bound)) 1e-8 * max(1, abs(bound)) else 0
+  if (logLik > bound + tol) {
+    return(sprintf("logLik %.3g exceeds bound %.3g", logLik, bound))
+  }
+  NULL
+}
+
+
 # ==== Homoscedastic log-likelihoods (no Z) ====
 
 # Parameter-vector layout convention (all likelihoods below):
@@ -427,8 +473,40 @@
 
 # Normal/exponential, u ~ Exp(rate = 1/sigma_u):
 # log f(eps) = -log sigma_u + eps/sigma_u + sigma_v^2/(2*sigma_u^2)
-#              + log Phi(-(eps + sigma_v^2/sigma_u)/sigma_v).
+#              + log Phi(-a),   a = (eps + sigma_v^2/sigma_u)/sigma_v.
 # Meeusen and van den Broeck (1977).
+#
+# For large a, log Phi(-a) is about -a^2/2 and cancels the positive
+# terms before it: at sigma_v/sigma_u = 1e57 both sides are ~1e113, and
+# the rounding error of their sum (~1e97, of either sign) replaced the
+# true value (~ -200), so BFGS climbed it to log-likelihoods of 1e100.
+# For a > 40 the density is evaluated in the equivalent form
+#   log f(eps) = -log(2*pi)/2 - eps^2/(2*sigma_v^2) - log(sigma_u*a)
+#                + log(a*M(a)),
+# with M(a) = Phi(-a)/phi(a) the Mills ratio and the asymptotic series
+# a*M(a) = 1 - 1/a^2 + 3/a^4 - 15/a^6 + 105/a^8, accurate to 1e-13 for
+# a > 40, the size of the rounding error of the direct form at a = 40.
+# Below the switch the direct form is used unchanged.
+# Vectorised over eps and sigma_u; returns per-observation values.
+#' @noRd
+.ll_exponential <- function(eps, sigma_v, sigma_u) {
+  lambda_u <- 1 / sigma_u
+  a <- (eps + lambda_u * sigma_v^2) / sigma_v
+
+  ll <- log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
+    pnorm(-a, log.p = TRUE)
+
+  big <- which(a > 40)
+  if (length(big)) {
+    ab <- a[big]
+    r <- 1 / ab^2
+    su <- rep_len(sigma_u, length(eps))[big]
+    ll[big] <- -0.5 * log(2 * pi) - 0.5 * (eps[big] / sigma_v)^2 -
+      log(su * ab) + log1p(r * (-1 + r * (3 + r * (-15 + 105 * r))))
+  }
+  ll
+}
+
 #' @noRd
 .loglik_exponential <- function(params, y, X) {
   k <- ncol(X)
@@ -438,13 +516,9 @@
 
   if (sigma_v < 1e-10 || sigma_u < 1e-10) return(-1e20)
 
-  lambda_u <- 1 / sigma_u
   eps <- as.numeric(y - X %*% beta)
 
-  ll <- log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
-    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
-
-  result <- sum(ll)
+  result <- sum(.ll_exponential(eps, sigma_v, sigma_u))
   if (!is.finite(result)) return(-1e20)
   result
 }
@@ -525,13 +599,9 @@
   sigma_u <- exp(as.numeric(Z %*% delta))
   if (any(sigma_u < 1e-10)) return(-1e20)
 
-  lambda_u <- 1 / sigma_u
   eps <- as.numeric(y - X %*% beta)
 
-  ll <- log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
-    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
-
-  result <- sum(ll)
+  result <- sum(.ll_exponential(eps, sigma_v, sigma_u))
   if (!is.finite(result)) return(-1e20)
   result
 }
@@ -590,11 +660,9 @@
 
   if (sigma_v < 1e-10 || sigma_u < 1e-10) return(rep(-1e20, length(y)))
 
-  lambda_u <- 1 / sigma_u
   eps <- as.numeric(y - X %*% beta)
 
-  log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
-    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
+  .ll_exponential(eps, sigma_v, sigma_u)
 }
 
 #' @noRd
@@ -654,11 +722,9 @@
   sigma_u <- exp(as.numeric(Z %*% delta))
   if (any(sigma_u < 1e-10)) return(rep(-1e20, length(y)))
 
-  lambda_u <- 1 / sigma_u
   eps <- as.numeric(y - X %*% beta)
 
-  log(lambda_u) + lambda_u * eps + 0.5 * lambda_u^2 * sigma_v^2 +
-    pnorm(-(eps + lambda_u * sigma_v^2) / sigma_v, log.p = TRUE)
+  .ll_exponential(eps, sigma_v, sigma_u)
 }
 
 
