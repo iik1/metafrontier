@@ -46,7 +46,9 @@
   for (g in group_levels) {
     idx <- which(group_vec_valid == g)
     beta_g <- group_models[[g]]$coefficients
-    group_frontier[idx] <- X[idx, , drop = FALSE] %*% beta_g
+    # Spatial group frontiers are compared in the long run (.fit_sfa_spatial_group)
+    scale_g <- if (is.null(group_models[[g]]$long_run)) 1 else group_models[[g]]$long_run
+    group_frontier[idx] <- X[idx, , drop = FALSE] %*% beta_g * scale_g
     te_group[idx] <- group_models[[g]]$efficiency
   }
 

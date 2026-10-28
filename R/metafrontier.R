@@ -129,8 +129,13 @@
 #'   group's own units (re-row-standardised when \code{row_standardise =
 #'   TRUE}), so spillovers between groups are excluded. Each group model
 #'   reports \code{rho} and the direct, indirect and total input effects
-#'   (\code{effects}). The technology gap compares the direct technology
-#'   \eqn{x'\beta_g} with the metafrontier. Cross-sectional SFA without
+#'   (\code{effects}). The metafrontier envelops the long-run group
+#'   frontiers \eqn{m_g x'\beta_g}, with \eqn{m_g} the mean row sum of
+#'   \eqn{(I - \rho_g W_g)^{-1}} (\eqn{1 / (1 - \rho_g)} for
+#'   row-standardised weights): with row-standardised weights the
+#'   intercept and \eqn{\rho_g} are nearly collinear, so the direct
+#'   technology \eqn{x'\beta_g} is poorly determined while the long-run
+#'   frontier is not. Cross-sectional SFA without
 #'   inefficiency determinants, internal engine only.
 #' @param ... additional arguments passed to the group-level
 #'   estimation functions.

@@ -65,6 +65,10 @@
   }
 
   fit$rho <- rho
+  # Long-run multiplier of the frontier, mean row sum of (I - rho W)^-1
+  # (= 1 / (1 - rho) for row-standardised W); the metafrontier envelops
+  # the long-run frontiers x'beta * long_run
+  fit$long_run <- mean(rowSums(solve(diag(n) - rho * W)))
   fit$y <- as.numeric(y)
   fit$W <- W
   fit$spatial_lag <- rho * Wy
