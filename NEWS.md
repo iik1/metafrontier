@@ -50,8 +50,13 @@
   rho is estimated by profiling the full likelihood (log-Jacobian from
   the eigenvalues of W); each group model reports `rho`, a Hessian that
   includes rho, and direct, indirect and total input effects with
-  delta-method standard errors (LeSage and Pace, 2009). The TGR compares
-  the direct technology x'beta. W may be a matrix, a `Matrix` or an
+  delta-method standard errors (LeSage and Pace, 2009). The metafrontier
+  envelops the long-run group frontiers x'beta / (1 - rho) (for
+  row-standardised W; in general the mean row sum of (I - rho W)^-1),
+  because with row-standardised W the intercept and rho are nearly
+  collinear and the direct technology x'beta is poorly determined; on
+  simulated data the seed-to-seed spread of the TGR relative to the true
+  gap halves (regression-tested). W may be a matrix, a `Matrix` or an
   `spdep` `listw`; rows dropped for missing values are dropped from W.
   Works with `frontier = "cost"` and both metafrontier types.
   `simulate_metafrontier(spatial = list(rho, k))` generates SAR data with

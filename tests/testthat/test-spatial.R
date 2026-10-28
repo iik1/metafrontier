@@ -96,3 +96,31 @@ test_that("rows dropped for missing values are dropped from W too", {
   expect_equal(fit_na$tgr, fit_cl$tgr)
   expect_equal(fit_na$group_models$G1$rho, fit_cl$group_models$G1$rho)
 })
+
+test_that("the spatial TGR compares long-run frontiers and is stable across seeds", {
+  # With row-standardised W the intercept and rho are nearly collinear,
+  # so the direct technology x'beta is noisy; the long-run frontier
+  # x'beta / (1 - rho) is not. True long-run gap: 0.5 / (1 - 0.4)
+  truth <- exp(-0.5 / 0.6)
+  runs <- t(vapply(1:6, function(s) {
+    sim <- simulate_metafrontier(n_groups = 2, n_per_group = 300,
+                                 tech_gap = c(0, 0.5), sigma_v = 0.1,
+                                 seed = s, spatial = list(rho = 0.4, k = 5))
+    fit <- metafrontier(log_y ~ log_x1 + log_x2, data = sim$data,
+                        group = "group", spatial = list(W = sim$W))
+    g2 <- sim$data$group == "G2"
+    X <- cbind(1, as.matrix(sim$data[g2, c("log_x1", "log_x2")]))
+    direct <- sapply(fit$group_models, function(m) X %*% m$coefficients)
+    c(true = unique(sim$data$true_tgr[g2]),
+      longrun = mean(fit$tgr[g2]),
+      direct = mean(exp(direct[, 2] - apply(direct, 1, max))))
+  }, numeric(3)))
+  expect_equal(unname(runs[, "true"]), rep(truth, 6))
+  # Centred on the long-run gap (0.43), not the direct one (0.61); rho-hat
+  # sits slightly below 0.4 in samples this size, a small upward bias
+  expect_equal(mean(runs[, "longrun"]), truth, tolerance = 0.1)
+  spread <- function(x, gap) sd(log(x)) / gap
+  expect_lt(spread(runs[, "longrun"], 0.5 / 0.6), 0.1)
+  expect_lt(spread(runs[, "longrun"], 0.5 / 0.6),
+            spread(runs[, "direct"], 0.5))
+})

@@ -61,7 +61,10 @@
 #'   unit square, \code{W} is the row-standardised k-nearest-neighbour
 #'   matrix within each group, and \code{log_y = (I - rho W_g)^{-1}
 #'   (x'beta_g + v -/+ u)}. The block-diagonal n x n matrix is returned
-#'   as \code{W}. Default \code{NULL} (no spatial dependence).
+#'   as \code{W}, and \code{true_tgr} is the gap between the long-run
+#'   frontiers \eqn{x'\beta_g / (1 - \rho)}: \code{exp(-tech_gap[g] /
+#'   (1 - rho))} in the default design. Default \code{NULL} (no spatial
+#'   dependence).
 #'
 #' @details
 #' By default the group frontiers share the metafrontier slopes and
@@ -316,6 +319,8 @@ simulate_metafrontier <- function(n_groups = 2L,
     } else {
       true_tgr <- exp(-tech_gap[g])  # constant for intercept-shift DGP
     }
+    # Spatial: gap between long-run frontiers x'beta / (1 - rho)
+    if (!is.null(spatial)) true_tgr <- true_tgr^(1 / (1 - spatial$rho))
 
     df_g <- data.frame(
       X_inputs,
