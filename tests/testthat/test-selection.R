@@ -58,6 +58,7 @@ test_that("selection group frontiers match sfaR::sfaselectioncross", {
 })
 
 test_that("with rho = 0 the selection fit is close to the uncorrected fit", {
+  skip_on_cran()   # each selection fit on n = 1000 per group takes seconds
   d0 <- make_sel_data(rho = 0, seed = 9)
   fit_s <- metafrontier(y ~ x1 + x2, data = d0, group = "group",
                         selection = d ~ z1)
@@ -70,6 +71,7 @@ test_that("with rho = 0 the selection fit is close to the uncorrected fit", {
 })
 
 test_that("selection keeps unselected rows with a missing outcome and drops incomplete ones", {
+  skip_on_cran()
   d_na <- sel_data
   d_na$z1[3] <- NA            # missing selection regressor: dropped
   d_na$x1[which(d_na$d == 1)[1]] <- NA   # selected, missing input: dropped
@@ -88,6 +90,7 @@ test_that("selection keeps unselected rows with a missing outcome and drops inco
 })
 
 test_that("cost selection frontiers mirror the production fit", {
+  skip_on_cran()
   fit_p <- metafrontier(y ~ x1 + x2, data = sel_data, group = "group",
                         selection = d ~ z1)
   fit_c <- metafrontier(I(-y) ~ x1 + x2, data = sel_data, group = "group",
@@ -101,6 +104,7 @@ test_that("cost selection frontiers mirror the production fit", {
 })
 
 test_that("unsupported selection combinations fail loudly", {
+  skip_on_cran()
   expect_error(metafrontier(y ~ x1 + x2, data = sel_data, group = "group",
                             selection = d ~ z1, method = "dea"), "selection")
   expect_error(metafrontier(y ~ x1 + x2, data = sel_data, group = "group",
@@ -117,6 +121,7 @@ test_that("unsupported selection combinations fail loudly", {
 })
 
 test_that("simulate_metafrontier(selection = ) generates recoverable selection data", {
+  skip_on_cran()
   sim <- simulate_metafrontier(n_groups = 2, n_per_group = 1500,
                                sigma_v = 0.2, seed = 12,
                                selection = list(gamma = c(0.3, 0.8),

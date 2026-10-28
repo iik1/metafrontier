@@ -48,7 +48,13 @@
   wts <- gh$weights / sqrt(pi)
   # u at the quadrature nodes for u = sigma_u * q, q the standardised
   # inefficiency: |W| (half-normal) or -log Phi(-W) (exponential)
-  q <- if (dist == "hnormal") abs(z) else -pnorm(-z, log.p = TRUE)
+  if (dist == "hnormal") {
+    # |W| is symmetric and the nodes come in +/- pairs: the positive half
+    # with doubled weights gives the same sum at half the cost
+    wts <- 2 * wts[z > 0]
+    z <- z[z > 0]
+  }
+  q <- if (dist == "hnormal") z else -pnorm(-z, log.p = TRUE)
 
   node_terms <- function(params) {
     beta <- params[seq_len(k)]

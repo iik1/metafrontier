@@ -98,6 +98,7 @@ test_that("rows dropped for missing values are dropped from W too", {
 })
 
 test_that("the spatial TGR compares long-run frontiers and is stable across seeds", {
+  skip_on_cran()   # six simulated SAR fits
   # With row-standardised W the intercept and rho are nearly collinear,
   # so the direct technology x'beta is noisy; the long-run frontier
   # x'beta / (1 - rho) is not. True long-run gap: 0.5 / (1 - 0.4)
