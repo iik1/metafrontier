@@ -55,7 +55,8 @@ An object of class \code{"tfp_meta"}: a list with
       reference (\code{_group}, \code{_meta}) \code{TFP_star},
       \code{TFPE} and the efficiency components, plus \code{MTR}}
     \item{changes}{one row per unit and pair of consecutive periods
-      in which it is observed: the ratio (period_to over period_from)
+      of the sample in which it is observed in both: the ratio
+      (period_to over period_from)
       of every level column, prefixed with \code{d}}
     \item{weights}{the output and input aggregation weights}
     \item{settings, groups, periods, n_infeasible, call}{settings and

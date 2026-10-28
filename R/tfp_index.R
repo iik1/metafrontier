@@ -60,7 +60,8 @@
 #'       reference (\code{_group}, \code{_meta}) \code{TFP_star},
 #'       \code{TFPE} and the efficiency components, plus \code{MTR}}
 #'     \item{changes}{one row per unit and pair of consecutive periods
-#'       in which it is observed: the ratio (period_to over period_from)
+#'       of the sample in which it is observed in both: the ratio
+#'       (period_to over period_from)
 #'       of every level column, prefixed with \code{d}}
 #'     \item{weights}{the output and input aggregation weights}
 #'     \item{settings, groups, periods, n_infeasible, call}{settings and
@@ -166,8 +167,8 @@ tfp_index <- function(formula, data, group, time, id,
     }
     weights <- list(output = colMeans(data[output_prices]),
                     input = colMeans(data[input_prices]))
-    if (any(unlist(weights) <= 0)) {
-      stop("Representative prices must be positive.", call. = FALSE)
+    if (any(data[price_cols] <= 0)) {
+      stop("Prices must be positive.", call. = FALSE)
     }
   }
   AO <- as.numeric(Y %*% weights$output)
@@ -274,10 +275,10 @@ tfp_index <- function(formula, data, group, time, id,
   x0 <- colMeans(X)
   y0 <- colMeans(Y)
   vrs <- rts == "vrs"
-  w0 <- if (vrs) 1 else NULL   # free intercept column under VRS
+  w0 <- if (vrs) 1   # free intercept column under VRS
 
   # Output distance: min v'x0 (+ w) s.t. u'y0 = 1, v'x_j - u'y_j (+ w) >= 0
-  A <- rbind(cbind(-Y, X, if (vrs) 1), c(y0, rep(0, m), w0 * 0))
+  A <- rbind(cbind(-Y, X, if (vrs) 1), c(y0, rep(0, m), if (vrs) 0))
   o <- .lp_dense(c(rep(0, s), x0, w0), A, c(rep(">=", n), "="),
                  c(rep(0, n), 1), "min", if (vrs) s + m + 1L)
   u <- o$solution[seq_len(s)]
@@ -285,7 +286,7 @@ tfp_index <- function(formula, data, group, time, id,
   p <- u / (sum(v * x0) + if (vrs) o$solution[s + m + 1L] else 0)
 
   # Input distance: max u'y0 (+ w) s.t. v'x0 = 1, u'y_j - v'x_j (+ w) <= 0
-  A <- rbind(cbind(Y, -X, if (vrs) 1), c(rep(0, s), x0, w0 * 0))
+  A <- rbind(cbind(Y, -X, if (vrs) 1), c(rep(0, s), x0, if (vrs) 0))
   i <- .lp_dense(c(y0, rep(0, m), w0), A, c(rep("<=", n), "="),
                  c(rep(0, n), 1), "max", if (vrs) s + m + 1L)
   u <- i$solution[seq_len(s)]

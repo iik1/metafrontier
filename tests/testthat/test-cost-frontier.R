@@ -194,6 +194,13 @@ test_that("unsupported cost combinations fail loudly and output names the fronti
                               frontier = "cost"),
     "production"
   )
+  expect_error(
+    malmquist_meta(log_c ~ log_y + log_w,
+                   data = transform(cost_data, t = rep(1:2, 200), id = 1:400),
+                   group = "group", time = "t", id = "id",
+                   frontier = "cost"),
+    "production"
+  )
   fit <- metafrontier(log_c ~ log_y + log_w, data = cost_data,
                       group = "group", frontier = "cost")
   expect_output(print(fit), "Frontier:[[:space:]]+cost")

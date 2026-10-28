@@ -205,6 +205,11 @@ malmquist_meta <- function(formula = NULL,
   estimator <- match.arg(estimator)
   orientation <- match.arg(orientation)
   rts <- match.arg(rts)
+  # 'frontier' would otherwise vanish into ... and give production results
+  if (!is.null(list(...)$frontier)) {
+    stop("malmquist_meta() supports production frontiers only.",
+         call. = FALSE)
+  }
 
   # --- Input validation ---
   if (is.null(formula) || is.null(data) || is.null(group) ||

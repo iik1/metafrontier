@@ -120,7 +120,7 @@
 #'   Half-normal or exponential inefficiency; cross-sectional SFA with
 #'   the internal engine only.
 #' @param spatial an optional list \code{list(W = , row_standardise =
-#'   FALSE, model = "sar")}. \code{W} is an n x n spatial weights matrix
+#'   FALSE)}. \code{W} is an n x n spatial weights matrix
 #'   for the rows of \code{data} (a matrix, a \pkg{Matrix} matrix or an
 #'   \pkg{spdep} \code{listw} object) with a zero diagonal. Each group
 #'   frontier is then the spatial-autoregressive stochastic frontier
@@ -335,15 +335,16 @@ metafrontier <- function(formula = NULL,
     stop("'selection' is available for cross-sectional SFA with the ",
          "internal engine and the formula interface only.", call. = FALSE)
   }
+  if (!is.null(selection) && length(Formula::Formula(formula))[2] > 1L) {
+    stop("'selection' does not support inefficiency determinants.",
+         call. = FALSE)
+  }
   if (!is.null(spatial)) {
     if (method != "sfa" || !is.null(panel) || !is.null(selection) ||
         engine != "internal" || !is.null(models)) {
       stop("'spatial' is available for cross-sectional SFA with the ",
            "internal engine and the formula interface only, without ",
            "'selection'.", call. = FALSE)
-    }
-    if (!is.null(spatial$model) && !identical(spatial$model, "sar")) {
-      stop("Only spatial$model = \"sar\" is supported.", call. = FALSE)
     }
     if (length(Formula::Formula(formula))[2] > 1L) {
       stop("'spatial' does not support inefficiency determinants.",

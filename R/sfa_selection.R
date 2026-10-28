@@ -18,7 +18,7 @@
 #' @noRd
 .fit_sfa_selection_group <- function(formula, selection, data, dist,
                                      control, estimator = "bc88",
-                                     sign = 1, n_nodes = 100L) {
+                                     sign = 1) {
   if (!dist %in% c("hnormal", "exponential")) {
     stop("The sample-selection model supports dist = \"hnormal\" or ",
          "\"exponential\".", call. = FALSE)
@@ -43,7 +43,7 @@
   zg <- as.numeric(Zs[selected, , drop = FALSE] %*% gamma)
   k <- ncol(X)
 
-  gh <- .gauss_hermite(n_nodes)
+  gh <- .gauss_hermite(100L)   # as sfaR::sfaselectioncross
   z <- sqrt(2) * gh$nodes
   wts <- gh$weights / sqrt(pi)
   # u at the quadrature nodes for u = sigma_u * q, q the standardised
