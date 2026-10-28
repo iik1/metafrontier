@@ -7,7 +7,7 @@
 #'   predict AIC BIC printCoefmat sd var quantile median
 #'   lm.fit lm.wfit constrOptim na.omit pchisq setNames density
 #'   as.formula delete.response formula
-#'   kmeans rnorm rexp runif aggregate
+#'   kmeans rnorm rexp runif aggregate complete.cases na.pass
 #' @importFrom graphics abline boxplot legend lines par plot
 #' @importFrom grDevices rainbow
 #' @importFrom utils globalVariables

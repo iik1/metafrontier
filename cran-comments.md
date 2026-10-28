@@ -1,22 +1,15 @@
 ## Release summary
 
-metafrontier 0.3.1 (previous CRAN version: 0.3.0).
+metafrontier 0.4.0 (previous CRAN version: 0.3.1).
 
-This is a patch release addressing the failure reported by the CRAN
-additional check without long doubles (noLD): the test
-"bc88 is computed in all distribution branches" failed for the
-heteroscedastic exponential model.
+New features: cost frontiers, sample-selection (Greene, 2010) and
+spatial-autoregressive group frontiers, and transitive Fare-Primont and
+Lowe productivity indexes (`tfp_index()`). Bug fixes, among them a
+numerical failure of exponential SFA fits and an incorrect technology
+gap ratio for the stochastic metafrontier. See NEWS.md for details.
 
-Cause: the BC88/BC92 conditional efficiencies were evaluated as a
-natural-scale ratio of two `pnorm()` values. In degenerate fits with
-`sigma_u` near zero, both values are subnormal, and without
-extended-precision long doubles the ratio can return 0, `Inf`, or
-values above one.
-
-Fix: the efficiencies are now evaluated on the log scale
-(`pnorm(log.p = TRUE)`), with an asymptotic closed form in the far
-left tail where the log-scale difference itself loses precision. On
-standard platforms results are unchanged to near machine precision.
+New suggested packages: productivity, Matrix and spdep (used in tests
+and, for Matrix and spdep, optionally for spatial weights input).
 
 ## R CMD check results
 
@@ -27,10 +20,10 @@ standard platforms results are unchanged to near machine precision.
 * Local: Windows 11, R 4.5.1
 * GitHub Actions:
   - Ubuntu 24.04, R-devel
-  - Ubuntu 24.04, R 4.5.1 (release)
-  - Ubuntu 24.04, R 4.4.x (oldrel-1)
-  - Windows Server 2022, R 4.5.1 (release)
-  - macOS 14, R 4.5.1 (release)
+  - Ubuntu 24.04, R release
+  - Ubuntu 24.04, R oldrel-1
+  - Windows Server 2022, R release
+  - macOS 14, R release
 
 ## Notes
 

@@ -205,7 +205,9 @@ An object of class \code{"metafrontier"} (with subclass
     \item{meta_convergence}{integer convergence code for the
       metafrontier stage (0 = success; \code{\link[stats]{optim}}
       codes for the stochastic metafrontier and the QP barrier
-      fallback; 0 for a successful LP or DEA solution). Each SFA
+      fallback, and 99 for a stochastic metafrontier whose
+      log-likelihood is non-finite or impossibly large; 0 for a
+      successful LP or DEA solution). Each SFA
       group model in \code{group_models} additionally carries its
       own \code{convergence} code. Use
       \code{\link{check_convergence}} to inspect all stages.}
@@ -310,4 +312,16 @@ O'Donnell, C.J., Rao, D.S.P. and Battese, G.E. (2008).
 Metafrontier frameworks for the study of firm-level efficiencies
 and technology ratios. \emph{Empirical Economics}, 34(2), 231--255.
 \doi{10.1007/s00181-007-0119-4}
+
+Greene, W.H. (2010). A stochastic frontier model with correction for
+sample selection. \emph{Journal of Productivity Analysis}, 34(1),
+15--24. \doi{10.1007/s11123-009-0159-1}
+
+Glass, A.J., Kenjegalieva, K. and Sickles, R.C. (2016). A spatial
+autoregressive stochastic frontier model for panel data with
+asymmetric efficiency spillovers. \emph{Journal of Econometrics},
+190(2), 289--300. \doi{10.1016/j.jeconom.2015.06.011}
+
+LeSage, J. and Pace, R.K. (2009). \emph{Introduction to Spatial
+Econometrics}. CRC Press.
 }
