@@ -30,14 +30,15 @@ A data frame of class \code{"metafrontier_convergence"}
       \code{"LP"}, \code{"QP"}, \code{"QP (barrier)"},
       \code{"DEA"}, or \code{"external"}}
     \item{code}{the integer convergence code returned by the
-      optimiser (0 indicates success); \code{NA} for DEA stages
-      and externally fitted groups}
+      optimiser (0 indicates success), or 99 for a numerical
+      failure (see Details); \code{NA} for DEA stages and
+      externally fitted groups}
     \item{converged}{logical convergence indicator; for DEA
       stages \code{TRUE} unless any efficiency score is
       \code{NA} (infeasible programme); \code{NA} for externally
       fitted groups}
     \item{note}{additional detail, e.g. the number of infeasible
-      DEA programmes}
+      DEA programmes or the reason for code 99}
   }
 }
 \description{
@@ -53,6 +54,14 @@ For groups supplied via the \code{models} argument of
 \code{\link{metafrontier}} the convergence status of the external
 fitter is not tracked, and the corresponding rows carry
 \code{NA} with an explanatory note.
+
+An SFA stage is reported with code 99, and as not converged, when
+the log-likelihood at the optimiser's solution is not finite or
+exceeds \eqn{n(-\log\sigma_v - \log(2\pi)/2)}. No model with
+\eqn{N(0, \sigma_v^2)} noise can attain a higher value, so such a
+solution is a numerical failure even when the optimiser itself
+reported success. The check is applied to the stored fit, so it
+also covers objects created with earlier versions of the package.
 }
 \examples{
 sim <- simulate_metafrontier(n_groups = 2, n_per_group = 50, seed = 42)
