@@ -1,4 +1,4 @@
-# metafrontier (development version)
+# metafrontier 0.4.0
 
 ## New features
 
@@ -78,6 +78,40 @@
   observation-level intervals.
 
 ## Bug fixes
+
+- SFA with `dist = "exponential"` could diverge silently. The
+  normal-exponential log-density adds `sigma_v^2 / (2 sigma_u^2)` to
+  `log Phi(-a)`, which is close to `-a^2 / 2` for large `a`. When the
+  optimiser tried large values of `sigma_v / sigma_u`, the two terms
+  cancelled, and their rounding error, which can be positive and
+  astronomically large, replaced the true value. BFGS climbed this
+  error: on the package's test data one group frontier ended at
+  `sigma_v` of about 4e91 and `sigma_u` of about 5e34 with a
+  log-likelihood of 2e100, reported as converged, and the
+  second-stage stochastic metafrontier diverged in the same way even
+  given correct group frontiers. The failure was common: with the
+  default settings of `simulate_metafrontier()`, 75 of 80 group fits
+  (40 seeds, 150 observations per group) diverged. Exponential fits
+  made with earlier versions should be re-estimated;
+  `check_convergence()` flags the affected stages of stored objects
+  (see below). For `a > 40` the log-density is now evaluated in an
+  algebraically equivalent form based on the asymptotic expansion of
+  the Mills ratio, which avoids the cancellation; the affected group
+  fit on the test data now agrees with
+  `sfaR::sfacross()` (regression-tested). Below `a = 40` the
+  evaluation is unchanged, so fits that never reached that region
+  give identical results. The fix covers group frontiers with and
+  without inefficiency determinants, the stochastic metafrontier,
+  latent class models, and Murphy-Topel standard errors.
+
+- An SFA stage whose log-likelihood at the optimiser's solution is not
+  finite, or exceeds `n * (-log(sigma_v) - log(2 * pi) / 2)` (the
+  largest value any model with `N(0, sigma_v^2)` noise can attain), is
+  now reported with convergence code 99 and a warning, rather than
+  with the optimiser's code 0. `check_convergence()`, `summary()` and
+  `print()` show such stages as not converged, with the reason in the
+  `note` column. `check_convergence()` applies the check to the stored
+  fit, so objects created with earlier versions are flagged too.
 
 - Stochastic metafrontier (`meta_type = "stochastic"`): the TGR was
   computed as `exp(group_frontier - meta_frontier)`, which equals

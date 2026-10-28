@@ -88,8 +88,8 @@ with \code{corr(w, v) = rho}; \code{log_y} is \code{NA} when
 \item{spatial}{optional list \code{list(rho = , k = 5)} for a
 spatial-autoregressive design: units get random coordinates in the
 unit square, \code{W} is the row-standardised k-nearest-neighbour
-matrix within each group, and \code{log_y = (I - rho W_g)^{-1}
-(x'beta_g + v -/+ u)}. The block-diagonal n x n matrix is returned
+matrix within each group, and \eqn{\log y = (I - \rho W_g)^{-1}
+(x'\beta_g + v \mp u)}. The block-diagonal n x n matrix is returned
 as \code{W}, and \code{true_tgr} is the gap between the long-run
 frontiers \eqn{x'\beta_g / (1 - \rho)}: \code{exp(-tech_gap[g] /
 (1 - rho))} in the default design. Default \code{NULL} (no spatial

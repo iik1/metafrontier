@@ -1,7 +1,7 @@
 Package: metafrontier
 Type: Package
 Title: Analysis of Metafrontier Models for Efficiency and Productivity
-Version: 0.3.1.9000
+Version: 0.4.0
 Authors@R: c(
     person("Erik", "Enstad", email = "erik.enstad@nhh.no",
            role = c("aut", "cre"),
@@ -19,7 +19,13 @@ Description: Implements metafrontier production function models for
     productivity index of O'Donnell, Rao, and Battese (2008)
     <doi:10.1007/s00181-007-0119-4>. The deterministic metafrontier can
     be identified by either the minimum sum of absolute deviations (LP)
-    or the minimum sum of squared deviations (QP) criterion. Additional
+    or the minimum sum of squared deviations (QP) criterion. Group
+    frontiers can be production or cost frontiers, corrected for sample
+    selection following Greene (2010) <doi:10.1007/s11123-009-0159-1>,
+    or spatial-autoregressive stochastic frontiers. Transitive
+    Fare-Primont and Lowe productivity indexes (O'Donnell, 2012
+    <doi:10.1093/ajae/aas023>) are decomposed against group technologies
+    and the metatechnology. Additional
     features include panel SFA with time-varying inefficiency, bootstrap
     confidence intervals for technology gap ratios, a DEA poolability
     permutation test, latent class metafrontier estimation via the EM
@@ -40,7 +46,7 @@ Imports:
     lpSolveAPI,
     methods
 Suggests:
-    testthat (>= 3.0.0),
+    testthat (>= 3.1.7),
     knitr,
     rmarkdown,
     sfaR,
