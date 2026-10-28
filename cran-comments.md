@@ -1,3 +1,15 @@
+## Resubmission
+
+This is a resubmission of 0.4.0. In this version I have:
+
+* Reduced the check time, which was 11 min on r-devel-windows-x86_64.
+  The sample-selection likelihood now evaluates its Gauss-Hermite
+  quadrature on the positive half of the symmetric node set (same
+  values, half the cost), and the slowest simulation-based tests are
+  skipped on CRAN; they still run in our CI on five platforms.
+* "Primont" in DESCRIPTION is not a misspelling: it is a surname, as in
+  the Fare-Primont productivity index.
+
 ## Release summary
 
 metafrontier 0.4.0 (previous CRAN version: 0.3.1).
